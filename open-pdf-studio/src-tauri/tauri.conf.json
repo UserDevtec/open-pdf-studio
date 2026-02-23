@@ -73,7 +73,7 @@
       "mobile": [
         {
           "host": "open",
-          "pathPrefix": "/"
+          "pathPrefix": ["/"]
         }
       ],
       "desktop": {
