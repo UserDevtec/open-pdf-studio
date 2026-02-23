@@ -59,18 +59,54 @@ jobs:
         env:
           NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/27.0.12077973
 
-      - name: Find APK files
-        id: find-apk
+      - name: Sign APK
         run: |
-          APK_PATH=$(find src-tauri/gen/android -name "*.apk" -type f | head -1)
-          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
-          echo "Found APK: $APK_PATH"
+          # Find the unsigned APK
+          UNSIGNED_APK=$(find src-tauri/gen/android -name "*-unsigned.apk" -type f | head -1)
+          if [ -z "$UNSIGNED_APK" ]; then
+            echo "No unsigned APK found"
+            exit 1
+          fi
+          echo "Found unsigned APK: $UNSIGNED_APK"
+          APK_DIR=$(dirname "$UNSIGNED_APK")
 
-      - name: Upload APK artifact
+          # Generate a signing keystore
+          keytool -genkeypair -v \
+            -keystore "$APK_DIR/release.keystore" \
+            -alias release \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass openpdfstudio -keypass openpdfstudio \
+            -dname "CN=Open PDF Studio, O=OpenAEC Foundation, L=Unknown, ST=Unknown, C=US"
+
+          # Find the build-tools for zipalign and apksigner
+          BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/*/ | sort -V | tail -1)
+          echo "Using build-tools: $BUILD_TOOLS"
+
+          # Zipalign the APK
+          ALIGNED_APK="$APK_DIR/app-universal-release-aligned.apk"
+          "${BUILD_TOOLS}zipalign" -v 4 "$UNSIGNED_APK" "$ALIGNED_APK"
+
+          # Sign the APK
+          SIGNED_APK="$APK_DIR/open-pdf-studio-release.apk"
+          "${BUILD_TOOLS}apksigner" sign \
+            --ks "$APK_DIR/release.keystore" \
+            --ks-key-alias release \
+            --ks-pass pass:openpdfstudio \
+            --key-pass pass:openpdfstudio \
+            --out "$SIGNED_APK" \
+            "$ALIGNED_APK"
+
+          # Verify the signature
+          "${BUILD_TOOLS}apksigner" verify --verbose "$SIGNED_APK"
+          echo "signed_apk=$SIGNED_APK" >> $GITHUB_OUTPUT
+          echo "Signed APK: $SIGNED_APK"
+        id: sign-apk
+
+      - name: Upload signed APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: open-pdf-studio/src-tauri/gen/android/**/outputs/**/*.apk
+          path: open-pdf-studio/src-tauri/gen/android/**/open-pdf-studio-release.apk
           if-no-files-found: warn
 
       - name: Get version tag
@@ -84,6 +120,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.get-version.outputs.version }}"
-          for apk in $(find src-tauri/gen/android -name "*.apk" -type f); do
-            gh release upload "$VERSION" "$apk" --clobber --repo "${{ github.repository }}" || true
-          done
+          SIGNED_APK=$(find src-tauri/gen/android -name "open-pdf-studio-release.apk" -type f | head -1)
+          if [ -n "$SIGNED_APK" ]; then
+            gh release upload "$VERSION" "$SIGNED_APK" --clobber --repo "${{ github.repository }}"
+          fi
