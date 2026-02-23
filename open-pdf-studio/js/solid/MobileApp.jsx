@@ -1,7 +1,7 @@
 import { createSignal, onMount, onCleanup, Show, For } from 'solid-js';
 import { useTranslation } from '../i18n/useTranslation.js';
 import { state } from '../core/state.js';
-import { isTauri, openFileDialog, extractFileName } from '../core/platform.js';
+import { isTauri, extractFileName } from '../core/platform.js';
 import { loadPDF } from '../pdf/loader.js';
 import { fitWidth, fitPage, goToPage, rotatePage, setZoom } from '../pdf/renderer.js';
 import { createTab } from '../ui/chrome/tabs.js';
@@ -71,12 +71,20 @@ export default function MobileApp() {
 
   // --- File operations ---
 
+  // Strategy: Try Tauri dialog first (gives us a content:// URI we can save back to).
+  // If dialog plugin is unavailable or fails, fall back to HTML <input type="file">
+  // which works on every Android WebView (WRY implements onShowFileChooser).
+
   async function handleOpen() {
     setDrawerOpen(false);
 
-    if (isTauri()) {
+    // Attempt 1: Tauri dialog plugin (preferred — returns a path we can save to)
+    if (isTauri() && window.__TAURI__?.dialog) {
       try {
-        const path = await openFileDialog();
+        const path = await window.__TAURI__.dialog.open({
+          multiple: false,
+          filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+        });
         if (path) {
           createTab(path);
           await new Promise(r => setTimeout(r, 0));
@@ -85,13 +93,17 @@ export default function MobileApp() {
           await fitPage();
           addRecentFile(path, extractFileName(path));
           setRecentFiles(getRecentFiles());
+          return; // Success — done
         }
+        // path is null = user cancelled, don't fall through
+        return;
       } catch (e) {
-        console.warn('Failed to open file:', e);
+        console.warn('Tauri dialog failed, falling back to HTML file input:', e);
       }
-    } else {
-      fileInputRef?.click();
     }
+
+    // Attempt 2: HTML <input type="file"> (guaranteed fallback)
+    fileInputRef?.click();
   }
 
   async function handleFileInput(e) {
@@ -108,6 +120,7 @@ export default function MobileApp() {
       addRecentFile(file.name, file.name);
       setRecentFiles(getRecentFiles());
     } catch (err) {
+      alert('Failed to load PDF: ' + (err.message || err));
       console.warn('Failed to load PDF:', err);
     }
     e.target.value = '';
@@ -115,25 +128,10 @@ export default function MobileApp() {
 
   async function handleOpenRecent(recent) {
     setDrawerOpen(false);
-    if (isTauri()) {
-      try {
-        createTab(recent.path);
-        await new Promise(r => setTimeout(r, 0));
-        initDomElements();
-        await loadPDF(recent.path);
-        await fitPage();
-        addRecentFile(recent.path, recent.name);
-        setRecentFiles(getRecentFiles());
-      } catch (e) {
-        // On Android, content:// URI permissions expire after app restart
-        if (recent.path.startsWith('content://')) {
-          alert('This file can no longer be accessed. Please open it again using the file picker.');
-        } else {
-          alert('Failed to open file: ' + (e.message || e));
-        }
-        console.warn('Failed to open recent file:', e);
-      }
-    }
+    // On mobile, content:// URI permissions expire after app restart, and
+    // HTML file input paths are just display names — neither can be reopened.
+    // Prompt the user to re-pick the file.
+    alert('Please use the Open button to reopen this file. Android does not allow apps to reopen files by path.');
   }
 
   function handleClearRecents() {
