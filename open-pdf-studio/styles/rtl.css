@@ -182,6 +182,11 @@
   flex-direction: row-reverse;
 }
 
+/* Default app bar */
+[dir="rtl"] .default-app-bar {
+  flex-direction: row-reverse;
+}
+
 /* Scrollbars - move to left side for RTL */
 [dir="rtl"] ::-webkit-scrollbar {
   direction: ltr;

@@ -16,13 +16,14 @@ export default function SplitButton(props) {
 
   return (
     <div class="ribbon-split-btn" id={props.id} ref={containerRef}>
-      <button class="ribbon-btn" title={props.mainTitle} onClick={props.onMainClick}>
+      <button class="ribbon-btn" title={props.mainTitle} disabled={props.disabled} onClick={props.onMainClick}>
         <div class="ribbon-btn-icon" ref={el => { if (props.mainIcon) el.innerHTML = props.mainIcon; }}></div>
         <span class="ribbon-btn-label">{props.mainLabel}</span>
       </button>
       <button
         class="ribbon-split-btn-arrow"
         title={props.dropdownTitle}
+        disabled={props.disabled}
         onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen()); }}
       >
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="8" height="8">

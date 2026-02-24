@@ -65,7 +65,7 @@ export default function ThumbnailItem(props) {
           <div class="thumbnail-spinner" />
         </div>
       }>
-        <img class="thumbnail-canvas" src={imageData().dataURL} style={{ width: imageData().width + 'px', height: imageData().height + 'px' }} />
+        <img class="thumbnail-canvas" src={imageData().dataURL} style={{ width: imageData().width + 'px' }} />
       </Show>
       <div class="thumbnail-label">{props.pageNum}</div>
     </div>

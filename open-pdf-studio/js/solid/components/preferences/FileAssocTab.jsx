@@ -65,20 +65,20 @@ export default function FileAssocTab() {
   }
 
   return (
-    <div class="preferences-section">
-      <h3>{t('fileAssoc.defaultPdfApplication')}</h3>
+    <fieldset class="pref-fieldset">
+      <legend>{t('fileAssoc.defaultPdfApplication')}</legend>
       <div class="pref-row">
         <label>{t('fileAssoc.currentDefault')}</label>
-        <span style="font-size:11px;color:#666;">{currentApp()}</span>
+        <span style="font-size:11px;color:var(--theme-text-secondary, #666);">{currentApp()}</span>
       </div>
       <div class="pref-row" style="margin-top:12px;">
         <button type="button" class="pref-btn pref-btn-secondary" style="width:100%;" onClick={handleSetDefault}>
           {t('fileAssoc.setDefault')}
         </button>
       </div>
-      <p style="font-size:10px;color:#888;margin-top:12px;line-height:1.4;">
+      <p style="font-size:10px;color:var(--theme-text-secondary, #888);margin-top:12px;line-height:1.4;">
         {t('fileAssoc.setDefaultHelp')}
       </p>
-    </div>
+    </fieldset>
   );
 }

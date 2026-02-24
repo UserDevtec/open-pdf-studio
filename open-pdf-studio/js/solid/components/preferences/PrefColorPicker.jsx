@@ -1,4 +1,4 @@
-import { createSignal, onCleanup } from 'solid-js';
+import { createSignal, onCleanup, Show } from 'solid-js';
 
 const PALETTE_COLUMNS = [
   ['#ffffff', '#d9d9d9', '#999999', '#666666', '#333333', '#000000'],
@@ -21,12 +21,19 @@ export default function PrefColorPicker(props) {
     }
   }
 
-  document.addEventListener('click', handleDocClick);
-  onCleanup(() => document.removeEventListener('click', handleDocClick));
+  document.addEventListener('mousedown', handleDocClick);
+  onCleanup(() => document.removeEventListener('mousedown', handleDocClick));
+
+  const isNone = () => props.noneChecked?.() || false;
 
   function selectColor(color) {
     props.setValue(color);
     if (props.setNoneChecked) props.setNoneChecked(false);
+    setDropdownOpen(false);
+  }
+
+  function selectNone() {
+    if (props.setNoneChecked) props.setNoneChecked(true);
     setDropdownOpen(false);
   }
 
@@ -40,75 +47,87 @@ export default function PrefColorPicker(props) {
   }
 
   function toggleDropdown(e) {
-    if (props.noneChecked?.()) return;
     e.stopPropagation();
     setDropdownOpen(v => !v);
   }
 
-  const isDisabled = () => props.noneChecked?.() || false;
+  const colorPreviewStyle = () => {
+    if (isNone()) {
+      const surfaceColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--theme-surface').trim() || '#fff';
+      return {
+        background: `linear-gradient(135deg, ${surfaceColor} 45%, #ff0000 45%, #ff0000 55%, ${surfaceColor} 55%)`
+      };
+    }
+    return { 'background-color': props.value() };
+  };
+
+  const hexDisplay = () => {
+    if (isNone()) return 'None';
+    return props.value().toUpperCase();
+  };
 
   return (
-    <div class="pref-color-row" ref={wrapperRef}>
-      {props.noneChecked && (
-        <label class="pref-fill-none-checkbox">
-          <input
-            type="checkbox"
-            checked={props.noneChecked()}
-            onChange={e => props.setNoneChecked(e.target.checked)}
-          />
-          <span>None</span>
-        </label>
-      )}
-      <div class="pref-color-wrapper">
-        <button
-          type="button"
-          class="color-picker-button"
-          disabled={isDisabled()}
-          onClick={toggleDropdown}
-        >
-          <div class="color-preview" style={{ background: props.value() }}></div>
-          <span class="color-hex">{props.value().toUpperCase()}</span>
-          <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 9l6 6 6-6"/>
-          </svg>
-        </button>
-        <div class="color-palette-dropdown" classList={{ show: dropdownOpen() }}>
-          <div class="color-palette" style="display:flex;gap:2px;padding:2px;">
-            {PALETTE_COLUMNS.map(col => (
-              <div class="color-column" style="display:flex;flex-direction:column;gap:1px;padding:1px;background:var(--theme-border);border-radius:2px;">
-                {col.map(color => (
-                  <div
-                    class="color-swatch"
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      'background-color': color,
-                      border: '1px solid rgba(0,0,0,0.15)',
-                      cursor: 'pointer',
-                      'border-radius': '2px',
-                    }}
-                    onClick={() => selectColor(color)}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-          <button type="button" class="color-custom-btn" onClick={handleCustomColor}>
+    <div class="pref-color-wrapper" ref={wrapperRef}>
+      <button
+        type="button"
+        class="color-picker-button"
+        onClick={toggleDropdown}
+      >
+        <div class="color-preview" style={colorPreviewStyle()} />
+        <span class="color-hex">{hexDisplay()}</span>
+        <svg class="dropdown-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <div class="color-palette-dropdown" classList={{ show: dropdownOpen() }}>
+        <Show when={props.setNoneChecked}>
+          <button type="button" class="color-none-btn" onClick={selectNone}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
-              <path d="M12 2a10 10 0 0 1 0 20"/>
+              <line x1="4" y1="4" x2="20" y2="20"/>
             </svg>
-            More Colors...
+            None
           </button>
+        </Show>
+        <div class="color-palette" style="display:flex;gap:2px;padding:2px;">
+          {PALETTE_COLUMNS.map(col => (
+            <div class="color-column" style="display:flex;flex-direction:column;gap:1px;padding:1px;background:var(--theme-border);border-radius:2px;">
+              {col.map(color => (
+                <div
+                  class="color-swatch"
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    'background-color': color,
+                    border: '1px solid rgba(0,0,0,0.15)',
+                    cursor: 'pointer',
+                    'border-radius': '2px',
+                  }}
+                  title={color}
+                  onClick={() => selectColor(color)}
+                  onMouseEnter={(e) => { e.target.style.transform = 'scale(1.2)'; e.target.style.zIndex = '1'; }}
+                  onMouseLeave={(e) => { e.target.style.transform = 'scale(1)'; e.target.style.zIndex = '0'; }}
+                />
+              ))}
+            </div>
+          ))}
         </div>
-        <input
-          type="color"
-          ref={colorInputRef}
-          value={props.value()}
-          onInput={handleColorInput}
-          style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;"
-        />
+        <button type="button" class="color-custom-btn" onClick={handleCustomColor}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 2a10 10 0 0 1 0 20"/>
+          </svg>
+          More Colors...
+        </button>
       </div>
+      <input
+        type="color"
+        ref={colorInputRef}
+        value={props.value()}
+        onInput={handleColorInput}
+        style="position:absolute;width:0;height:0;opacity:0;pointer-events:none;"
+      />
     </div>
   );
 }

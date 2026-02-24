@@ -261,14 +261,25 @@ export function createAnnotationFromTool(tool, startX, startY, endX, endY, e) {
     }
 
     case 'measureDistance': {
-      const dist = calculateDistance(startX, startY, endX, endY);
+      let mEndX = endX;
+      let mEndY = endY;
+      if (e.shiftKey && prefs.enableAngleSnap) {
+        const dx = endX - startX;
+        const dy = endY - startY;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const currentAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+        const snappedAngle = snapAngle(currentAngle, prefs.angleSnapDegrees) * (Math.PI / 180);
+        mEndX = startX + length * Math.cos(snappedAngle);
+        mEndY = startY + length * Math.sin(snappedAngle);
+      }
+      const dist = calculateDistance(startX, startY, mEndX, mEndY);
       return createAnnotation({
         type: 'measureDistance',
         page: state.currentPage,
         startX: startX,
         startY: startY,
-        endX: endX,
-        endY: endY,
+        endX: mEndX,
+        endY: mEndY,
         color: prefs.measureStrokeColor,
         strokeColor: prefs.measureStrokeColor,
         lineWidth: prefs.measureLineWidth,
@@ -361,6 +372,79 @@ export function createContinuousAnnotation(tool, pageNum, startX, startY, endX, 
         fillColor: getColorPickerValue(),
         strokeColor: getColorPickerValue(),
         lineWidth: getLineWidthValue()
+      });
+    }
+
+    case 'textbox': {
+      const tbX = Math.min(startX, endX);
+      const tbY = Math.min(startY, endY);
+      const tbW = Math.abs(endX - startX);
+      const tbH = Math.abs(endY - startY);
+      const prefs = state.preferences;
+      if (tbW > 5 && tbH > 5) {
+        return createAnnotation({
+          type: 'textbox',
+          page: pageNum,
+          x: tbX,
+          y: tbY,
+          width: tbW,
+          height: tbH,
+          text: '',
+          color: prefs.textboxStrokeColor,
+          strokeColor: prefs.textboxStrokeColor,
+          fillColor: prefs.textboxFillNone ? 'transparent' : prefs.textboxFillColor,
+          textColor: '#000000',
+          fontSize: prefs.textboxFontSize,
+          fontFamily: 'Arial',
+          lineWidth: prefs.textboxBorderWidth,
+          borderStyle: prefs.textboxBorderStyle,
+          opacity: (prefs.textboxOpacity || 100) / 100
+        });
+      }
+      return null;
+    }
+
+    case 'callout': {
+      const prefs = state.preferences;
+      const defaultWidth = 150;
+      const defaultHeight = 60;
+      const coX = endX - defaultWidth / 2;
+      const coY = endY - defaultHeight / 2;
+      const boxCenterX = endX;
+      const isArrowLeft = startX < boxCenterX;
+      let armOriginX;
+      if (isArrowLeft) {
+        armOriginX = coX;
+      } else {
+        armOriginX = coX + defaultWidth;
+      }
+      const armOriginY = Math.max(coY, Math.min(coY + defaultHeight, endY));
+      const armLength = Math.min(30, Math.abs(startX - armOriginX) * 0.4);
+      const kneeX = isArrowLeft ? armOriginX - armLength : armOriginX + armLength;
+      const kneeY = armOriginY;
+      return createAnnotation({
+        type: 'callout',
+        page: pageNum,
+        x: coX,
+        y: coY,
+        width: defaultWidth,
+        height: defaultHeight,
+        arrowX: startX,
+        arrowY: startY,
+        kneeX: kneeX,
+        kneeY: kneeY,
+        armOriginX: armOriginX,
+        armOriginY: armOriginY,
+        text: '',
+        color: prefs.calloutStrokeColor,
+        strokeColor: prefs.calloutStrokeColor,
+        fillColor: prefs.calloutFillNone ? 'transparent' : prefs.calloutFillColor,
+        textColor: '#000000',
+        fontSize: prefs.calloutFontSize,
+        fontFamily: 'Arial',
+        lineWidth: prefs.calloutBorderWidth,
+        borderStyle: prefs.calloutBorderStyle,
+        opacity: (prefs.calloutOpacity || 100) / 100
       });
     }
 

@@ -47,93 +47,94 @@ export const DEFAULT_PREFERENCES = {
   showGrid: false,
 
   // Appearance
-  defaultAnnotationColor: '#ffff00',
-  defaultLineWidth: 3,
+  defaultAnnotationColor: '#FF0000',
+  defaultLineWidth: 1,
   defaultFontSize: 16,
-  highlightOpacity: 30, // percentage
+  highlightOpacity: 50,
 
   // TextBox defaults
-  textboxFillColor: '#ffffd0',
-  textboxFillNone: false,
-  textboxStrokeColor: '#000000',
+  textboxFillColor: '#FFFBEB',
+  textboxFillNone: true,
+  textboxStrokeColor: '#FF0000',
   textboxBorderWidth: 1,
-  textboxBorderStyle: 'solid', // solid, dashed, dotted
-  textboxOpacity: 100, // percentage
+  textboxBorderStyle: 'solid',
+  textboxOpacity: 100,
   textboxFontSize: 14,
 
   // Callout defaults
-  calloutFillColor: '#ffffd0',
+  calloutFillColor: '#FFFBEB',
   calloutFillNone: false,
-  calloutStrokeColor: '#000000',
+  calloutStrokeColor: '#FF0000',
   calloutBorderWidth: 1,
-  calloutBorderStyle: 'solid', // solid, dashed, dotted
-  calloutOpacity: 100, // percentage
+  calloutBorderStyle: 'solid',
+  calloutOpacity: 100,
   calloutFontSize: 14,
 
   // Rectangle defaults
-  rectFillColor: '#ffff00',
-  rectFillNone: true, // Default to no fill
-  rectStrokeColor: '#000000',
-  rectBorderWidth: 2,
+  rectFillColor: '#FFFBEB',
+  rectFillNone: true,
+  rectStrokeColor: '#FF0000',
+  rectBorderWidth: 1,
   rectBorderStyle: 'solid',
   rectOpacity: 100,
 
   // Circle/Ellipse defaults
-  circleFillColor: '#ffff00',
-  circleFillNone: true, // Default to no fill
-  circleStrokeColor: '#000000',
-  circleBorderWidth: 2,
+  circleFillColor: '#FFFBEB',
+  circleFillNone: true,
+  circleStrokeColor: '#FF0000',
+  circleBorderWidth: 1,
   circleBorderStyle: 'solid',
   circleOpacity: 100,
 
   // Arrow defaults
-  arrowFillColor: '#0000ff', // Fill color for closed arrowheads
-  arrowStrokeColor: '#0000ff',
-  arrowLineWidth: 2,
-  arrowBorderStyle: 'solid', // solid, dashed, dotted
-  arrowStartHead: 'none', // none, open, closed, diamond, circle, square, slash
-  arrowEndHead: 'open', // none, open, closed, diamond, circle, square, slash
-  arrowHeadSize: 12,
+  arrowFillColor: '#FF0000',
+  arrowFillNone: true,
+  arrowStrokeColor: '#FF0000',
+  arrowLineWidth: 1,
+  arrowBorderStyle: 'solid',
+  arrowStartHead: 'none',
+  arrowEndHead: 'open',
+  arrowHeadSize: 10,
   arrowOpacity: 100,
 
   // Draw/Freehand defaults
-  drawStrokeColor: '#000000',
-  drawLineWidth: 3,
+  drawStrokeColor: '#FF0000',
+  drawLineWidth: 1,
   drawOpacity: 100,
 
   // Line defaults
-  lineStrokeColor: '#000000',
-  lineLineWidth: 2,
+  lineStrokeColor: '#FF0000',
+  lineLineWidth: 1,
   lineBorderStyle: 'solid',
   lineOpacity: 100,
 
   // Highlight defaults
-  highlightColor: '#ffff00',
+  highlightColor: '#FFFF00',
 
   // Polygon defaults
-  polygonStrokeColor: '#000000',
-  polygonLineWidth: 2,
+  polygonStrokeColor: '#FF0000',
+  polygonLineWidth: 1,
   polygonOpacity: 100,
 
   // Cloud defaults
-  cloudStrokeColor: '#000000',
-  cloudLineWidth: 2,
+  cloudStrokeColor: '#FF0000',
+  cloudLineWidth: 1,
   cloudOpacity: 100,
 
   // Comment/Note defaults
-  commentColor: '#ffff00',
+  commentColor: '#FFFF00',
   commentIcon: 'comment',
 
   // Polyline defaults
-  polylineStrokeColor: '#000000',
-  polylineLineWidth: 2,
+  polylineStrokeColor: '#FF0000',
+  polylineLineWidth: 1,
   polylineOpacity: 100,
 
   // Redaction defaults
   redactionOverlayColor: '#000000',
 
   // Measurement defaults
-  measureStrokeColor: '#ff0000',
+  measureStrokeColor: '#FF0000',
   measureLineWidth: 1,
   measureOpacity: 100,
 

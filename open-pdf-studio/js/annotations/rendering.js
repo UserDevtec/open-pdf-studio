@@ -601,15 +601,23 @@ function drawAnnotation(ctx, annotation) {
       ctx.lineTo(annotation.endX + px, annotation.endY + py);
       ctx.stroke();
 
-      // Draw measurement label
+      // Draw measurement label along the line direction
       if (annotation.measureText) {
         const midX = (annotation.startX + annotation.endX) / 2;
         const midY = (annotation.startY + annotation.endY) / 2;
+        let textAngle = Math.atan2(annotation.endY - annotation.startY, annotation.endX - annotation.startX);
+        // Keep text readable (not upside-down)
+        if (textAngle > Math.PI / 2) textAngle -= Math.PI;
+        else if (textAngle < -Math.PI / 2) textAngle += Math.PI;
+        ctx.save();
+        ctx.translate(midX, midY);
+        ctx.rotate(textAngle);
         ctx.font = '11px Arial';
         ctx.fillStyle = strokeColor;
         ctx.textAlign = 'center';
-        ctx.fillText(annotation.measureText, midX, midY - 6);
-        ctx.textAlign = 'left';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(annotation.measureText, 0, -4);
+        ctx.restore();
       }
       break;
     }

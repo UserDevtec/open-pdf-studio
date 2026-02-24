@@ -3,7 +3,7 @@ import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
 import SplitButton from './SplitButton.jsx';
 import { setTool } from '../../../tools/manager.js';
-import { state, getPageRotation } from '../../../core/state.js';
+import { state, getPageRotation, noPdf } from '../../../core/state.js';
 import { isPdfAReadOnly } from '../../../pdf/loader.js';
 import { zoomIn, zoomOut, fitWidth, fitPage, actualSize, goToPage, rotatePage } from '../../../pdf/renderer.js';
 import { recordPageRotation } from '../../../core/undo-manager.js';
@@ -24,17 +24,18 @@ export default function HomeTab() {
       <div class="ribbon-groups">
         <RibbonGroup label={t('home.tools')}>
           <RibbonButton id="tool-hand" title={t('home.handTool')} icon={handIcon} label={t('home.hand')}
-            active={state.currentTool === 'hand'} onClick={() => setTool('hand')} />
+            disabled={noPdf()} active={state.currentTool === 'hand'} onClick={() => setTool('hand')} />
           <RibbonButton id="tool-select" title={t('home.selectText')} icon={selectTextIcon} label={t('home.selectText')}
-            active={state.currentTool === 'select'} onClick={() => setTool('select')} />
+            disabled={noPdf()} active={state.currentTool === 'select'} onClick={() => setTool('select')} />
           <RibbonButton id="tool-select-comments" title={t('home.selectComments')} icon={selectCommentsIcon} label={t('home.selectComments')}
-            active={state.currentTool === 'selectComments'} onClick={() => setTool('selectComments')} />
+            disabled={noPdf()} active={state.currentTool === 'selectComments'} onClick={() => setTool('selectComments')} />
           <SplitButton
             id="screenshot-split-btn"
             mainIcon={screenshotIcon}
             mainLabel={t('home.screenshot')}
             mainTitle={t('home.captureFullPage')}
             dropdownTitle={t('home.screenshotOptions')}
+            disabled={noPdf()}
             onMainClick={async () => {
               const { screenshotFullPage } = await import('../../../tools/screenshot.js');
               screenshotFullPage();
@@ -68,27 +69,27 @@ export default function HomeTab() {
         <RibbonGroup label={t('home.view')}>
           <RibbonButtonStack>
             <RibbonButton size="small" id="zoom-in-ribbon" title={t('home.zoomIn')} icon={zoomInIcon} label={t('home.zoomIn')}
-              onClick={() => zoomIn()} />
+              disabled={noPdf()} onClick={() => zoomIn()} />
             <RibbonButton size="small" id="zoom-out-ribbon" title={t('home.zoomOut')} icon={zoomOutIcon} label={t('home.zoomOut')}
-              onClick={() => zoomOut()} />
+              disabled={noPdf()} onClick={() => zoomOut()} />
             <RibbonButton size="small" id="fit-width" title={t('home.fitWidth')} icon={fitWidthIcon} label={t('home.fitWidth')}
-              onClick={() => fitWidth()} />
+              disabled={noPdf()} onClick={() => fitWidth()} />
           </RibbonButtonStack>
           <RibbonButtonStack>
             <RibbonButton size="small" id="actual-size-ribbon" title={t('home.actualSize')} icon={actualSizeIcon} label={t('home.hundredPercent')}
-              onClick={() => actualSize()} />
+              disabled={noPdf()} onClick={() => actualSize()} />
             <RibbonButton size="small" id="fit-page-ribbon" title={t('home.fitPage')} icon={fitPageIcon} label={t('home.fitPageLabel')}
-              onClick={() => fitPage()} />
+              disabled={noPdf()} onClick={() => fitPage()} />
           </RibbonButtonStack>
           <RibbonButtonStack>
             <RibbonButton size="small" id="rotate-left" title={t('home.rotateLeft')} icon={rotateLeftIcon} label={t('home.rotateLeft')}
-              disabled={isPdfAReadOnly()} onClick={() => {
+              disabled={noPdf() || isPdfAReadOnly()} onClick={() => {
                 const oldRot = getPageRotation(state.currentPage);
                 rotatePage(-90);
                 recordPageRotation(state.currentPage, oldRot, getPageRotation(state.currentPage));
               }} />
             <RibbonButton size="small" id="rotate-right" title={t('home.rotateRight')} icon={rotateRightIcon} label={t('home.rotateRight')}
-              disabled={isPdfAReadOnly()} onClick={() => {
+              disabled={noPdf() || isPdfAReadOnly()} onClick={() => {
                 const oldRot = getPageRotation(state.currentPage);
                 rotatePage(90);
                 recordPageRotation(state.currentPage, oldRot, getPageRotation(state.currentPage));
@@ -98,27 +99,27 @@ export default function HomeTab() {
 
         <RibbonGroup label={t('home.edit')}>
           <RibbonButton id="edit-text" title={t('home.editText')} icon={editTextIcon} label={t('home.editText')}
-            disabled={isPdfAReadOnly()} active={state.currentTool === 'editText'} onClick={() => setTool('editText')} />
+            disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'editText'} onClick={() => setTool('editText')} />
           <RibbonButton id="add-text" title={t('home.addText')} icon={addTextIcon} label={t('home.addText')}
-            disabled={isPdfAReadOnly()} onClick={() => setTool('text')} />
+            disabled={noPdf() || isPdfAReadOnly()} onClick={() => setTool('text')} />
         </RibbonGroup>
 
         <RibbonGroup label={t('home.navigate')}>
           <RibbonButtonStack>
             <RibbonButton size="small" id="first-page" title={t('home.firstPage')} icon={firstPageIcon} label={t('home.first')}
-              onClick={async () => { if (state.pdfDoc && state.currentPage !== 1) await goToPage(1); }} />
+              disabled={noPdf()} onClick={async () => { if (state.pdfDoc && state.currentPage !== 1) await goToPage(1); }} />
             <RibbonButton size="small" id="prev-page-ribbon" title={t('home.previousPage')} icon={prevPageIcon} label={t('home.previous')}
-              onClick={() => document.getElementById('prev-page')?.click()} />
+              disabled={noPdf()} onClick={() => document.getElementById('prev-page')?.click()} />
             <RibbonButton size="small" id="next-page-ribbon" title={t('home.nextPage')} icon={nextPageIcon} label={t('home.next')}
-              onClick={() => document.getElementById('next-page')?.click()} />
+              disabled={noPdf()} onClick={() => document.getElementById('next-page')?.click()} />
           </RibbonButtonStack>
           <RibbonButton id="last-page" title={t('home.lastPage')} icon={lastPageIcon} label={t('home.last')}
-            onClick={async () => { if (state.pdfDoc && state.currentPage !== state.pdfDoc.numPages) await goToPage(state.pdfDoc.numPages); }} />
+            disabled={noPdf()} onClick={async () => { if (state.pdfDoc && state.currentPage !== state.pdfDoc.numPages) await goToPage(state.pdfDoc.numPages); }} />
         </RibbonGroup>
 
         <RibbonGroup label={t('home.find')}>
           <RibbonButton id="ribbon-find" title={t('home.findCtrlF')} icon={findIcon} label={t('home.find')}
-            onClick={() => openFindBar()} />
+            disabled={noPdf()} onClick={() => openFindBar()} />
         </RibbonGroup>
       </div>
     </div>

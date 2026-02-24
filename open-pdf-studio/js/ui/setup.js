@@ -1,6 +1,6 @@
 import { state } from '../core/state.js';
 import { annotationCanvas } from './dom-elements.js';
-import { handleMouseDown, handleMouseMove, handleMouseUp } from '../tools/mouse-handlers.js';
+import { handleMouseDown, handleMouseMove, handleMouseUp, handleDblClick } from '../tools/mouse-handlers.js';
 import { initKeyboardHandlers } from '../tools/keyboard-handlers.js';
 import { loadPDF } from '../pdf/loader.js';
 import { isTauri } from '../core/platform.js';
@@ -124,6 +124,7 @@ export function setupEventListeners() {
     annotationCanvas.addEventListener('mousedown', handleMouseDown);
     annotationCanvas.addEventListener('mousemove', handleMouseMove);
     annotationCanvas.addEventListener('mouseup', handleMouseUp);
+    annotationCanvas.addEventListener('dblclick', handleDblClick);
   }
 
   initKeyboardHandlers();

@@ -1,34 +1,35 @@
 import { useTranslation } from '../../../i18n/useTranslation.js';
 import PrefColorPicker from './PrefColorPicker.jsx';
+import PrefComboBox from './PrefComboBox.jsx';
 
 export default function MarkupTab(props) {
   const { t } = useTranslation('preferences');
   const p = props.prefs;
   return (
     <>
-      <div class="preferences-section">
-        <h3>{t('markup.redactionDefaults')}</h3>
+      <fieldset class="pref-fieldset">
+        <legend>{t('markup.redactionDefaults')}</legend>
         <div class="pref-row">
           <label>{t('markup.overlayColor')}</label>
           <PrefColorPicker value={p.redactionOverlayColor[0]} setValue={p.redactionOverlayColor[1]} />
         </div>
-      </div>
+      </fieldset>
 
-      <div class="preferences-section">
-        <h3>{t('markup.measurementDefaults')}</h3>
+      <fieldset class="pref-fieldset">
+        <legend>{t('markup.measurementDefaults')}</legend>
         <div class="pref-row">
           <label>{t('markup.strokeColor')}</label>
           <PrefColorPicker value={p.measureStrokeColor[0]} setValue={p.measureStrokeColor[1]} />
         </div>
         <div class="pref-row">
           <label>{t('markup.lineWidth')}</label>
-          <input type="number" min="1" max="20" value={p.measureLineWidth[0]()} onInput={e => p.measureLineWidth[1](parseInt(e.target.value) || 1)} />
+          <PrefComboBox value={p.measureLineWidth[0]} setValue={p.measureLineWidth[1]} options={[0.5,1,2,3,4,6,8,10,12]} min={0.5} max={20} fallback={1} suffix="pt" />
         </div>
         <div class="pref-row">
           <label>{t('markup.opacity')}</label>
-          <input type="number" min="10" max="100" value={p.measureOpacity[0]()} onInput={e => p.measureOpacity[1](parseInt(e.target.value) || 100)} />
+          <PrefComboBox value={p.measureOpacity[0]} setValue={p.measureOpacity[1]} min={10} max={100} fallback={100} />
         </div>
-      </div>
+      </fieldset>
     </>
   );
 }

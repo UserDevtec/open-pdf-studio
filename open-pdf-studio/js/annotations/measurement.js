@@ -69,10 +69,11 @@ export function calculatePerimeter(points) {
 // Format measurement for display
 export function formatMeasurement(measurement) {
   const val = measurement.value;
-  if (val < 0.01) return `0 ${measurement.unit}`;
-  if (val < 1) return `${val.toFixed(3)} ${measurement.unit}`;
-  if (val < 100) return `${val.toFixed(2)} ${measurement.unit}`;
-  return `${val.toFixed(1)} ${measurement.unit}`;
+  const suffix = measurement.unit === 'px' ? '' : ` ${measurement.unit}`;
+  if (val < 0.01) return `0${suffix}`;
+  if (val < 1) return `${val.toFixed(3)}${suffix}`;
+  if (val < 100) return `${val.toFixed(2)}${suffix}`;
+  return `${val.toFixed(1)}${suffix}`;
 }
 
 // Show scale calibration dialog

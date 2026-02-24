@@ -7,7 +7,7 @@ import { toggleLeftPanel } from '../../../ui/panels/left-panel.js';
 import { toggleAnnotationsListPanel } from '../../../ui/panels/annotations-list.js';
 import { showProperties, hideProperties, closePropertiesPanel } from '../../../ui/panels/properties-panel.js';
 import { panelVisible, setPanelVisible } from '../../stores/propertiesStore.js';
-import { state } from '../../../core/state.js';
+import { state, noPdf } from '../../../core/state.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 export default function ViewTab() {
@@ -18,7 +18,7 @@ export default function ViewTab() {
       <div class="ribbon-groups">
         <RibbonGroup label={t('view.pageDisplay')}>
           <RibbonButton id="single-page" title={t('view.singlePage')} icon={singlePageIcon} label={t('view.single')}
-            active={state.viewMode === 'single'}
+            disabled={noPdf()} active={state.viewMode === 'single'}
             onClick={() => setViewMode('single')} />
           <RibbonButton id="continuous" title={t('view.continuousTitle')} icon={continuousIcon} label={t('view.continuous')}
             active={state.viewMode === 'continuous'}
@@ -27,8 +27,9 @@ export default function ViewTab() {
 
         <RibbonGroup label={t('view.panels')}>
           <RibbonButton id="ribbon-nav-panel" title={t('view.navigationPanel')} icon={navigationIcon} label={t('view.navigation')}
-            onClick={() => toggleLeftPanel()} />
+            disabled={noPdf()} onClick={() => toggleLeftPanel()} />
           <RibbonButton id="ribbon-properties-panel" title={t('view.propertiesPanel')} icon={propertiesIcon} label={t('view.propertiesLabel')}
+            disabled={noPdf()}
             active={panelVisible()}
             onClick={() => {
               if (panelVisible()) {
@@ -43,7 +44,7 @@ export default function ViewTab() {
               }
             }} />
           <RibbonButton id="ribbon-annotations-list" title={t('view.annotationsList')} icon={annotationsListIcon} label={t('view.annotationsLabel')}
-            onClick={() => toggleAnnotationsListPanel()} />
+            disabled={noPdf()} onClick={() => toggleAnnotationsListPanel()} />
         </RibbonGroup>
 
         <RibbonGroup label={t('view.appearance')}>

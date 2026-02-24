@@ -305,6 +305,14 @@ export const state = createMutable({
 });
 
 /**
+ * Check if no PDF document is currently loaded
+ * @returns {boolean} true when there is no active PDF
+ */
+export function noPdf() {
+  return !state.pdfDoc;
+}
+
+/**
  * Get the active document
  * @returns {Object|null} Active document or null
  */
@@ -351,11 +359,8 @@ export function setPageRotation(pageNum, degrees) {
  * Clear all selections
  */
 export function clearSelection() {
-  const doc = state.documents[state.activeDocumentIndex];
-  if (doc) {
-    doc.selectedAnnotation = null;
-    doc.selectedAnnotations = [];
-  }
+  state.selectedAnnotation = null;
+  state.selectedAnnotations = [];
 }
 
 /**

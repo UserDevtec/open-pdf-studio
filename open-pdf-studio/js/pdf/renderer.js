@@ -292,10 +292,11 @@ export async function renderContinuous() {
 // Setup mouse events for continuous mode pages
 function setupContinuousPageEvents(canvas, pageNum) {
   // Import event handlers dynamically to avoid circular dependencies
-  import('../tools/mouse-handlers.js').then(({ handleContinuousMouseDown, handleContinuousMouseMove, handleContinuousMouseUp }) => {
+  import('../tools/mouse-handlers.js').then(({ handleContinuousMouseDown, handleContinuousMouseMove, handleContinuousMouseUp, handleContinuousDblClick }) => {
     canvas.addEventListener('mousedown', (e) => handleContinuousMouseDown(e, pageNum));
     canvas.addEventListener('mousemove', (e) => handleContinuousMouseMove(e, pageNum));
     canvas.addEventListener('mouseup', (e) => handleContinuousMouseUp(e, pageNum));
+    canvas.addEventListener('dblclick', (e) => handleContinuousDblClick(e, pageNum));
   });
 }
 

@@ -28,6 +28,7 @@
     "defaultLineWidth": "Default Line Width",
     "defaultFontSize": "Default Font Size",
     "highlightOpacity": "Highlight Opacity (%)",
+    "angleSnap": "Angle Snap (Shift key)",
     "textBoxDefaults": "Text Box Defaults",
     "fillColor": "Fill Color",
     "strokeColor": "Stroke Color",
@@ -47,7 +48,12 @@
     "iconNewParagraph": "New Paragraph",
     "iconParagraph": "Paragraph",
     "iconInsert": "Insert",
-    "noFill": "No Fill"
+    "noFill": "No Fill",
+    "subtabGeneral": "General",
+    "subtabComments": "Comments",
+    "subtabText": "Text",
+    "subtabDrawing": "Drawing",
+    "subtabShapes": "Shapes"
   },
   "drawing": {
     "freehandDefaults": "Freehand Defaults",

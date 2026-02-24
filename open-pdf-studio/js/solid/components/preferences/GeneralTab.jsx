@@ -8,8 +8,8 @@ export default function GeneralTab(props) {
   const p = props.prefs;
   return (
     <>
-      <div class="preferences-section">
-        <h3>{t('general.language')}</h3>
+      <fieldset class="pref-fieldset">
+        <legend>{t('general.language')}</legend>
         <div class="pref-row">
           <label>{t('general.interfaceLanguage')}</label>
           <select style="width:180px;" value={p.language[0]()} onChange={e => p.language[1](e.target.value)}>
@@ -18,9 +18,9 @@ export default function GeneralTab(props) {
             </For>
           </select>
         </div>
-      </div>
-      <div class="preferences-section">
-        <h3>{t('general.theme')}</h3>
+      </fieldset>
+      <fieldset class="pref-fieldset">
+        <legend>{t('general.theme')}</legend>
         <div class="pref-row">
           <label>{t('general.applicationTheme')}</label>
           <select style="width:120px;" value={p.theme[0]()} onChange={e => p.theme[1](e.target.value)}>
@@ -31,23 +31,23 @@ export default function GeneralTab(props) {
             <option value="highContrast">{tRibbon('theme.highContrast')}</option>
           </select>
         </div>
-      </div>
-      <div class="preferences-section">
-        <h3>{t('general.startup')}</h3>
+      </fieldset>
+      <fieldset class="pref-fieldset">
+        <legend>{t('general.startup')}</legend>
         <div class="pref-row pref-checkbox-row">
           <label class="pref-checkbox-label">
             <input type="checkbox" checked={p.restoreLastSession[0]()} onChange={e => p.restoreLastSession[1](e.target.checked)} />
             <span>{t('general.restoreLastSession')}</span>
           </label>
         </div>
-      </div>
-      <div class="preferences-section">
-        <h3>{t('general.author')}</h3>
+      </fieldset>
+      <fieldset class="pref-fieldset">
+        <legend>{t('general.author')}</legend>
         <div class="pref-row">
           <label>{t('general.defaultAuthorName')}</label>
           <input type="text" value={p.authorName[0]()} onInput={e => p.authorName[1](e.target.value)} />
         </div>
-      </div>
+      </fieldset>
     </>
   );
 }

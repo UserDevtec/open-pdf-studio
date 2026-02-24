@@ -64,7 +64,9 @@ export default function Dialog(props) {
           onMouseDown={onHeaderMouseDown}
         >
           <h2>{props.title}</h2>
-          <button class="modal-close-btn" onClick={() => props.onClose?.()}>&times;</button>
+          <button class="modal-close-btn" onClick={() => props.onClose?.()}>
+            <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+          </button>
         </div>
         <div class={`modal-body ${props.bodyClass || ''}`}>
           {props.children}

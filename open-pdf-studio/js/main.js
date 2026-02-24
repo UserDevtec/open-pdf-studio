@@ -248,7 +248,7 @@ async function restoreLastSession() {
   }
 }
 
-// Check if this app is the default PDF handler and suggest setting it
+// Check if this app is the default PDF handler and show info bar if not
 async function checkDefaultPdfApp() {
   if (!isTauri()) return;
   if (state.preferences.dontAskDefaultPdf) return;
@@ -257,23 +257,8 @@ async function checkDefaultPdfApp() {
     const isDefault = await isDefaultPdfApp();
     if (isDefault) return;
 
-    if (window.__TAURI__?.dialog?.message) {
-      const result = await window.__TAURI__.dialog.message(
-        'Open PDF Studio is not set as the default app for opening PDF files. Would you like to set it as the default?',
-        {
-          title: 'Default PDF App',
-          kind: 'info',
-          buttons: { yes: 'Set as Default', no: "Don't Ask Again", cancel: 'Not Now' }
-        }
-      );
-
-      if (result === 'Yes' || result === 'Set as Default') {
-        await openDefaultAppsSettings();
-      } else if (result === 'No' || result === "Don't Ask Again") {
-        state.preferences.dontAskDefaultPdf = true;
-        savePreferences();
-      }
-    }
+    const { showDefaultAppBar } = await import('./solid/stores/defaultAppBarStore.js');
+    showDefaultAppBar();
   } catch (e) {
     console.warn('Failed to check default PDF app:', e);
   }

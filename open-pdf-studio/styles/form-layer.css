@@ -234,6 +234,57 @@
   color: #e81123;
 }
 
+/* Default app info bar */
+.default-app-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #dbeafe;
+  border-bottom: 1px solid #93c5fd;
+  font-size: 12px;
+  color: #1a1a1a;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.default-app-bar svg {
+  flex-shrink: 0;
+}
+
+.default-app-bar span {
+  flex: 1;
+}
+
+.default-app-bar .default-app-bar-action {
+  background: #ffffff;
+  border: 1px solid #c0c0c0;
+  font-size: 11px;
+  color: #333;
+  cursor: pointer;
+  padding: 3px 12px;
+  line-height: 1;
+}
+
+.default-app-bar .default-app-bar-action:hover {
+  background: #e5e5e5;
+  border-color: #999;
+}
+
+.default-app-bar .default-app-bar-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #666;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.default-app-bar .default-app-bar-close:hover {
+  color: #e81123;
+}
+
 /* Form field validation error dialog (Windows-style) */
 .form-validation-overlay { z-index: 2000; display: flex; }
 .form-validation-dialog { width: 380px; }

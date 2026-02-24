@@ -9,8 +9,6 @@ import { isMobile } from '../../../core/platform.js';
 
 import GeneralTab from './GeneralTab.jsx';
 import AnnotationsTab from './AnnotationsTab.jsx';
-import DrawingTab from './DrawingTab.jsx';
-import ShapesTab from './ShapesTab.jsx';
 import MarkupTab from './MarkupTab.jsx';
 import BehaviorTab from './BehaviorTab.jsx';
 import FileAssocTab from './FileAssocTab.jsx';
@@ -21,13 +19,44 @@ const DESKTOP_ONLY_TABS = ['fileassoc', 'vprinter'];
 const TAB_IDS = [
   { id: 'general', key: 'tabs.general' },
   { id: 'annotations', key: 'tabs.annotations' },
-  { id: 'drawing', key: 'tabs.drawing' },
-  { id: 'shapes', key: 'tabs.shapes' },
   { id: 'markup', key: 'tabs.markup' },
   { id: 'behavior', key: 'tabs.behavior' },
   { id: 'fileassoc', key: 'tabs.fileAssociation' },
   { id: 'vprinter', key: 'tabs.virtualPrinter' },
 ];
+
+const TAB_ICONS = {
+  general: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.2 4.2l2.8 2.8m10-2.8 2.8 2.8M1 12h4m14 0h4M4.2 19.8l2.8-2.8m10 2.8 2.8-2.8"/>
+    </svg>
+  ),
+  annotations: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  markup: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>
+    </svg>
+  ),
+  behavior: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-3m0-4V3"/><circle cx="4" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="10" r="2" fill="currentColor"/><circle cx="20" cy="16" r="2" fill="currentColor"/>
+    </svg>
+  ),
+  fileassoc: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+    </svg>
+  ),
+  vprinter: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+    </svg>
+  ),
+};
 
 function createPrefSignals(source) {
   const signals = {};
@@ -97,6 +126,7 @@ export default function PreferencesDialog(props) {
                 classList={{ active: activeTab() === tab.id }}
                 onClick={() => setActiveTab(tab.id)}
               >
+                <span class="pref-tab-icon">{TAB_ICONS[tab.id]}</span>
                 {t(tab.key)}
               </button>
             )}
@@ -110,12 +140,6 @@ export default function PreferencesDialog(props) {
             </Match>
             <Match when={activeTab() === 'annotations'}>
               <AnnotationsTab prefs={prefs} />
-            </Match>
-            <Match when={activeTab() === 'drawing'}>
-              <DrawingTab prefs={prefs} />
-            </Match>
-            <Match when={activeTab() === 'shapes'}>
-              <ShapesTab prefs={prefs} />
             </Match>
             <Match when={activeTab() === 'markup'}>
               <MarkupTab prefs={prefs} />

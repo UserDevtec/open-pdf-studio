@@ -190,7 +190,7 @@ export function handleKeydown(e) {
     showDocPropertiesDialog();
   }
 
-  // ESC key - close dialogs or switch back to select tool
+  // ESC key - deselect, or close dialogs, or switch back to hand tool
   else if (e.key === 'Escape') {
     e.preventDefault();
     // First check if find bar is open
@@ -198,15 +198,21 @@ export function handleKeydown(e) {
       closeFindBar();
       return;
     }
-    // Switch to select tool
-    setTool('select');
-    // Switch to Home ribbon tab
-    switchToTab('home');
-    // Deselect any selected annotations
+    // If annotations are selected, deselect them first
     if (state.selectedAnnotation || state.selectedAnnotations.length > 0) {
       clearSelection();
       hideProperties();
+      if (state.viewMode === 'continuous') {
+        redrawContinuous();
+      } else {
+        redrawAnnotations();
+      }
+      return;
     }
+    // Otherwise switch to hand tool (default)
+    setTool('hand');
+    // Switch to Home ribbon tab
+    switchToTab('home');
   }
 
   // View shortcuts

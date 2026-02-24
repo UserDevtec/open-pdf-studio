@@ -1,7 +1,7 @@
 import RibbonGroup from './RibbonGroup.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import { insertPageIcon, deletePageIcon, extractPagesIcon, mergePdfsIcon, watermarkIcon, headerFooterIcon, manageWatermarksIcon } from '../../data/ribbonIcons.js';
-import { state } from '../../../core/state.js';
+import { state, noPdf } from '../../../core/state.js';
 import { isPdfAReadOnly } from '../../../pdf/loader.js';
 import { goToPage } from '../../../pdf/renderer.js';
 import { showInsertPageDialog, showExtractPagesDialog, showMergePdfsDialog } from '../../../ui/chrome/dialogs.js';
@@ -16,9 +16,9 @@ export default function OrganizeTab() {
       <div class="ribbon-groups">
         <RibbonGroup label={t('organize.pages')}>
           <RibbonButton id="insert-page" title={t('organize.insertPage')} icon={insertPageIcon} label={t('organize.insert')}
-            disabled={isPdfAReadOnly()} onClick={() => showInsertPageDialog()} />
+            disabled={noPdf() || isPdfAReadOnly()} onClick={() => showInsertPageDialog()} />
           <RibbonButton id="delete-page" title={t('organize.deletePage')} icon={deletePageIcon} label={t('organize.deleteLabel')}
-            disabled={isPdfAReadOnly()}
+            disabled={noPdf() || isPdfAReadOnly()}
             onClick={async () => {
               if (!state.pdfDoc) return;
               if (state.pdfDoc.numPages <= 1) { alert(t('organize.cannotDeleteLast')); return; }
@@ -26,21 +26,21 @@ export default function OrganizeTab() {
               if (confirmed) await deletePages([state.currentPage]);
             }} />
           <RibbonButton id="extract-pages" title={t('organize.extractPages')} icon={extractPagesIcon} label={t('organize.extractLabel')}
-            disabled={isPdfAReadOnly()} onClick={() => showExtractPagesDialog()} />
+            disabled={noPdf() || isPdfAReadOnly()} onClick={() => showExtractPagesDialog()} />
         </RibbonGroup>
 
         <RibbonGroup label={t('organize.combine')}>
           <RibbonButton id="merge-pdfs" title={t('organize.mergePdfs')} icon={mergePdfsIcon} label={t('organize.mergeLabel')}
-            disabled={isPdfAReadOnly()} onClick={() => showMergePdfsDialog()} />
+            disabled={noPdf() || isPdfAReadOnly()} onClick={() => showMergePdfsDialog()} />
         </RibbonGroup>
 
         <RibbonGroup label={t('organize.watermark')}>
           <RibbonButton id="add-watermark" title={t('organize.addWatermark')} icon={watermarkIcon} label={t('organize.watermarkLabel')}
-            disabled={isPdfAReadOnly()} onClick={async () => { const { showWatermarkDialog } = await import('../../../watermark/watermark-dialog.js'); showWatermarkDialog(); }} />
+            disabled={noPdf() || isPdfAReadOnly()} onClick={async () => { const { showWatermarkDialog } = await import('../../../watermark/watermark-dialog.js'); showWatermarkDialog(); }} />
           <RibbonButton id="add-header-footer" title={t('organize.addHeaderFooter')} icon={headerFooterIcon} label={t('organize.headerFooter')}
-            disabled={isPdfAReadOnly()} onClick={async () => { const { showHeaderFooterDialog } = await import('../../../watermark/watermark-dialog.js'); showHeaderFooterDialog(); }} />
+            disabled={noPdf() || isPdfAReadOnly()} onClick={async () => { const { showHeaderFooterDialog } = await import('../../../watermark/watermark-dialog.js'); showHeaderFooterDialog(); }} />
           <RibbonButton id="manage-watermarks" title={t('organize.manageWatermarks')} icon={manageWatermarksIcon} label={t('organize.manage')}
-            disabled={isPdfAReadOnly()} onClick={async () => { const { showManageWatermarksDialog } = await import('../../../watermark/watermark-dialog.js'); showManageWatermarksDialog(); }} />
+            disabled={noPdf() || isPdfAReadOnly()} onClick={async () => { const { showManageWatermarksDialog } = await import('../../../watermark/watermark-dialog.js'); showManageWatermarksDialog(); }} />
         </RibbonGroup>
       </div>
     </div>

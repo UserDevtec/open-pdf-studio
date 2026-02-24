@@ -73,9 +73,9 @@ export default function VirtualPrinterTab() {
   }
 
   return (
-    <div class="preferences-section">
-      <h3>{t('virtualPrinter.title')}</h3>
-      <p style="font-size:11px;color:#555;margin-bottom:12px;line-height:1.4;">
+    <fieldset class="pref-fieldset">
+      <legend>{t('virtualPrinter.title')}</legend>
+      <p style="font-size:11px;color:var(--theme-text-secondary, #555);margin-bottom:12px;line-height:1.4;">
         {t('virtualPrinter.description')}
       </p>
       <div class="pref-row">
@@ -94,9 +94,9 @@ export default function VirtualPrinterTab() {
           </button>
         )}
       </div>
-      <p style="font-size:10px;color:#888;margin-top:12px;line-height:1.4;">
+      <p style="font-size:10px;color:var(--theme-text-secondary, #888);margin-top:12px;line-height:1.4;">
         {t('virtualPrinter.installNote')}
       </p>
-    </div>
+    </fieldset>
   );
 }

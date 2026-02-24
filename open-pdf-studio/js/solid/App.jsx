@@ -7,6 +7,7 @@ import LeftPanel from './components/left-panel/LeftPanel.jsx';
 import FindBar from './components/FindBar.jsx';
 import FormFieldsBar from './components/FormFieldsBar.jsx';
 import PdfABar from './components/PdfABar.jsx';
+import DefaultAppBar from './components/DefaultAppBar.jsx';
 import PropertiesPanel from './components/properties-panel/PropertiesPanel.jsx';
 import StatusBar from './components/StatusBar.jsx';
 import Backstage from './components/backstage/Backstage.jsx';
@@ -45,6 +46,7 @@ function DesktopApp() {
           <FormFieldsBar />
 
           <PdfABar />
+          <DefaultAppBar />
 
           <div id="pdf-container">
             <div id="canvas-wrapper">
