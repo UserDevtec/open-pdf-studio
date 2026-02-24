@@ -93,19 +93,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Install trusted-signing-cli (Windows only)
-        if: matrix.platform == 'windows-latest'
-        run: cargo install trusted-signing-cli
-
-      - name: Create signing wrapper script (Windows only)
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          $script = "@echo off`r`ntrusted-signing-cli sign -e $env:AZURE_ENDPOINT %1"
-          Set-Content -Path "$env:USERPROFILE\.cargo\bin\sign.cmd" -Value $script
-        env:
-          AZURE_ENDPOINT: ${{ secrets.AZURE_ENDPOINT }}
-
       - name: Install frontend dependencies
         run: npm install
 
@@ -113,17 +100,87 @@ jobs:
         uses: tauri-apps/tauri-action@action-v0.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AZURE_TENANT_ID: ${{ matrix.platform == 'windows-latest' && secrets.AZURE_TENANT_ID || '' }}
-          AZURE_CLIENT_ID: ${{ matrix.platform == 'windows-latest' && secrets.AZURE_CLIENT_ID || '' }}
-          AZURE_CLIENT_SECRET: ${{ matrix.platform == 'windows-latest' && secrets.AZURE_CLIENT_SECRET || '' }}
-          AZURE_ENDPOINT: ${{ matrix.platform == 'windows-latest' && secrets.AZURE_ENDPOINT || '' }}
-          AZURE_TRUSTED_SIGNING_ACCOUNT_NAME: ${{ matrix.platform == 'windows-latest' && secrets.AZURE_TRUSTED_SIGNING_ACCOUNT_NAME || '' }}
-          AZURE_CERTIFICATE_PROFILE_NAME: ${{ matrix.platform == 'windows-latest' && secrets.AZURE_CERTIFICATE_PROFILE_NAME || '' }}
         with:
           projectPath: open-pdf-studio
           args: ${{ matrix.args }}
           releaseId: ${{ needs.create-release.outputs.release_id }}
           includeUpdaterJson: true
+
+      - name: Authenticode sign Windows installer
+        if: matrix.platform == 'windows-latest'
+        uses: azure/trusted-signing-action@v0.5.0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_ENDPOINT }}
+          trusted-signing-account-name: ${{ secrets.AZURE_TRUSTED_SIGNING_ACCOUNT_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_CERTIFICATE_PROFILE_NAME }}
+          files-folder: ${{ github.workspace }}/open-pdf-studio/src-tauri/target/release/bundle/nsis
+          files-folder-filter: exe
+          files-folder-depth: 1
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Re-sign updater artifacts after Authenticode signing
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $VERSION = "${{ needs.create-release.outputs.version }}"
+          $NSIS_DIR = "src-tauri/target/release/bundle/nsis"
+
+          $EXE = Get-ChildItem "$NSIS_DIR/*-setup.exe" | Select-Object -First 1
+          $ZIP = Get-ChildItem "$NSIS_DIR/*.nsis.zip" | Select-Object -First 1
+
+          Write-Host "Signed exe: $($EXE.Name)"
+          Write-Host "Old zip: $($ZIP.Name)"
+
+          # Re-create .nsis.zip with the Authenticode-signed exe
+          Remove-Item $ZIP.FullName
+          Compress-Archive -Path $EXE.FullName -DestinationPath $ZIP.FullName
+
+          # Re-generate updater signatures for both files
+          $EXE_SIG = npx tauri signer sign "$($EXE.FullName)" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" 2>&1 | Select-Object -Last 1
+          $ZIP_SIG = npx tauri signer sign "$($ZIP.FullName)" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" 2>&1 | Select-Object -Last 1
+
+          Write-Host "New exe signature generated"
+          Write-Host "New zip signature generated"
+
+          # Write new .sig files
+          [System.IO.File]::WriteAllText("$($EXE.FullName).sig", $EXE_SIG)
+          [System.IO.File]::WriteAllText("$($ZIP.FullName).sig", $ZIP_SIG)
+
+          # Download latest.json from release, update Windows signatures
+          gh release download $VERSION --pattern "latest.json" --output latest.json --clobber --repo "${{ github.repository }}"
+
+          $latest = Get-Content latest.json -Raw | ConvertFrom-Json
+
+          foreach ($key in @('windows-x86_64')) {
+            if ($latest.platforms.PSObject.Properties[$key]) {
+              $latest.platforms.$key.signature = $ZIP_SIG
+              Write-Host "Updated signature for $key"
+            }
+          }
+          foreach ($key in @('windows-x86_64-nsis')) {
+            if ($latest.platforms.PSObject.Properties[$key]) {
+              $latest.platforms.$key.signature = $EXE_SIG
+              Write-Host "Updated signature for $key"
+            }
+          }
+
+          $latest | ConvertTo-Json -Depth 10 | Set-Content latest.json -NoNewline
+
+          # Re-upload all modified files
+          gh release upload $VERSION "$($EXE.FullName)" --clobber --repo "${{ github.repository }}"
+          gh release upload $VERSION "$($EXE.FullName).sig" --clobber --repo "${{ github.repository }}"
+          gh release upload $VERSION "$($ZIP.FullName)" --clobber --repo "${{ github.repository }}"
+          gh release upload $VERSION "$($ZIP.FullName).sig" --clobber --repo "${{ github.repository }}"
+          gh release upload $VERSION latest.json --clobber --repo "${{ github.repository }}"
+
+          Write-Host "All Windows artifacts re-uploaded with correct signatures"
 
   publish-release:
     permissions:

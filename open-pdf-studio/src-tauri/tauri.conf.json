@@ -41,7 +41,6 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "signCommand": "sign.cmd %1",
       "nsis": {
         "template": "./nsis/installer.nsi",
         "installerHooks": "./nsis/hooks.nsh",
