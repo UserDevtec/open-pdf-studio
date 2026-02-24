@@ -143,15 +143,16 @@ jobs:
           Compress-Archive -Path $EXE.FullName -DestinationPath $ZIP.FullName
 
           # Re-generate updater signatures for both files
-          $EXE_SIG = npx tauri signer sign "$($EXE.FullName)" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" 2>&1 | Select-Object -Last 1
-          $ZIP_SIG = npx tauri signer sign "$($ZIP.FullName)" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD" 2>&1 | Select-Object -Last 1
+          # tauri signer sign writes a .sig file next to the input file
+          npx tauri signer sign "$($EXE.FullName)" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
+          npx tauri signer sign "$($ZIP.FullName)" --private-key "$env:TAURI_SIGNING_PRIVATE_KEY" --password "$env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD"
 
-          Write-Host "New exe signature generated"
-          Write-Host "New zip signature generated"
+          # Read the generated .sig files
+          $EXE_SIG = Get-Content "$($EXE.FullName).sig" -Raw
+          $ZIP_SIG = Get-Content "$($ZIP.FullName).sig" -Raw
 
-          # Write new .sig files
-          [System.IO.File]::WriteAllText("$($EXE.FullName).sig", $EXE_SIG)
-          [System.IO.File]::WriteAllText("$($ZIP.FullName).sig", $ZIP_SIG)
+          Write-Host "New exe signature: $($EXE_SIG.Substring(0, 50))..."
+          Write-Host "New zip signature: $($ZIP_SIG.Substring(0, 50))..."
 
           # Download latest.json from release, update Windows signatures
           gh release download $VERSION --pattern "latest.json" --output latest.json --clobber --repo "${{ github.repository }}"
