@@ -182,7 +182,6 @@ fn lock_file(path: String, state: tauri::State<LockedFiles>) -> Result<bool, Str
 
     #[cfg(not(target_os = "windows"))]
     {
-        use std::io::{Seek, SeekFrom};
         // On Unix, use advisory file locking (flock)
         let file = fs::OpenOptions::new()
             .read(true)
@@ -527,7 +526,7 @@ pub fn run() {
         // Single instance must be registered first — when a second instance is
         // launched (e.g. double-clicking a PDF while the app is already open),
         // this callback runs on the existing instance instead of starting a new one.
-        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+        .plugin(tauri_plugin_single_instance::init(|app: &tauri::AppHandle, argv: Vec<String>, _cwd: String| {
             // Focus the existing window
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.unminimize();
@@ -536,7 +535,7 @@ pub fn run() {
 
             // If a PDF file was passed, emit it to the frontend
             let file = argv.iter()
-                .find(|arg| arg.to_lowercase().ends_with(".pdf") && !arg.starts_with('-'))
+                .find(|arg: &&String| arg.to_lowercase().ends_with(".pdf") && !arg.starts_with('-'))
                 .cloned();
 
             if let Some(ref path) = file {
