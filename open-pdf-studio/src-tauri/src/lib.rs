@@ -523,27 +523,6 @@ pub fn run() {
         .cloned();
 
     let mut builder = tauri::Builder::default()
-        // Single instance must be registered first — when a second instance is
-        // launched (e.g. double-clicking a PDF while the app is already open),
-        // this callback runs on the existing instance instead of starting a new one.
-        .plugin(tauri_plugin_single_instance::init(|app: &tauri::AppHandle, argv: Vec<String>, _cwd: String| {
-            // Focus the existing window
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-            }
-
-            // If a PDF file was passed, emit it to the frontend
-            let file = argv.iter()
-                .find(|arg: &&String| arg.to_lowercase().ends_with(".pdf") && !arg.starts_with('-'))
-                .cloned();
-
-            if let Some(ref path) = file {
-                // Grant the FS plugin read access to this file
-                let _ = app.fs_scope().allow_file(path);
-                let _ = app.emit("open-file", path);
-            }
-        }))
         .manage(OpenedFile(Mutex::new(opened_file)))
         .manage(LockedFiles(Mutex::new(HashMap::new())))
         .plugin(tauri_plugin_fs::init())
@@ -553,10 +532,24 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_deep_link::init());
 
-    // Updater plugin is desktop-only (Play Store handles updates on Android)
+    // Single-instance and updater plugins are desktop-only
     #[cfg(not(target_os = "android"))]
     {
-        builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+        builder = builder
+            .plugin(tauri_plugin_single_instance::init(|app: &tauri::AppHandle, argv: Vec<String>, _cwd: String| {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+                let file = argv.iter()
+                    .find(|arg: &&String| arg.to_lowercase().ends_with(".pdf") && !arg.starts_with('-'))
+                    .cloned();
+                if let Some(ref path) = file {
+                    let _ = app.fs_scope().allow_file(path);
+                    let _ = app.emit("open-file", path);
+                }
+            }))
+            .plugin(tauri_plugin_updater::Builder::new().build());
     }
 
     builder
