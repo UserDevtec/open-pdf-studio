@@ -60,7 +60,8 @@
     "subtabComments": "মন্তব্য",
     "subtabText": "পাঠ্য",
     "subtabDrawing": "অঙ্কন",
-    "subtabShapes": "আকৃতি"
+    "subtabShapes": "আকৃতি",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "ফ্রিহ্যান্ড ডিফল্ট",
@@ -101,7 +102,12 @@
     "measurementDefaults": "পরিমাপ ডিফল্ট",
     "strokeColor": "স্ট্রোক রঙ",
     "lineWidth": "রেখার প্রস্থ",
-    "opacity": "অস্বচ্ছতা (%)"
+    "opacity": "অস্বচ্ছতা (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "স্টার্টআপ",
@@ -124,7 +130,8 @@
     "creation": "তৈরি",
     "autoSelectAfterCreation": "তৈরির পরে স্বয়ংক্রিয়ভাবে টীকা নির্বাচন করুন",
     "deletion": "মুছে ফেলা",
-    "confirmBeforeDeleting": "টীকা মুছে ফেলার আগে নিশ্চিত করুন"
+    "confirmBeforeDeleting": "টীকা মুছে ফেলার আগে নিশ্চিত করুন",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "ডিফল্ট PDF অ্যাপ্লিকেশন",

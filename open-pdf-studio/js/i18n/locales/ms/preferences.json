@@ -60,7 +60,8 @@
     "subtabComments": "Komen",
     "subtabText": "Teks",
     "subtabDrawing": "Lukisan",
-    "subtabShapes": "Bentuk"
+    "subtabShapes": "Bentuk",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Lalai Bebas",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Lalai Pengukuran",
     "strokeColor": "Warna Garis",
     "lineWidth": "Lebar Garisan",
-    "opacity": "Kelegapan (%)"
+    "opacity": "Kelegapan (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Permulaan",
@@ -124,7 +130,8 @@
     "creation": "Penciptaan",
     "autoSelectAfterCreation": "Pilih automatik anotasi selepas penciptaan",
     "deletion": "Pemadaman",
-    "confirmBeforeDeleting": "Sahkan sebelum memadam anotasi"
+    "confirmBeforeDeleting": "Sahkan sebelum memadam anotasi",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Aplikasi PDF Lalai",

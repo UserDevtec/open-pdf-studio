@@ -88,7 +88,13 @@
     "clearPageConfirm": "Hapus semua anotasi pada halaman saat ini?",
     "clearAllAnnotations": "Hapus Semua Anotasi",
     "clearAll": "Hapus Semua",
-    "clearAllConfirm": "Hapus SEMUA anotasi dari SEMUA halaman?"
+    "clearAllConfirm": "Hapus SEMUA anotasi dari SEMUA halaman?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Tampilan Halaman",
@@ -224,9 +230,9 @@
     "sameWidth": "Lebar Sama",
     "sameHeight": "Tinggi Sama",
     "rotate": "Putar",
-    "rotate90CCW": "Putar 90\u00b0 Berlawanan Jarum Jam",
-    "rotate90CW": "Putar 90\u00b0 Searah Jarum Jam",
-    "rotate180": "Putar 180\u00b0",
+    "rotate90CCW": "Putar 90° Berlawanan Jarum Jam",
+    "rotate90CW": "Putar 90° Searah Jarum Jam",
+    "rotate180": "Putar 180°",
     "reflect": "Cerminkan",
     "flipHorizontally": "Balik Horizontal",
     "horizontally": "Horizontal",

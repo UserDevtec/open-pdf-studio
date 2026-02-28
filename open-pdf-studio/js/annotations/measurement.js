@@ -1,10 +1,16 @@
-import { state } from '../core/state.js';
+import { state, getActiveDocument } from '../core/state.js';
 import { openDialog } from '../solid/stores/dialogStore.js';
+import { redrawAnnotations, redrawContinuous } from './rendering.js';
 
 // Scale calibration: pixels per unit
-// Default: 1 pixel = 1 pixel (no calibration)
-// After calibration: state.preferences.measureScale = { pixelsPerUnit, unit }
+// Per-document scale takes priority, then legacy global preference, then default (px)
 export function getMeasureScale() {
+  // 1. Per-document scale
+  const docScale = state.measureScale;
+  if (docScale && docScale.pixelsPerUnit > 0) {
+    return { pixelsPerUnit: docScale.pixelsPerUnit, unit: docScale.unit || 'px' };
+  }
+  // 2. Legacy global preference
   const ms = state.preferences.measureScale;
   if (ms && ms.pixelsPerUnit > 0) {
     return { pixelsPerUnit: ms.pixelsPerUnit, unit: ms.unit || 'px' };
@@ -66,17 +72,105 @@ export function calculatePerimeter(points) {
   };
 }
 
+// Apply measurement rounding based on preference
+function applyRounding(value, unit) {
+  const rounding = state.preferences.measureRounding;
+  if (!rounding || rounding === 'none' || unit === 'px') return value;
+  const step = parseFloat(rounding);
+  if (!step || step <= 0) return value;
+  return Math.round(value / step) * step;
+}
+
 // Format measurement for display
 export function formatMeasurement(measurement) {
-  const val = measurement.value;
+  const val = applyRounding(measurement.value, measurement.unit);
   const suffix = measurement.unit === 'px' ? '' : ` ${measurement.unit}`;
+  const rounding = state.preferences.measureRounding;
+  if (rounding && rounding !== 'none' && measurement.unit !== 'px') {
+    const step = parseFloat(rounding);
+    // Show appropriate decimal places based on rounding step
+    if (step >= 1) return `${Math.round(val)}${suffix}`;
+    return `${val.toFixed(1)}${suffix}`;
+  }
   if (val < 0.01) return `0${suffix}`;
   if (val < 1) return `${val.toFixed(3)}${suffix}`;
   if (val < 100) return `${val.toFixed(2)}${suffix}`;
   return `${val.toFixed(1)}${suffix}`;
 }
 
-// Show scale calibration dialog
-export function showCalibrationDialog() {
-  openDialog('calibration');
+// Show scale calibration dialog, optionally with a reference pixel length
+export function showCalibrationDialog(referencePixelLength) {
+  openDialog('calibration', { referencePixelLength: referencePixelLength || null });
+}
+
+// Recalculate all measurement annotations after scale change
+export function recalculateAllMeasurements() {
+  const doc = getActiveDocument();
+  if (!doc) return;
+
+  const scale = getMeasureScale();
+
+  for (const ann of doc.annotations) {
+    if (ann.type === 'measureDistance') {
+      const pixels = ann.measurePixels || Math.sqrt(
+        (ann.endX - ann.startX) ** 2 + (ann.endY - ann.startY) ** 2
+      );
+      const value = pixels / scale.pixelsPerUnit;
+      ann.measureValue = value;
+      ann.measureUnit = scale.unit;
+      ann.measureText = formatMeasurement({ value, unit: scale.unit });
+    } else if (ann.type === 'measureArea') {
+      if (ann.points && ann.points.length >= 3) {
+        const area = calculateArea(ann.points);
+        ann.measureValue = area.value;
+        ann.measureUnit = area.unit;
+        ann.measureText = formatMeasurement(area);
+      }
+    } else if (ann.type === 'measurePerimeter') {
+      if (ann.points && ann.points.length >= 2) {
+        const perim = calculatePerimeter(ann.points);
+        ann.measureValue = perim.value;
+        ann.measureUnit = perim.unit;
+        ann.measureText = formatMeasurement(perim);
+      }
+    }
+  }
+
+  // Redraw canvas
+  if (state.viewMode === 'continuous') {
+    redrawContinuous();
+  } else {
+    redrawAnnotations();
+  }
+}
+
+// LocalStorage key for per-document scale persistence
+function scaleStorageKey(filePath) {
+  return 'ops_measureScale_' + filePath;
+}
+
+// Save the current document's measure scale to localStorage
+export function saveDocumentScale() {
+  const doc = getActiveDocument();
+  if (!doc || !doc.filePath) return;
+  const ms = doc.measureScale;
+  if (ms) {
+    try {
+      localStorage.setItem(scaleStorageKey(doc.filePath), JSON.stringify(ms));
+    } catch { /* quota exceeded or private mode */ }
+  } else {
+    localStorage.removeItem(scaleStorageKey(doc.filePath));
+  }
+}
+
+// Load measure scale from localStorage into the current document
+export function loadDocumentScale() {
+  const doc = getActiveDocument();
+  if (!doc || !doc.filePath) return;
+  try {
+    const raw = localStorage.getItem(scaleStorageKey(doc.filePath));
+    if (raw) {
+      doc.measureScale = JSON.parse(raw);
+    }
+  } catch { /* corrupted data */ }
 }

@@ -60,7 +60,8 @@
     "subtabComments": "Комментарии",
     "subtabText": "Текст",
     "subtabDrawing": "Рисование",
-    "subtabShapes": "Фигуры"
+    "subtabShapes": "Фигуры",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Настройки рисования от руки по умолчанию",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Настройки измерений по умолчанию",
     "strokeColor": "Цвет обводки",
     "lineWidth": "Толщина линии",
-    "opacity": "Непрозрачность (%)"
+    "opacity": "Непрозрачность (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Запуск",
@@ -124,7 +130,8 @@
     "creation": "Создание",
     "autoSelectAfterCreation": "Автоматически выделять аннотацию после создания",
     "deletion": "Удаление",
-    "confirmBeforeDeleting": "Подтверждать перед удалением аннотаций"
+    "confirmBeforeDeleting": "Подтверждать перед удалением аннотаций",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Приложение PDF по умолчанию",

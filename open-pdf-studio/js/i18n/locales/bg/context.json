@@ -22,8 +22,8 @@
     "sendToBack": "Преместване най-отзад",
     "bringForward": "Преместване напред",
     "sendBackward": "Преместване назад",
-    "rotateLeft90": "Завъртане наляво на 90\u00b0",
-    "rotateRight90": "Завъртане надясно на 90\u00b0",
+    "rotateLeft90": "Завъртане наляво на 90°",
+    "rotateRight90": "Завъртане надясно на 90°",
     "flipHorizontal": "Обръщане хоризонтално",
     "flipVertical": "Обръщане вертикално",
     "transform": "Трансформиране...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Прилагане на стила по подразбиране",
     "exportSubmenu": "Експортиране",
     "exportAsImage": "Експортиране като изображение...",
-    "properties": "Свойства..."
+    "properties": "Свойства...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Копиране на {{count}} анотации",

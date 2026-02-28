@@ -36,7 +36,8 @@
     "applyDefaultStyle": "应用默认样式",
     "exportSubmenu": "导出",
     "exportAsImage": "导出为图像...",
-    "properties": "属性..."
+    "properties": "属性...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "复制 {{count}} 个批注",

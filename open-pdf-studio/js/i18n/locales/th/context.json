@@ -22,8 +22,8 @@
     "sendToBack": "ส่งไปข้างหลังสุด",
     "bringForward": "เลื่อนไปข้างหน้า",
     "sendBackward": "เลื่อนไปข้างหลัง",
-    "rotateLeft90": "หมุนซ้าย 90\u00b0",
-    "rotateRight90": "หมุนขวา 90\u00b0",
+    "rotateLeft90": "หมุนซ้าย 90°",
+    "rotateRight90": "หมุนขวา 90°",
     "flipHorizontal": "พลิกแนวนอน",
     "flipVertical": "พลิกแนวตั้ง",
     "transform": "แปลง...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "ใช้รูปแบบเริ่มต้น",
     "exportSubmenu": "ส่งออก",
     "exportAsImage": "ส่งออกเป็นรูปภาพ...",
-    "properties": "คุณสมบัติ..."
+    "properties": "คุณสมบัติ...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "คัดลอก {{count}} คำอธิบายประกอบ",

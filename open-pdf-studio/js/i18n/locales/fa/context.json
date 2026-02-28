@@ -22,8 +22,8 @@
     "sendToBack": "فرستادن به عقب‌ترین",
     "bringForward": "آوردن به جلو",
     "sendBackward": "فرستادن به عقب",
-    "rotateLeft90": "چرخش به چپ 90\u00b0",
-    "rotateRight90": "چرخش به راست 90\u00b0",
+    "rotateLeft90": "چرخش به چپ 90°",
+    "rotateRight90": "چرخش به راست 90°",
     "flipHorizontal": "وارونه افقی",
     "flipVertical": "وارونه عمودی",
     "transform": "تبدیل...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "اعمال سبک پیش‌فرض",
     "exportSubmenu": "صدور",
     "exportAsImage": "صدور به صورت تصویر...",
-    "properties": "ویژگی‌ها..."
+    "properties": "ویژگی‌ها...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "کپی {{count}} حاشیه‌نویسی",

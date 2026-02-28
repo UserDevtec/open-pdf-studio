@@ -88,7 +88,13 @@
     "clearPageConfirm": "清除当前页面的所有批注？",
     "clearAllAnnotations": "清除所有批注",
     "clearAll": "清除全部",
-    "clearAllConfirm": "清除所有页面的全部批注？"
+    "clearAllConfirm": "清除所有页面的全部批注？",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "页面显示",

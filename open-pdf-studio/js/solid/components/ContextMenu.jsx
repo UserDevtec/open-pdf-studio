@@ -28,6 +28,7 @@ import { setAsDefaultStyle } from '../../core/preferences.js';
 import { setTool } from '../../tools/manager.js';
 import { alignAnnotations } from '../../annotations/smart-guides.js';
 import { getSelectedText, clearTextSelection } from '../../text/text-selection.js';
+import { showCalibrationDialog } from '../../annotations/measurement.js';
 import { useTranslation } from '../../i18n/useTranslation.js';
 
 function redraw() {
@@ -103,6 +104,7 @@ function AnnotationMenuContent() {
   const ann = () => targetAnnotation();
   const isLocked = () => ann()?.locked || false;
   const isLineType = () => ['line', 'arrow'].includes(ann()?.type);
+  const isMeasureDistance = () => ann()?.type === 'measureDistance';
 
   const statusItems = [
     { key: 'None', label: () => t('annotation.statusNone') },
@@ -277,6 +279,19 @@ function AnnotationMenuContent() {
             a.points = [{ x: a.x1, y: a.y1 }, { x: a.x2, y: a.y2 }];
             a.modifiedAt = new Date().toISOString();
             redraw();
+          }
+        }} />
+        <Separator />
+      </Show>
+
+      <Show when={isMeasureDistance()}>
+        <MenuItem icon={convertMeasurementIcon} label={t('annotation.calibrateFromLine')} onClick={() => {
+          const a = ann();
+          if (a) {
+            const px = a.measurePixels || Math.sqrt(
+              (a.endX - a.startX) ** 2 + (a.endY - a.startY) ** 2
+            );
+            showCalibrationDialog(px);
           }
         }} />
         <Separator />

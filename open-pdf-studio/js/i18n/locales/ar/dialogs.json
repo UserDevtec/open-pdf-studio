@@ -226,8 +226,22 @@
   "calibration": {
     "title": "معايرة المقياس",
     "helpText": "ارسم خط قياس بطول معروف، ثم أدخل المسافة الحقيقية هنا.",
-    "knownDistance": "المسافة المعروفة:",
-    "measuredPixels": "البكسلات المقاسة:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unit",
+    "autoDetect": "Auto-detect from title block",
+    "detecting": "Detecting...",
+    "scaleDetected": "Scale detected!",
+    "scaleNotFound": "No scale found in title block"
   },
   "pageSetup": {
     "title": "إعداد الصفحة",

@@ -22,8 +22,8 @@
     "sendToBack": "Přesunout do pozadí",
     "bringForward": "Přenést dopředu",
     "sendBackward": "Přesunout dozadu",
-    "rotateLeft90": "Otočit doleva o 90\u00b0",
-    "rotateRight90": "Otočit doprava o 90\u00b0",
+    "rotateLeft90": "Otočit doleva o 90°",
+    "rotateRight90": "Otočit doprava o 90°",
     "flipHorizontal": "Překlopit vodorovně",
     "flipVertical": "Překlopit svisle",
     "transform": "Transformovat...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Použít výchozí styl",
     "exportSubmenu": "Exportovat",
     "exportAsImage": "Exportovat jako obrázek...",
-    "properties": "Vlastnosti..."
+    "properties": "Vlastnosti...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Kopírovat {{count}} anotací",

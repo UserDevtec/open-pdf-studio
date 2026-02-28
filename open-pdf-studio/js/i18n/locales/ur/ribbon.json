@@ -88,7 +88,13 @@
     "clearPageConfirm": "موجودہ صفحے کی تمام تشریحات صاف کریں؟",
     "clearAllAnnotations": "تمام تشریحات صاف کریں",
     "clearAll": "سب صاف کریں",
-    "clearAllConfirm": "تمام صفحات سے تمام تشریحات صاف کریں؟"
+    "clearAllConfirm": "تمام صفحات سے تمام تشریحات صاف کریں؟",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "صفحہ کی نمائش",

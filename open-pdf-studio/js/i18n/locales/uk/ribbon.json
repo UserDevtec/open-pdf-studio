@@ -88,7 +88,13 @@
     "clearPageConfirm": "Очистити всі анотації на поточній сторінці?",
     "clearAllAnnotations": "Очистити всі анотації",
     "clearAll": "Очистити все",
-    "clearAllConfirm": "Очистити ВСІ анотації з УСІХ сторінок?"
+    "clearAllConfirm": "Очистити ВСІ анотації з УСІХ сторінок?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Відображення сторінки",
@@ -224,9 +230,9 @@
     "sameWidth": "Однакова ширина",
     "sameHeight": "Однакова висота",
     "rotate": "Поворот",
-    "rotate90CCW": "Повернути на 90\u00b0 проти год. стр.",
-    "rotate90CW": "Повернути на 90\u00b0 за год. стр.",
-    "rotate180": "Повернути на 180\u00b0",
+    "rotate90CCW": "Повернути на 90° проти год. стр.",
+    "rotate90CW": "Повернути на 90° за год. стр.",
+    "rotate180": "Повернути на 180°",
     "reflect": "Відображення",
     "flipHorizontally": "Відобразити горизонтально",
     "horizontally": "Горизонтально",

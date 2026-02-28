@@ -88,7 +88,13 @@
     "clearPageConfirm": "वर्तमान पृष्ठ की सभी एनोटेशन साफ़ करें?",
     "clearAllAnnotations": "सभी एनोटेशन साफ़ करें",
     "clearAll": "सभी साफ़ करें",
-    "clearAllConfirm": "सभी पृष्ठों से सभी एनोटेशन साफ़ करें?"
+    "clearAllConfirm": "सभी पृष्ठों से सभी एनोटेशन साफ़ करें?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "पृष्ठ प्रदर्शन",
@@ -224,9 +230,9 @@
     "sameWidth": "समान चौड़ाई",
     "sameHeight": "समान ऊंचाई",
     "rotate": "घुमाएं",
-    "rotate90CCW": "90\u00b0 वामावर्त घुमाएं",
-    "rotate90CW": "90\u00b0 दक्षिणावर्त घुमाएं",
-    "rotate180": "180\u00b0 घुमाएं",
+    "rotate90CCW": "90° वामावर्त घुमाएं",
+    "rotate90CW": "90° दक्षिणावर्त घुमाएं",
+    "rotate180": "180° घुमाएं",
     "reflect": "प्रतिबिंबित करें",
     "flipHorizontally": "क्षैतिज रूप से पलटें",
     "horizontally": "क्षैतिज",

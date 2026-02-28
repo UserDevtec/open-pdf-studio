@@ -88,7 +88,13 @@
     "clearPageConfirm": "Fjerne alle merknader på gjeldende side?",
     "clearAllAnnotations": "Fjern alle merknader",
     "clearAll": "Tøm alle",
-    "clearAllConfirm": "Fjerne ALLE merknader fra ALLE sider?"
+    "clearAllConfirm": "Fjerne ALLE merknader fra ALLE sider?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Sidevisning",
@@ -224,9 +230,9 @@
     "sameWidth": "Samme bredde",
     "sameHeight": "Samme høyde",
     "rotate": "Roter",
-    "rotate90CCW": "Roter 90\u00b0 mot klokken",
-    "rotate90CW": "Roter 90\u00b0 med klokken",
-    "rotate180": "Roter 180\u00b0",
+    "rotate90CCW": "Roter 90° mot klokken",
+    "rotate90CW": "Roter 90° med klokken",
+    "rotate180": "Roter 180°",
     "reflect": "Speilvend",
     "flipHorizontally": "Speilvend horisontalt",
     "horizontally": "Horisontalt",

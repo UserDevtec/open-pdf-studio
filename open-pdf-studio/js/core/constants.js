@@ -44,6 +44,7 @@ export const DEFAULT_PREFERENCES = {
   snapToCenters: true,
   snapToEdges: true,
   objectSnapRadius: 10,
+  snapToPdfContent: true,
 
   // Appearance
   defaultAnnotationColor: '#FF0000',
@@ -136,6 +137,7 @@ export const DEFAULT_PREFERENCES = {
   measureStrokeColor: '#FF0000',
   measureLineWidth: 1,
   measureOpacity: 100,
+  measureRounding: 'none', // 'none', '1', '5', '10'
 
   // Behavior
   autoSelectAfterCreate: true,

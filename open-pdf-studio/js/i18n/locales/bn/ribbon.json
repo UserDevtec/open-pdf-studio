@@ -88,7 +88,13 @@
     "clearPageConfirm": "বর্তমান পৃষ্ঠার সমস্ত টীকা মুছে ফেলবেন?",
     "clearAllAnnotations": "সমস্ত টীকা মুছে ফেলুন",
     "clearAll": "সমস্ত মুছুন",
-    "clearAllConfirm": "সমস্ত পৃষ্ঠা থেকে সমস্ত টীকা মুছে ফেলবেন?"
+    "clearAllConfirm": "সমস্ত পৃষ্ঠা থেকে সমস্ত টীকা মুছে ফেলবেন?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "পৃষ্ঠা প্রদর্শন",

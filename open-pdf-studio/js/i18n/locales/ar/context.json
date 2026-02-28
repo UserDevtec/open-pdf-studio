@@ -22,8 +22,8 @@
     "sendToBack": "إرسال للخلفية",
     "bringForward": "تقديم للأمام",
     "sendBackward": "إرسال للخلف",
-    "rotateLeft90": "تدوير لليسار 90\u00b0",
-    "rotateRight90": "تدوير لليمين 90\u00b0",
+    "rotateLeft90": "تدوير لليسار 90°",
+    "rotateRight90": "تدوير لليمين 90°",
     "flipHorizontal": "قلب أفقي",
     "flipVertical": "قلب عمودي",
     "transform": "تحويل...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "تطبيق النمط الافتراضي",
     "exportSubmenu": "تصدير",
     "exportAsImage": "تصدير كصورة...",
-    "properties": "الخصائص..."
+    "properties": "الخصائص...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "نسخ {{count}} تعليق",

@@ -60,7 +60,8 @@
     "subtabComments": "Kommentarer",
     "subtabText": "Tekst",
     "subtabDrawing": "Tegning",
-    "subtabShapes": "Figurer"
+    "subtabShapes": "Figurer",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Frihåndsstandarder",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Målestandarder",
     "strokeColor": "Strekfarge",
     "lineWidth": "Linjebredde",
-    "opacity": "Ugjennomsiktighet (%)"
+    "opacity": "Ugjennomsiktighet (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Oppstart",
@@ -124,7 +130,8 @@
     "creation": "Opprettelse",
     "autoSelectAfterCreation": "Velg merknad automatisk etter opprettelse",
     "deletion": "Sletting",
-    "confirmBeforeDeleting": "Bekreft før sletting av merknader"
+    "confirmBeforeDeleting": "Bekreft før sletting av merknader",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Standard PDF-program",

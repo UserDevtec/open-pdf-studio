@@ -36,7 +36,8 @@
     "applyDefaultStyle": "ডিফল্ট স্টাইল প্রয়োগ করুন",
     "exportSubmenu": "রপ্তানি",
     "exportAsImage": "চিত্র হিসেবে রপ্তানি...",
-    "properties": "বৈশিষ্ট্য..."
+    "properties": "বৈশিষ্ট্য...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "{{count}} টীকা অনুলিপি করুন",

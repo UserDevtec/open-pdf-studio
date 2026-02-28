@@ -36,7 +36,8 @@
     "applyDefaultStyle": "既定のスタイルを適用",
     "exportSubmenu": "エクスポート",
     "exportAsImage": "画像としてエクスポート...",
-    "properties": "プロパティ..."
+    "properties": "プロパティ...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "{{count}} 個の注釈をコピー",

@@ -28,6 +28,7 @@ export function createDocument(filePath = null) {
     pageRotations: {},
     pdfaCompliance: null,
     pdfADismissed: false,
+    measureScale: null, // { pixelsPerUnit, unit, method, scaleRatio }
   };
 }
 
@@ -268,6 +269,15 @@ export const state = createMutable({
         doc.selectedAnnotations = [];
       }
     }
+  },
+
+  get measureScale() {
+    const doc = this.documents[this.activeDocumentIndex];
+    return doc ? doc.measureScale : null;
+  },
+  set measureScale(value) {
+    const doc = this.documents[this.activeDocumentIndex];
+    if (doc) doc.measureScale = value;
   },
 
   get selectedAnnotations() {

@@ -60,7 +60,8 @@
     "subtabComments": "Comentarii",
     "subtabText": "Text",
     "subtabDrawing": "Desen",
-    "subtabShapes": "Forme"
+    "subtabShapes": "Forme",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Valori implicite mana libera",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Valori implicite masurare",
     "strokeColor": "Culoare contur",
     "lineWidth": "Grosime linie",
-    "opacity": "Opacitate (%)"
+    "opacity": "Opacitate (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Pornire",
@@ -124,7 +130,8 @@
     "creation": "Creare",
     "autoSelectAfterCreation": "Selectare automata a adnotarii dupa creare",
     "deletion": "Stergere",
-    "confirmBeforeDeleting": "Confirmare inainte de stergerea adnotarilor"
+    "confirmBeforeDeleting": "Confirmare inainte de stergerea adnotarilor",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Aplicatie PDF implicita",

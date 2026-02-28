@@ -226,8 +226,22 @@
   "calibration": {
     "title": "Skalenkalibrierung",
     "helpText": "Zeichnen Sie eine Messlinie bekannter Länge und geben Sie dann die tatsächliche Entfernung hier ein.",
-    "knownDistance": "Bekannte Entfernung:",
-    "measuredPixels": "Gemessene Pixel:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/Einheit",
+    "autoDetect": "Automatisch aus Schriftfeld erkennen",
+    "detecting": "Erkennung...",
+    "scaleDetected": "Maßstab erkannt!",
+    "scaleNotFound": "Kein Maßstab im Schriftfeld gefunden"
   },
   "pageSetup": {
     "title": "Seite einrichten",

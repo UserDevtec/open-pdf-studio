@@ -60,7 +60,8 @@
     "subtabComments": "கருத்துரைகள்",
     "subtabText": "உரை",
     "subtabDrawing": "வரைதல்",
-    "subtabShapes": "வடிவங்கள்"
+    "subtabShapes": "வடிவங்கள்",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "கைவரை இயல்புநிலைகள்",
@@ -101,7 +102,12 @@
     "measurementDefaults": "அளவீட்டு இயல்புநிலைகள்",
     "strokeColor": "கோட்டு நிறம்",
     "lineWidth": "கோட்டு அகலம்",
-    "opacity": "ஒளிபுகாமை (%)"
+    "opacity": "ஒளிபுகாமை (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "தொடக்கம்",
@@ -124,7 +130,8 @@
     "creation": "உருவாக்கம்",
     "autoSelectAfterCreation": "உருவாக்கிய பின் குறிப்புரையைத் தானாகத் தேர்வுசெய்",
     "deletion": "நீக்கம்",
-    "confirmBeforeDeleting": "குறிப்புரைகளை நீக்கும் முன் உறுதிப்படுத்து"
+    "confirmBeforeDeleting": "குறிப்புரைகளை நீக்கும் முன் உறுதிப்படுத்து",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "இயல்புநிலை PDF பயன்பாடு",

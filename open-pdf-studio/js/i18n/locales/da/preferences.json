@@ -60,7 +60,8 @@
     "subtabComments": "Kommentarer",
     "subtabText": "Tekst",
     "subtabDrawing": "Tegning",
-    "subtabShapes": "Figurer"
+    "subtabShapes": "Figurer",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Frihåndsstandarder",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Målestandarder",
     "strokeColor": "Stregfarve",
     "lineWidth": "Linjebredde",
-    "opacity": "Gennemsigtighed (%)"
+    "opacity": "Gennemsigtighed (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Opstart",
@@ -124,7 +130,8 @@
     "creation": "Oprettelse",
     "autoSelectAfterCreation": "Vælg annotation automatisk efter oprettelse",
     "deletion": "Sletning",
-    "confirmBeforeDeleting": "Bekræft før sletning af annotationer"
+    "confirmBeforeDeleting": "Bekræft før sletning af annotationer",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Standard PDF-program",

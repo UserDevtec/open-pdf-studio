@@ -182,6 +182,16 @@
     "reason": "原因",
     "location": "位置",
     "date": "日期",
-    "contact": "联系人"
+    "contact": "联系人",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

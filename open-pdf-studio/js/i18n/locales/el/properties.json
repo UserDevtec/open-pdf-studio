@@ -182,6 +182,16 @@
     "reason": "Αιτία",
     "location": "Τοποθεσία",
     "date": "Ημερομηνία",
-    "contact": "Επικοινωνία"
+    "contact": "Επικοινωνία",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

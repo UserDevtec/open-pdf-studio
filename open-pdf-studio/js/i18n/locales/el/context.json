@@ -22,8 +22,8 @@
     "sendToBack": "Μετακίνηση στο πίσω μέρος",
     "bringForward": "Μετακίνηση μπροστά",
     "sendBackward": "Μετακίνηση πίσω",
-    "rotateLeft90": "Περιστροφή αριστερά 90\u00b0",
-    "rotateRight90": "Περιστροφή δεξιά 90\u00b0",
+    "rotateLeft90": "Περιστροφή αριστερά 90°",
+    "rotateRight90": "Περιστροφή δεξιά 90°",
     "flipHorizontal": "Αναστροφή οριζόντια",
     "flipVertical": "Αναστροφή κατακόρυφα",
     "transform": "Μετασχηματισμός...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Εφαρμογή προεπιλεγμένου στυλ",
     "exportSubmenu": "Εξαγωγή",
     "exportAsImage": "Εξαγωγή ως εικόνα...",
-    "properties": "Ιδιότητες..."
+    "properties": "Ιδιότητες...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Αντιγραφή {{count}} σχολιασμών",

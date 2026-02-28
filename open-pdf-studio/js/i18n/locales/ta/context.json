@@ -22,8 +22,8 @@
     "sendToBack": "பின்புறம் அனுப்பு",
     "bringForward": "முன்னே கொண்டுவா",
     "sendBackward": "பின்னே அனுப்பு",
-    "rotateLeft90": "இடமாக 90\u00b0 சுழற்று",
-    "rotateRight90": "வலமாக 90\u00b0 சுழற்று",
+    "rotateLeft90": "இடமாக 90° சுழற்று",
+    "rotateRight90": "வலமாக 90° சுழற்று",
     "flipHorizontal": "கிடையாகப் புரட்டு",
     "flipVertical": "நிலையாகப் புரட்டு",
     "transform": "மாற்றம்...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "இயல்புநிலை பாணியைப் பொருத்து",
     "exportSubmenu": "ஏற்றுமதி",
     "exportAsImage": "படமாக ஏற்றுமதி செய்...",
-    "properties": "பண்புகள்..."
+    "properties": "பண்புகள்...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "{{count}} குறிப்புரைகளை நகலெடு",

@@ -88,7 +88,13 @@
     "clearPageConfirm": "Futa maoni yote kwenye ukurasa wa sasa?",
     "clearAllAnnotations": "Futa Maoni Yote",
     "clearAll": "Futa Yote",
-    "clearAllConfirm": "Futa maoni YOTE kutoka kurasa ZOTE?"
+    "clearAllConfirm": "Futa maoni YOTE kutoka kurasa ZOTE?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Onyesho la Ukurasa",
@@ -224,9 +230,9 @@
     "sameWidth": "Upana Sawa",
     "sameHeight": "Urefu Sawa",
     "rotate": "Zungusha",
-    "rotate90CCW": "Zungusha 90\u00b0 Kinyumenyume",
-    "rotate90CW": "Zungusha 90\u00b0 Kisaa",
-    "rotate180": "Zungusha 180\u00b0",
+    "rotate90CCW": "Zungusha 90° Kinyumenyume",
+    "rotate90CW": "Zungusha 90° Kisaa",
+    "rotate180": "Zungusha 180°",
     "reflect": "Akisi",
     "flipHorizontally": "Geuza Mlalo",
     "horizontally": "Mlalo",

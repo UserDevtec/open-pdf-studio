@@ -22,8 +22,8 @@
     "sendToBack": "Porta in fondo",
     "bringForward": "Porta avanti",
     "sendBackward": "Porta indietro",
-    "rotateLeft90": "Ruota 90\u00b0 a sinistra",
-    "rotateRight90": "Ruota 90\u00b0 a destra",
+    "rotateLeft90": "Ruota 90° a sinistra",
+    "rotateRight90": "Ruota 90° a destra",
     "flipHorizontal": "Capovolgi orizzontalmente",
     "flipVertical": "Capovolgi verticalmente",
     "transform": "Trasforma...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Applica stile predefinito",
     "exportSubmenu": "Esporta",
     "exportAsImage": "Esporta come immagine...",
-    "properties": "Propriet\u00e0..."
+    "properties": "Proprietà...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Copia {{count}} annotazioni",
@@ -72,7 +73,7 @@
     "printMenu": "Stampa...",
     "findMenu": "Trova...",
     "searchMenu": "Cerca...",
-    "propertiesMenu": "Propriet\u00e0..."
+    "propertiesMenu": "Proprietà..."
   },
   "bookmark": {
     "addBookmark": "Aggiungi segnalibro",
@@ -91,7 +92,7 @@
     "deletePages": "Elimina pagine",
     "deletePageConfirm": "Eliminare la pagina {{page}}?",
     "deletePageTitle": "Elimina pagina",
-    "properties": "Propriet\u00e0"
+    "properties": "Proprietà"
   },
   "textSelection": {
     "highlightSelection": "Evidenzia selezione",

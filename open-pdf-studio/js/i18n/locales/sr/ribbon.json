@@ -88,7 +88,13 @@
     "clearPageConfirm": "Обрисати све анотације на тренутној страници?",
     "clearAllAnnotations": "Обриши све анотације",
     "clearAll": "Обриши све",
-    "clearAllConfirm": "Обрисати СВЕ анотације са СВИХ страница?"
+    "clearAllConfirm": "Обрисати СВЕ анотације са СВИХ страница?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Приказ странице",
@@ -224,9 +230,9 @@
     "sameWidth": "Иста ширина",
     "sameHeight": "Иста висина",
     "rotate": "Ротирај",
-    "rotate90CCW": "Ротирај 90\u00b0 супротно",
-    "rotate90CW": "Ротирај 90\u00b0 у смеру",
-    "rotate180": "Ротирај 180\u00b0",
+    "rotate90CCW": "Ротирај 90° супротно",
+    "rotate90CW": "Ротирај 90° у смеру",
+    "rotate180": "Ротирај 180°",
     "reflect": "Огледај",
     "flipHorizontally": "Обрни хоризонтално",
     "horizontally": "Хоризонтално",

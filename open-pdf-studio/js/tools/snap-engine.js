@@ -1,4 +1,5 @@
 import { state } from '../core/state.js';
+import { getCachedPdfSnapPoints, getCachedPdfEdgeSegments } from './pdf-snap-extractor.js';
 
 // Collect snap points from all annotations on the given page.
 // excludeId: optional annotation id to skip (the one being drawn).
@@ -355,6 +356,28 @@ export function drawSnapIndicator(ctx, snapResult, scale) {
   ctx.restore();
 }
 
+// Find nearest point on PDF vector edge segments within radius.
+function nearestPointOnPdfEdge(cursorX, cursorY, currentPage, snapRadius) {
+  const prefs = state.preferences;
+  if (!prefs.snapToPdfContent || !prefs.snapToEdges) return null;
+
+  const edges = getCachedPdfEdgeSegments(currentPage);
+  if (!edges || edges.length === 0) return null;
+
+  let bestDist = Infinity;
+  let bestPoint = null;
+
+  for (const seg of edges) {
+    const proj = projectPointOnSegment(cursorX, cursorY, seg.x1, seg.y1, seg.x2, seg.y2);
+    if (proj.dist < bestDist && proj.dist <= snapRadius) {
+      bestDist = proj.dist;
+      bestPoint = { x: proj.x, y: proj.y, type: 'edge', snapped: true };
+    }
+  }
+
+  return bestPoint;
+}
+
 // Combined snap: first try point snaps, then edge snap.
 // Returns the best snap result.
 // inProgressPoints: optional array of {x,y} from the polyline/measure being drawn
@@ -366,23 +389,39 @@ export function performSnap(cursorX, cursorY, annotations, currentPage, scale, e
 
   const snapRadius = (prefs.objectSnapRadius || 10) / scale;
 
-  // Collect point snap targets from completed annotations
+  // 1. Collect point snap targets from completed annotations
   const snapPoints = collectSnapPoints(annotations, currentPage, excludeId);
 
-  // Add in-progress points (vertices already placed in the current polyline/measure)
+  // 2. Add PDF vector snap points (if enabled)
+  if (prefs.snapToPdfContent) {
+    const pdfPoints = getCachedPdfSnapPoints(currentPage);
+    if (pdfPoints.length > 0) {
+      for (const pt of pdfPoints) {
+        snapPoints.push(pt);
+      }
+    }
+  }
+
+  // 3. Add in-progress points (vertices already placed in the current polyline/measure)
   if (inProgressPoints && inProgressPoints.length > 0) {
     for (const pt of inProgressPoints) {
       snapPoints.push({ x: pt.x, y: pt.y, type: 'endpoint', annotation: null });
     }
   }
 
-  // Try point snap first (endpoints, corners, midpoints, centers)
+  // 4. Try point snap first (endpoints, corners, midpoints, centers)
   const pointResult = findNearestSnap(cursorX, cursorY, snapPoints, snapRadius);
   if (pointResult.snapped) return pointResult;
 
-  // Fall back to edge snap
+  // 5. Fall back to annotation edge snap
   const edgeResult = nearestPointOnEdge(cursorX, cursorY, annotations, currentPage, snapRadius, excludeId);
   if (edgeResult) return edgeResult;
+
+  // 6. Fall back to PDF vector edge snap
+  if (prefs.snapToPdfContent) {
+    const pdfEdgeResult = nearestPointOnPdfEdge(cursorX, cursorY, currentPage, snapRadius);
+    if (pdfEdgeResult) return pdfEdgeResult;
+  }
 
   return { x: cursorX, y: cursorY, snapped: false };
 }

@@ -88,7 +88,13 @@
     "clearPageConfirm": "לנקות את כל ההערות בעמוד הנוכחי?",
     "clearAllAnnotations": "ניקוי כל ההערות",
     "clearAll": "ניקוי הכל",
-    "clearAllConfirm": "לנקות את כל ההערות מכל העמודים?"
+    "clearAllConfirm": "לנקות את כל ההערות מכל העמודים?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "תצוגת עמוד",
@@ -224,9 +230,9 @@
     "sameWidth": "רוחב זהה",
     "sameHeight": "גובה זהה",
     "rotate": "סיבוב",
-    "rotate90CCW": "סיבוב 90\u00b0 נגד כיוון השעון",
-    "rotate90CW": "סיבוב 90\u00b0 עם כיוון השעון",
-    "rotate180": "סיבוב 180\u00b0",
+    "rotate90CCW": "סיבוב 90° נגד כיוון השעון",
+    "rotate90CW": "סיבוב 90° עם כיוון השעון",
+    "rotate180": "סיבוב 180°",
     "reflect": "שיקוף",
     "flipHorizontally": "היפוך אופקי",
     "horizontally": "אופקית",

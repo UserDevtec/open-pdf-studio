@@ -22,8 +22,8 @@
     "sendToBack": "Trimitere in fundal",
     "bringForward": "Aducere in fata",
     "sendBackward": "Trimitere in spate",
-    "rotateLeft90": "Rotire la stanga 90\u00b0",
-    "rotateRight90": "Rotire la dreapta 90\u00b0",
+    "rotateLeft90": "Rotire la stanga 90°",
+    "rotateRight90": "Rotire la dreapta 90°",
     "flipHorizontal": "Oglindire orizontala",
     "flipVertical": "Oglindire verticala",
     "transform": "Transformare...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Aplicare stil implicit",
     "exportSubmenu": "Export",
     "exportAsImage": "Export ca imagine...",
-    "properties": "Proprietati..."
+    "properties": "Proprietati...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Copiere {{count}} adnotari",

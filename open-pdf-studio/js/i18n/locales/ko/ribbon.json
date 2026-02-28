@@ -88,7 +88,13 @@
     "clearPageConfirm": "현재 페이지의 모든 주석을 지우시겠습니까?",
     "clearAllAnnotations": "모든 주석 지우기",
     "clearAll": "모두 지우기",
-    "clearAllConfirm": "모든 페이지의 모든 주석을 지우시겠습니까?"
+    "clearAllConfirm": "모든 페이지의 모든 주석을 지우시겠습니까?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "페이지 표시",

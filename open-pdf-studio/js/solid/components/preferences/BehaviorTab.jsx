@@ -89,6 +89,12 @@ export default function BehaviorTab(props) {
           <label>{t('behavior.objectSnapRadius')}</label>
           <input type="number" min="3" max="30" value={p.objectSnapRadius[0]()} onInput={e => p.objectSnapRadius[1](parseInt(e.target.value) || 10)} disabled={!p.enableObjectSnap[0]()} />
         </div>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.snapToPdfContent[0]()} onChange={e => p.snapToPdfContent[1](e.target.checked)} disabled={!p.enableObjectSnap[0]()} />
+            <span>{t('behavior.snapToPdfContent')}</span>
+          </label>
+        </div>
       </fieldset>
 
       <fieldset class="pref-fieldset">

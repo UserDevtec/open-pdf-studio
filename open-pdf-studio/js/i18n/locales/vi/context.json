@@ -22,8 +22,8 @@
     "sendToBack": "Đưa xuống dưới cùng",
     "bringForward": "Đưa lên trước",
     "sendBackward": "Đưa ra sau",
-    "rotateLeft90": "Xoay trái 90\u00b0",
-    "rotateRight90": "Xoay phải 90\u00b0",
+    "rotateLeft90": "Xoay trái 90°",
+    "rotateRight90": "Xoay phải 90°",
     "flipHorizontal": "Lật Ngang",
     "flipVertical": "Lật Dọc",
     "transform": "Biến đổi...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Áp dụng Kiểu Mặc định",
     "exportSubmenu": "Xuất",
     "exportAsImage": "Xuất dưới dạng Hình ảnh...",
-    "properties": "Thuộc tính..."
+    "properties": "Thuộc tính...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Sao chép {{count}} Chú thích",

@@ -185,6 +185,12 @@ export async function loadPDF(filePath, preloadedData = null) {
       }
     }
 
+    // Load persisted measure scale for this document
+    {
+      const { loadDocumentScale } = await import('../annotations/measurement.js');
+      loadDocumentScale();
+    }
+
     // Notify that a PDF has been loaded (listeners can reset tool, update UI, etc.)
     document.dispatchEvent(new CustomEvent('pdf-loaded'));
 

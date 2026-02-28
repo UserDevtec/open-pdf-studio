@@ -11,6 +11,8 @@ import { updateActiveThumbnail } from '../ui/panels/left-panel.js';
 import { createSinglePageTextLayer, clearSinglePageTextLayer, createTextLayer, clearTextLayers } from '../text/text-layer.js';
 import { createSinglePageLinkLayer, clearSinglePageLinkLayer, createLinkLayer, clearLinkLayers } from './link-layer.js';
 import { createSinglePageFormLayer, clearSinglePageFormLayer, createFormLayer, clearFormLayers, hideFormFieldsBar } from './form-layer.js';
+import { clearPdfVectorCache } from '../tools/pdf-snap-extractor.js';
+import { clearDetectionCache } from '../tools/pdf-element-detector.js';
 
 // Track current render task to cancel if needed
 let currentRenderTask = null;
@@ -486,6 +488,12 @@ export function clearPdfView() {
   if (continuousContainer) {
     continuousContainer.innerHTML = '';
   }
+
+  // Clear PDF vector snap cache
+  clearPdfVectorCache();
+
+  // Clear element detection cache
+  clearDetectionCache();
 
   // Clear text, link, and form layers
   clearSinglePageTextLayer();

@@ -102,6 +102,10 @@ export const measureAreaIcon = `<svg fill="none" stroke="currentColor" viewBox="
 
 export const measurePerimeterIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18L9 10L14 14L20 6"/><path stroke-linecap="round" stroke-width="2" d="M4 18v-3m0 3h3"/></svg>`;
 
+export const calibrateIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 20L20 4"/><path stroke-linecap="round" stroke-width="1.5" d="M7 17l2-2m3-3l2-2m3-3l2-2"/><circle cx="4" cy="20" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="4" r="1.5" fill="currentColor" stroke="none"/></svg>`;
+
+export const snapToDrawingIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="1.5" d="M3 3h18v18H3z"/><path stroke-width="1.5" stroke-dasharray="2 2" d="M7 7h10v10H7z"/><circle cx="7" cy="7" r="2" fill="currentColor" stroke="none"/><path stroke-width="2" stroke-linecap="round" d="M12 12l-4-4"/></svg>`;
+
 // --- Comment tab: Redaction ---
 
 export const redactionIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="0" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke-width="2"/><line x1="7" y1="5" x2="7" y2="19" stroke-width="1.5"/><line x1="17" y1="5" x2="17" y2="19" stroke-width="1.5"/></svg>`;

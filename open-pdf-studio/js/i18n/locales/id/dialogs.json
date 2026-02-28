@@ -226,8 +226,22 @@
   "calibration": {
     "title": "Kalibrasi Skala",
     "helpText": "Gambar garis pengukuran dengan panjang yang diketahui, lalu masukkan jarak sebenarnya di sini.",
-    "knownDistance": "Jarak yang diketahui:",
-    "measuredPixels": "Piksel terukur:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unit",
+    "autoDetect": "Auto-detect from title block",
+    "detecting": "Detecting...",
+    "scaleDetected": "Scale detected!",
+    "scaleNotFound": "No scale found in title block"
   },
   "pageSetup": {
     "title": "Pengaturan Halaman",

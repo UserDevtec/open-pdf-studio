@@ -60,7 +60,8 @@
     "subtabComments": "टिप्पणियां",
     "subtabText": "टेक्स्ट",
     "subtabDrawing": "आरेखण",
-    "subtabShapes": "आकार"
+    "subtabShapes": "आकार",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "फ्रीहैंड डिफ़ॉल्ट",
@@ -101,7 +102,12 @@
     "measurementDefaults": "मापन डिफ़ॉल्ट",
     "strokeColor": "स्ट्रोक रंग",
     "lineWidth": "रेखा चौड़ाई",
-    "opacity": "अपारदर्शिता (%)"
+    "opacity": "अपारदर्शिता (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "स्टार्टअप",
@@ -124,7 +130,8 @@
     "creation": "निर्माण",
     "autoSelectAfterCreation": "निर्माण के बाद एनोटेशन स्वतः चुनें",
     "deletion": "हटाना",
-    "confirmBeforeDeleting": "एनोटेशन हटाने से पहले पुष्टि करें"
+    "confirmBeforeDeleting": "एनोटेशन हटाने से पहले पुष्टि करें",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "डिफ़ॉल्ट PDF एप्लिकेशन",

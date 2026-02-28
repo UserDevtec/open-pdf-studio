@@ -88,7 +88,13 @@
     "clearPageConfirm": "Stergeti toate adnotarile de pe pagina curenta?",
     "clearAllAnnotations": "Stergere toate adnotarile",
     "clearAll": "Stergere tot",
-    "clearAllConfirm": "Stergeti TOATE adnotarile de pe TOATE paginile?"
+    "clearAllConfirm": "Stergeti TOATE adnotarile de pe TOATE paginile?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Afisare pagina",
@@ -224,9 +230,9 @@
     "sameWidth": "Aceeasi latime",
     "sameHeight": "Aceeasi inaltime",
     "rotate": "Rotire",
-    "rotate90CCW": "Rotire 90\u00b0 sens invers acelor de ceasornic",
-    "rotate90CW": "Rotire 90\u00b0 sens orar",
-    "rotate180": "Rotire 180\u00b0",
+    "rotate90CCW": "Rotire 90° sens invers acelor de ceasornic",
+    "rotate90CW": "Rotire 90° sens orar",
+    "rotate180": "Rotire 180°",
     "reflect": "Reflectare",
     "flipHorizontally": "Oglindire orizontala",
     "horizontally": "Orizontal",

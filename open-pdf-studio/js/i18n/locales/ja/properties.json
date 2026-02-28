@@ -182,6 +182,16 @@
     "reason": "理由",
     "location": "場所",
     "date": "日付",
-    "contact": "連絡先"
+    "contact": "連絡先",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

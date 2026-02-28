@@ -88,7 +88,13 @@
     "clearPageConfirm": "Очистить все аннотации на текущей странице?",
     "clearAllAnnotations": "Очистить все аннотации",
     "clearAll": "Очистить все",
-    "clearAllConfirm": "Очистить ВСЕ аннотации со ВСЕХ страниц?"
+    "clearAllConfirm": "Очистить ВСЕ аннотации со ВСЕХ страниц?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Отображение страницы",
@@ -224,9 +230,9 @@
     "sameWidth": "Одинаковая ширина",
     "sameHeight": "Одинаковая высота",
     "rotate": "Поворот",
-    "rotate90CCW": "Повернуть на 90\u00b0 против ч.с.",
-    "rotate90CW": "Повернуть на 90\u00b0 по ч.с.",
-    "rotate180": "Повернуть на 180\u00b0",
+    "rotate90CCW": "Повернуть на 90° против ч.с.",
+    "rotate90CW": "Повернуть на 90° по ч.с.",
+    "rotate180": "Повернуть на 180°",
     "reflect": "Отражение",
     "flipHorizontally": "Отразить по горизонтали",
     "horizontally": "По горизонтали",

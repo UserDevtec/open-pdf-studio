@@ -182,6 +182,16 @@
     "reason": "Разлог",
     "location": "Локација",
     "date": "Датум",
-    "contact": "Контакт"
+    "contact": "Контакт",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

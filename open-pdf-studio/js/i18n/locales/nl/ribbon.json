@@ -88,7 +88,13 @@
     "clearPageConfirm": "Alle annotaties op de huidige pagina wissen?",
     "clearAllAnnotations": "Alle annotaties wissen",
     "clearAll": "Alles wissen",
-    "clearAllConfirm": "ALLE annotaties van ALLE pagina's wissen?"
+    "clearAllConfirm": "ALLE annotaties van ALLE pagina's wissen?",
+    "calibrate": "Kalibreren",
+    "calibrateTitle": "Schaalkalibratie",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap naar PDF-tekening",
+    "snapActive": "Snap Aan",
+    "loading": "Laden..."
   },
   "view": {
     "pageDisplay": "Paginaweergave",

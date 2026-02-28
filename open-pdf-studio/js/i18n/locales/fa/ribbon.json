@@ -88,7 +88,13 @@
     "clearPageConfirm": "آیا تمام حاشیه‌نویسی‌های صفحه فعلی پاک شوند؟",
     "clearAllAnnotations": "پاک کردن تمام حاشیه‌نویسی‌ها",
     "clearAll": "پاک کردن همه",
-    "clearAllConfirm": "آیا تمام حاشیه‌نویسی‌ها از تمام صفحات پاک شوند؟"
+    "clearAllConfirm": "آیا تمام حاشیه‌نویسی‌ها از تمام صفحات پاک شوند؟",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "نمایش صفحه",
@@ -224,9 +230,9 @@
     "sameWidth": "عرض یکسان",
     "sameHeight": "ارتفاع یکسان",
     "rotate": "چرخش",
-    "rotate90CCW": "چرخش 90\u00b0 پادساعتگرد",
-    "rotate90CW": "چرخش 90\u00b0 ساعتگرد",
-    "rotate180": "چرخش 180\u00b0",
+    "rotate90CCW": "چرخش 90° پادساعتگرد",
+    "rotate90CW": "چرخش 90° ساعتگرد",
+    "rotate180": "چرخش 180°",
     "reflect": "بازتاب",
     "flipHorizontally": "وارونه افقی",
     "horizontally": "افقی",

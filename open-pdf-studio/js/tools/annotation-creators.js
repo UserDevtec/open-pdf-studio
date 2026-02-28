@@ -286,7 +286,8 @@ export function createAnnotationFromTool(tool, startX, startY, endX, endY, e) {
         opacity: (prefs.measureOpacity || 100) / 100,
         measureText: formatMeasurement(dist),
         measureValue: dist.value,
-        measureUnit: dist.unit
+        measureUnit: dist.unit,
+        measurePixels: dist.pixels
       });
     }
 

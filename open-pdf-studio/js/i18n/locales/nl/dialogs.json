@@ -226,8 +226,22 @@
   "calibration": {
     "title": "Schaalcalibratie",
     "helpText": "Teken een meetlijn van bekende lengte en voer vervolgens de werkelijke afstand hier in.",
-    "knownDistance": "Bekende afstand:",
-    "measuredPixels": "Gemeten pixels:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Referentielijn",
+    "methodRatio": "Schaalverhouding",
+    "referenceHelp": "Voer de werkelijke afstand in voor een bekende meetlijn.",
+    "ratioHelp": "Voer de schaalverhouding van de tekening in. Het PDF-paginaformaat wordt gebruikt voor de berekening.",
+    "scaleRatio": "Schaal:",
+    "unit": "Eenheid:",
+    "customRatio": "Aangepast...",
+    "pageSize": "Paginaformaat:",
+    "calculatedScale": "Berekend:",
+    "pixelsPerUnit": "px/eenheid",
+    "autoDetect": "Automatisch detecteren uit onderhoek",
+    "detecting": "Detecteren...",
+    "scaleDetected": "Schaal gedetecteerd!",
+    "scaleNotFound": "Geen schaal gevonden in onderhoek"
   },
   "pageSetup": {
     "title": "Pagina-instelling",

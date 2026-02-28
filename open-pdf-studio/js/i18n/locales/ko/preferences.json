@@ -93,7 +93,12 @@
     "measurementDefaults": "측정 기본값",
     "strokeColor": "윤곽선 색",
     "lineWidth": "선 너비",
-    "opacity": "불투명도 (%)"
+    "opacity": "불투명도 (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "시작",

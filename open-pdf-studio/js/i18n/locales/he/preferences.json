@@ -60,7 +60,8 @@
     "subtabComments": "הערות",
     "subtabText": "טקסט",
     "subtabDrawing": "ציור",
-    "subtabShapes": "צורות"
+    "subtabShapes": "צורות",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "ברירות מחדל ליד חופשית",
@@ -101,7 +102,12 @@
     "measurementDefaults": "ברירות מחדל למדידה",
     "strokeColor": "צבע קו",
     "lineWidth": "עובי קו",
-    "opacity": "אטימות (%)"
+    "opacity": "אטימות (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "הפעלה",
@@ -124,7 +130,8 @@
     "creation": "יצירה",
     "autoSelectAfterCreation": "בחירה אוטומטית של הערה לאחר יצירה",
     "deletion": "מחיקה",
-    "confirmBeforeDeleting": "אישור לפני מחיקת הערות"
+    "confirmBeforeDeleting": "אישור לפני מחיקת הערות",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "יישום PDF ברירת מחדל",

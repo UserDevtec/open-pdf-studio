@@ -226,8 +226,22 @@
   "calibration": {
     "title": "การปรับเทียบมาตราส่วน",
     "helpText": "วาดเส้นวัดที่ทราบความยาว แล้วกรอกระยะทางจริงที่นี่",
-    "knownDistance": "ระยะทางที่ทราบ:",
-    "measuredPixels": "พิกเซลที่วัดได้:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unit",
+    "autoDetect": "Auto-detect from title block",
+    "detecting": "Detecting...",
+    "scaleDetected": "Scale detected!",
+    "scaleNotFound": "No scale found in title block"
   },
   "pageSetup": {
     "title": "ตั้งค่าหน้ากระดาษ",

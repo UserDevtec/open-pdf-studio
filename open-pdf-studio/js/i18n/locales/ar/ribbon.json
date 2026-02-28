@@ -88,7 +88,13 @@
     "clearPageConfirm": "هل تريد مسح جميع التعليقات على الصفحة الحالية؟",
     "clearAllAnnotations": "مسح جميع التعليقات",
     "clearAll": "مسح الكل",
-    "clearAllConfirm": "هل تريد مسح جميع التعليقات من جميع الصفحات؟"
+    "clearAllConfirm": "هل تريد مسح جميع التعليقات من جميع الصفحات؟",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "عرض الصفحة",
@@ -224,9 +230,9 @@
     "sameWidth": "نفس العرض",
     "sameHeight": "نفس الارتفاع",
     "rotate": "تدوير",
-    "rotate90CCW": "تدوير 90\u00b0 عكس عقارب الساعة",
-    "rotate90CW": "تدوير 90\u00b0 مع عقارب الساعة",
-    "rotate180": "تدوير 180\u00b0",
+    "rotate90CCW": "تدوير 90° عكس عقارب الساعة",
+    "rotate90CW": "تدوير 90° مع عقارب الساعة",
+    "rotate180": "تدوير 180°",
     "reflect": "انعكاس",
     "flipHorizontally": "قلب أفقي",
     "horizontally": "أفقي",

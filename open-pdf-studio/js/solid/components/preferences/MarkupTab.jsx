@@ -29,6 +29,15 @@ export default function MarkupTab(props) {
           <label>{t('markup.opacity')}</label>
           <PrefComboBox value={p.measureOpacity[0]} setValue={p.measureOpacity[1]} min={10} max={100} fallback={100} />
         </div>
+        <div class="pref-row">
+          <label>{t('markup.measureRounding')}</label>
+          <select value={p.measureRounding[0]()} onChange={e => p.measureRounding[1](e.target.value)}>
+            <option value="none">{t('markup.roundingNone')}</option>
+            <option value="1">{t('markup.rounding1mm')}</option>
+            <option value="5">{t('markup.rounding5mm')}</option>
+            <option value="10">{t('markup.rounding10mm')}</option>
+          </select>
+        </div>
       </fieldset>
     </>
   );

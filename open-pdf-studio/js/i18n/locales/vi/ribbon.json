@@ -88,7 +88,13 @@
     "clearPageConfirm": "Xóa tất cả chú thích trên trang hiện tại?",
     "clearAllAnnotations": "Xóa Tất cả Chú thích",
     "clearAll": "Xóa tất cả",
-    "clearAllConfirm": "Xóa TẤT CẢ chú thích trên TẤT CẢ các trang?"
+    "clearAllConfirm": "Xóa TẤT CẢ chú thích trên TẤT CẢ các trang?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Hiển thị Trang",
@@ -224,9 +230,9 @@
     "sameWidth": "Cùng Chiều rộng",
     "sameHeight": "Cùng Chiều cao",
     "rotate": "Xoay",
-    "rotate90CCW": "Xoay 90\u00b0 Ngược chiều KĐH",
-    "rotate90CW": "Xoay 90\u00b0 Thuận chiều KĐH",
-    "rotate180": "Xoay 180\u00b0",
+    "rotate90CCW": "Xoay 90° Ngược chiều KĐH",
+    "rotate90CW": "Xoay 90° Thuận chiều KĐH",
+    "rotate180": "Xoay 180°",
     "reflect": "Lật",
     "flipHorizontally": "Lật Ngang",
     "horizontally": "Ngang",

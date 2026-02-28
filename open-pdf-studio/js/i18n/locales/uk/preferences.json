@@ -60,7 +60,8 @@
     "subtabComments": "Коментарі",
     "subtabText": "Текст",
     "subtabDrawing": "Малювання",
-    "subtabShapes": "Фігури"
+    "subtabShapes": "Фігури",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Типові значення малювання від руки",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Типові значення вимірювання",
     "strokeColor": "Колір обведення",
     "lineWidth": "Ширина лінії",
-    "opacity": "Прозорість (%)"
+    "opacity": "Прозорість (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Запуск",
@@ -124,7 +130,8 @@
     "creation": "Створення",
     "autoSelectAfterCreation": "Автовибір анотації після створення",
     "deletion": "Видалення",
-    "confirmBeforeDeleting": "Підтверджувати перед видаленням анотацій"
+    "confirmBeforeDeleting": "Підтверджувати перед видаленням анотацій",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Програма PDF за замовчуванням",

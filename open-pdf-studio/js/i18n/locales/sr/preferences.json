@@ -60,7 +60,8 @@
     "subtabComments": "Коментари",
     "subtabText": "Текст",
     "subtabDrawing": "Цртање",
-    "subtabShapes": "Облици"
+    "subtabShapes": "Облици",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Подразумевано за слободну руку",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Подразумевано за мерење",
     "strokeColor": "Боја потеза",
     "lineWidth": "Ширина линије",
-    "opacity": "Непрозирност (%)"
+    "opacity": "Непрозирност (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Покретање",
@@ -124,7 +130,8 @@
     "creation": "Креирање",
     "autoSelectAfterCreation": "Аутоматски изабери анотацију после креирања",
     "deletion": "Брисање",
-    "confirmBeforeDeleting": "Потврди пре брисања анотација"
+    "confirmBeforeDeleting": "Потврди пре брисања анотација",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Подразумевана PDF апликација",

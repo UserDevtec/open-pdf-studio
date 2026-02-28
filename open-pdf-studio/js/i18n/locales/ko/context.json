@@ -36,7 +36,8 @@
     "applyDefaultStyle": "기본 스타일 적용",
     "exportSubmenu": "내보내기",
     "exportAsImage": "이미지로 내보내기...",
-    "properties": "속성..."
+    "properties": "속성...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "주석 {{count}}개 복사",

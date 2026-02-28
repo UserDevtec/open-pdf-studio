@@ -60,7 +60,8 @@
     "subtabComments": "Σχόλια",
     "subtabText": "Κείμενο",
     "subtabDrawing": "Σχέδιο",
-    "subtabShapes": "Σχήματα"
+    "subtabShapes": "Σχήματα",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Προεπιλογές ελεύθερου χεριού",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Προεπιλογές μέτρησης",
     "strokeColor": "Χρώμα περιγράμματος",
     "lineWidth": "Πλάτος γραμμής",
-    "opacity": "Αδιαφάνεια (%)"
+    "opacity": "Αδιαφάνεια (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Εκκίνηση",
@@ -124,7 +130,8 @@
     "creation": "Δημιουργία",
     "autoSelectAfterCreation": "Αυτόματη επιλογή σχολιασμού μετά τη δημιουργία",
     "deletion": "Διαγραφή",
-    "confirmBeforeDeleting": "Επιβεβαίωση πριν τη διαγραφή σχολιασμών"
+    "confirmBeforeDeleting": "Επιβεβαίωση πριν τη διαγραφή σχολιασμών",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Προεπιλεγμένη εφαρμογή PDF",

@@ -226,8 +226,22 @@
   "calibration": {
     "title": "Calibration de l'échelle",
     "helpText": "Tracez une ligne de mesure de longueur connue, puis entrez la distance réelle ici.",
-    "knownDistance": "Distance connue :",
-    "measuredPixels": "Pixels mesurés :"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unité",
+    "autoDetect": "Détecter depuis le cartouche",
+    "detecting": "Détection...",
+    "scaleDetected": "Échelle détectée !",
+    "scaleNotFound": "Aucune échelle trouvée dans le cartouche"
   },
   "pageSetup": {
     "title": "Mise en page",

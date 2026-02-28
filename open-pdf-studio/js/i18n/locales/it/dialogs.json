@@ -18,7 +18,7 @@
     "name": "Nome:",
     "status": "Stato:",
     "type": "Tipo:",
-    "propertiesBtn": "Propriet\u00e0...",
+    "propertiesBtn": "Proprietà...",
     "pageSetupBtn": "Imposta pagina...",
     "copies": "Copie:",
     "collate": "Fascicola",
@@ -67,7 +67,7 @@
     "beforeCurrentPage": "Prima della pagina corrente",
     "atTheBeginning": "All'inizio",
     "atTheEnd": "Alla fine",
-    "count": "Quantit\u00e0:",
+    "count": "Quantità:",
     "paperSize": "Formato carta:",
     "sameAsCurrentPage": "Uguale alla pagina corrente"
   },
@@ -89,7 +89,7 @@
     "addFiles": "Aggiungi file",
     "removeSelected": "Rimuovi selezionati",
     "moveUp": "Sposta su",
-    "moveDown": "Sposta gi\u00f9",
+    "moveDown": "Sposta giù",
     "clickToAdd": "Fare clic su + per aggiungere file PDF",
     "pg": "pag",
     "filesAndPages": "{{files}} file, {{pages}} pagine totali",
@@ -105,7 +105,7 @@
     "font": "Carattere:",
     "fontSize": "Dimensione carattere:",
     "color": "Colore:",
-    "opacity": "Opacit\u00e0:",
+    "opacity": "Opacità:",
     "rotation": "Rotazione:",
     "position": "Posizione:",
     "center": "Centro",
@@ -128,19 +128,19 @@
     "defaultText": "BOZZA"
   },
   "headerFooter": {
-    "addTitle": "Aggiungi intestazione/pi\u00e8 di pagina",
-    "editTitle": "Modifica intestazione/pi\u00e8 di pagina",
+    "addTitle": "Aggiungi intestazione/piè di pagina",
+    "editTitle": "Modifica intestazione/piè di pagina",
     "header": "Intestazione",
-    "footer": "Pi\u00e8 di pagina",
+    "footer": "Piè di pagina",
     "left": "Sinistra",
     "center": "Centro",
     "right": "Destra",
     "leftHeader": "Intestazione sinistra",
     "centerHeader": "Intestazione centrale",
     "rightHeader": "Intestazione destra",
-    "leftFooter": "Pi\u00e8 di pagina sinistro",
-    "centerFooter": "Pi\u00e8 di pagina centrale",
-    "rightFooter": "Pi\u00e8 di pagina destro",
+    "leftFooter": "Piè di pagina sinistro",
+    "centerFooter": "Piè di pagina centrale",
+    "rightFooter": "Piè di pagina destro",
     "insertVariable": "Inserisci variabile:",
     "pageNumber": "N. pagina",
     "pageCount": "Totale pagine",
@@ -165,7 +165,7 @@
     "enableDisable": "Abilita/Disabilita",
     "typeText": "Testo",
     "typeImage": "Immagine",
-    "typeHeaderFooter": "Intestazione/Pi\u00e8"
+    "typeHeaderFooter": "Intestazione/Piè"
   },
   "signature": {
     "title": "Firma",
@@ -178,7 +178,7 @@
   },
   "update": {
     "title": "Aggiornamento software",
-    "newVersionAvailable": "\u00c8 disponibile una nuova versione di Open PDF Studio.",
+    "newVersionAvailable": "È disponibile una nuova versione di Open PDF Studio.",
     "currentVersion": "Versione corrente:",
     "newVersion": "Nuova versione:",
     "releaseNotes": "Note di rilascio:",
@@ -191,7 +191,7 @@
     "restarting": "Riavvio dell'applicazione...",
     "updateFailed": "Aggiornamento non riuscito:",
     "skipThisVersion": "Ignora questa versione",
-    "remindMeLater": "Ricorda pi\u00f9 tardi"
+    "remindMeLater": "Ricorda più tardi"
   },
   "bookmark": {
     "addTitle": "Aggiungi segnalibro",
@@ -226,8 +226,22 @@
   "calibration": {
     "title": "Calibrazione scala",
     "helpText": "Disegnare una linea di misurazione di lunghezza nota, quindi inserire la distanza reale qui.",
-    "knownDistance": "Distanza nota:",
-    "measuredPixels": "Pixel misurati:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unit",
+    "autoDetect": "Auto-detect from title block",
+    "detecting": "Detecting...",
+    "scaleDetected": "Scale detected!",
+    "scaleNotFound": "No scale found in title block"
   },
   "pageSetup": {
     "title": "Imposta pagina",
@@ -246,7 +260,7 @@
     "bottom": "Inferiore:"
   },
   "docProperties": {
-    "title": "Propriet\u00e0 del documento",
+    "title": "Proprietà del documento",
     "file": "File",
     "fileName": "Nome file:",
     "filePath": "Percorso file:",
@@ -271,9 +285,9 @@
   },
   "defaultPdfApp": {
     "title": "Applicazione PDF predefinita",
-    "message": "Open PDF Studio non \u00e8 impostato come applicazione predefinita per aprire i file PDF. Impostarlo come predefinito?",
+    "message": "Open PDF Studio non è impostato come applicazione predefinita per aprire i file PDF. Impostarlo come predefinito?",
     "setAsDefault": "Imposta come predefinito",
-    "dontAskAgain": "Non chiedere pi\u00f9",
+    "dontAskAgain": "Non chiedere più",
     "notNow": "Non ora"
   }
 }

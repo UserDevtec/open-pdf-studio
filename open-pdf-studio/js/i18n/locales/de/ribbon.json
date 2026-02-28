@@ -88,7 +88,13 @@
     "clearPageConfirm": "Alle Anmerkungen auf der aktuellen Seite löschen?",
     "clearAllAnnotations": "Alle Anmerkungen löschen",
     "clearAll": "Alles löschen",
-    "clearAllConfirm": "ALLE Anmerkungen von ALLEN Seiten löschen?"
+    "clearAllConfirm": "ALLE Anmerkungen von ALLEN Seiten löschen?",
+    "calibrate": "Kalibrieren",
+    "calibrateTitle": "Skalenkalibrierung",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "An PDF-Zeichnung einrasten",
+    "snapActive": "Snap An",
+    "loading": "Laden..."
   },
   "view": {
     "pageDisplay": "Seitenanzeige",

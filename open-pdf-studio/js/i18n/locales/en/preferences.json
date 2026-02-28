@@ -36,6 +36,7 @@
     "snapToCenters": "Snap to Centers",
     "snapToEdges": "Snap to Edges",
     "objectSnapRadius": "Snap Radius (px)",
+    "snapToPdfContent": "Snap to PDF Drawing Content",
     "textBoxDefaults": "Text Box Defaults",
     "fillColor": "Fill Color",
     "strokeColor": "Stroke Color",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Measurement Defaults",
     "strokeColor": "Stroke Color",
     "lineWidth": "Line Width",
-    "opacity": "Opacity (%)"
+    "opacity": "Opacity (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Startup",
@@ -121,6 +127,7 @@
     "snapToCenters": "Snap to Centers",
     "snapToEdges": "Snap to Edges",
     "objectSnapRadius": "Snap Radius (pixels)",
+    "snapToPdfContent": "Snap to PDF Drawing Content",
     "creation": "Creation",
     "autoSelectAfterCreation": "Auto-select annotation after creation",
     "deletion": "Deletion",

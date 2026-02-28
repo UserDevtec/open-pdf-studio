@@ -226,8 +226,22 @@
   "calibration": {
     "title": "배율 보정",
     "helpText": "알려진 길이의 측정선을 그린 다음 여기에 실제 거리를 입력하십시오.",
-    "knownDistance": "알려진 거리:",
-    "measuredPixels": "측정된 픽셀:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unit",
+    "autoDetect": "Auto-detect from title block",
+    "detecting": "Detecting...",
+    "scaleDetected": "Scale detected!",
+    "scaleNotFound": "No scale found in title block"
   },
   "pageSetup": {
     "title": "페이지 설정",

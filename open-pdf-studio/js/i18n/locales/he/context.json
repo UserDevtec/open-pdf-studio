@@ -22,8 +22,8 @@
     "sendToBack": "שליחה לרקע",
     "bringForward": "הבאה קדימה",
     "sendBackward": "שליחה אחורה",
-    "rotateLeft90": "סיבוב שמאלה 90\u00b0",
-    "rotateRight90": "סיבוב ימינה 90\u00b0",
+    "rotateLeft90": "סיבוב שמאלה 90°",
+    "rotateRight90": "סיבוב ימינה 90°",
     "flipHorizontal": "היפוך אופקי",
     "flipVertical": "היפוך אנכי",
     "transform": "התמרה...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "החלת סגנון ברירת מחדל",
     "exportSubmenu": "ייצוא",
     "exportAsImage": "ייצוא כתמונה...",
-    "properties": "מאפיינים..."
+    "properties": "מאפיינים...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "העתקת {{count}} הערות",

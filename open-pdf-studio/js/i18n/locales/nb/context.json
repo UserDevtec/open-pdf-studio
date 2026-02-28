@@ -22,8 +22,8 @@
     "sendToBack": "Flytt bakerst",
     "bringForward": "Flytt fremover",
     "sendBackward": "Flytt bakover",
-    "rotateLeft90": "Roter 90\u00b0 til venstre",
-    "rotateRight90": "Roter 90\u00b0 til høyre",
+    "rotateLeft90": "Roter 90° til venstre",
+    "rotateRight90": "Roter 90° til høyre",
     "flipHorizontal": "Speilvend horisontalt",
     "flipVertical": "Speilvend vertikalt",
     "transform": "Transformer...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Bruk standardstil",
     "exportSubmenu": "Eksporter",
     "exportAsImage": "Eksporter som bilde...",
-    "properties": "Egenskaper..."
+    "properties": "Egenskaper...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Kopier {{count}} merknader",

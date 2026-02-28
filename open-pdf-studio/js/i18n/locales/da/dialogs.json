@@ -93,7 +93,7 @@
     "clickToAdd": "Klik + for at tilføje PDF-filer",
     "pg": "s.",
     "filesAndPages": "{{files}} fil(er), {{pages}} sider i alt",
-    "addAtLeastOne": "Tilføj venligst mindst \u00e9n PDF-fil at flette."
+    "addAtLeastOne": "Tilføj venligst mindst én PDF-fil at flette."
   },
   "watermark": {
     "addTitle": "Tilføj vandmærke",
@@ -226,8 +226,22 @@
   "calibration": {
     "title": "Skalakalibrering",
     "helpText": "Tegn en målelinje med en kendt længde, og indtast derefter den virkelige afstand her.",
-    "knownDistance": "Kendt afstand:",
-    "measuredPixels": "Målte pixels:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unit",
+    "autoDetect": "Auto-detect from title block",
+    "detecting": "Detecting...",
+    "scaleDetected": "Scale detected!",
+    "scaleNotFound": "No scale found in title block"
   },
   "pageSetup": {
     "title": "Sideopsætning",

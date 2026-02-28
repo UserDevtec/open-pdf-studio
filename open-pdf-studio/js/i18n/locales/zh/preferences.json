@@ -93,7 +93,12 @@
     "measurementDefaults": "测量默认值",
     "strokeColor": "描边颜色",
     "lineWidth": "线宽",
-    "opacity": "不透明度 (%)"
+    "opacity": "不透明度 (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "启动",
@@ -116,20 +121,20 @@
     "currentDefault": "当前默认：",
     "setDefault": "将 Open PDF Studio 设为默认 PDF 查看器",
     "setDefaultHelp": "这将打开系统设置，您可以在其中选择 Open PDF Studio 作为打开 PDF 文件的默认应用程序。",
-    "windowsInstructions": "Windows 设置已打开。\n\n要将 Open PDF Studio 设为默认：\n1. 向下滚动到\u201c按文件类型选择默认应用\u201d\n2. 找到 .pdf\n3. 点击并选择 Open PDF Studio",
+    "windowsInstructions": "Windows 设置已打开。\n\n要将 Open PDF Studio 设为默认：\n1. 向下滚动到“按文件类型选择默认应用”\n2. 找到 .pdf\n3. 点击并选择 Open PDF Studio",
     "windowsFailed": "无法打开 Windows 设置。\n\n请手动打开 设置 > 应用 > 默认应用。",
-    "macInstructions": "在 macOS 上将 Open PDF Studio 设为默认 PDF 查看器：\n\n1. 在 Finder 中右键点击任意 PDF 文件\n2. 选择\u201c显示简介\u201d\n3. 在\u201c打开方式\u201d下选择 Open PDF Studio\n4. 点击\u201c全部更改...\u201d",
+    "macInstructions": "在 macOS 上将 Open PDF Studio 设为默认 PDF 查看器：\n\n1. 在 Finder 中右键点击任意 PDF 文件\n2. 选择“显示简介”\n3. 在“打开方式”下选择 Open PDF Studio\n4. 点击“全部更改...”",
     "linuxInstructions": "在 Linux 上将 Open PDF Studio 设为默认 PDF 查看器：\n\n在终端中运行：\nxdg-mime default openpdfstudio.desktop application/pdf",
     "checkFinder": "检查 Finder > 显示简介",
     "notSet": "未设置"
   },
   "virtualPrinter": {
     "title": "虚拟打印机",
-    "description": "将\u201cOpen PDF Studio\u201d安装为 Windows 打印机。当您从任何应用程序（Word、Chrome、记事本等）打印并选择此打印机时，输出的 PDF 将自动在此应用中打开。",
+    "description": "将“Open PDF Studio”安装为 Windows 打印机。当您从任何应用程序（Word、Chrome、记事本等）打印并选择此打印机时，输出的 PDF 将自动在此应用中打开。",
     "status": "状态：",
     "installButton": "安装虚拟打印机",
     "removeButton": "移除虚拟打印机",
-    "installNote": "安装需要管理员权限（UAC 提示）。打印机使用内置的\u201cMicrosoft Print to PDF\u201d驱动程序。",
+    "installNote": "安装需要管理员权限（UAC 提示）。打印机使用内置的“Microsoft Print to PDF”驱动程序。",
     "installing": "正在安装...",
     "removing": "正在移除...",
     "installationFailed": "安装失败",

@@ -22,8 +22,8 @@
     "sendToBack": "На задній план",
     "bringForward": "Перемістити вперед",
     "sendBackward": "Перемістити назад",
-    "rotateLeft90": "Повернути ліворуч на 90\u00b0",
-    "rotateRight90": "Повернути праворуч на 90\u00b0",
+    "rotateLeft90": "Повернути ліворуч на 90°",
+    "rotateRight90": "Повернути праворуч на 90°",
     "flipHorizontal": "Відобразити горизонтально",
     "flipVertical": "Відобразити вертикально",
     "transform": "Трансформація...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Застосувати стиль за замовчуванням",
     "exportSubmenu": "Експорт",
     "exportAsImage": "Експортувати як зображення...",
-    "properties": "Властивості..."
+    "properties": "Властивості...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Копіювати {{count}} анотацій",

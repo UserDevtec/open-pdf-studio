@@ -60,7 +60,8 @@
     "subtabComments": "Maoni",
     "subtabText": "Maandishi",
     "subtabDrawing": "Kuchora",
-    "subtabShapes": "Maumbo"
+    "subtabShapes": "Maumbo",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Chaguo-msingi za Huru",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Chaguo-msingi za Vipimo",
     "strokeColor": "Rangi ya Mstari",
     "lineWidth": "Upana wa Mstari",
-    "opacity": "Uwazi (%)"
+    "opacity": "Uwazi (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Kuanza",
@@ -124,7 +130,8 @@
     "creation": "Uundaji",
     "autoSelectAfterCreation": "Chagua maoni kiotomatiki baada ya kuunda",
     "deletion": "Ufutaji",
-    "confirmBeforeDeleting": "Thibitisha kabla ya kufuta maoni"
+    "confirmBeforeDeleting": "Thibitisha kabla ya kufuta maoni",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Programu Chaguo-msingi ya PDF",

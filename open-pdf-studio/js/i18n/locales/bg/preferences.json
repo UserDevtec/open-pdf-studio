@@ -60,7 +60,8 @@
     "subtabComments": "Коментари",
     "subtabText": "Текст",
     "subtabDrawing": "Чертане",
-    "subtabShapes": "Фигури"
+    "subtabShapes": "Фигури",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Стойности по подразбиране за свободна ръка",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Стойности по подразбиране за измерване",
     "strokeColor": "Цвят на контура",
     "lineWidth": "Ширина на линията",
-    "opacity": "Непрозрачност (%)"
+    "opacity": "Непрозрачност (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Стартиране",
@@ -124,7 +130,8 @@
     "creation": "Създаване",
     "autoSelectAfterCreation": "Автоматичен избор на анотацията след създаване",
     "deletion": "Изтриване",
-    "confirmBeforeDeleting": "Потвърждение преди изтриване на анотации"
+    "confirmBeforeDeleting": "Потвърждение преди изтриване на анотации",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Програма по подразбиране за PDF",

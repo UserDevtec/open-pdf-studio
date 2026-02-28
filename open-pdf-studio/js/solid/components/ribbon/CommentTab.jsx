@@ -1,3 +1,4 @@
+import { createSignal } from 'solid-js';
 import RibbonGroup from './RibbonGroup.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
@@ -13,14 +14,33 @@ import {
   rectIcon, ellipseIcon, polygonIcon, cloudIcon,
   textAnnotIcon, textboxIcon, noteIcon, calloutIcon,
   stampIcon, signatureIcon,
-  measureDistanceIcon, measureAreaIcon, measurePerimeterIcon,
+  measureDistanceIcon, measureAreaIcon, measurePerimeterIcon, calibrateIcon, snapToDrawingIcon,
   redactionIcon, applyRedactionsIcon,
   undoIcon, clearPageIcon, clearAllIcon
 } from '../../data/ribbonIcons.js';
+import { showCalibrationDialog } from '../../../annotations/measurement.js';
+import { loadAllPdfSnapData, isPdfSnapLoaded, clearPdfVectorCache } from '../../../tools/pdf-snap-extractor.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 export default function CommentTab() {
   const { t } = useTranslation('ribbon');
+  const [snapLoading, setSnapLoading] = createSignal(false);
+  const [snapLoaded, setSnapLoaded] = createSignal(false);
+
+  async function handleSnapToDrawing() {
+    if (snapLoaded()) {
+      // Toggle off: clear cache
+      clearPdfVectorCache();
+      setSnapLoaded(false);
+      return;
+    }
+    setSnapLoading(true);
+    try {
+      await loadAllPdfSnapData();
+      setSnapLoaded(true);
+    } catch { /* ignore */ }
+    setSnapLoading(false);
+  }
 
   return (
     <div class="ribbon-content active" id="tab-comment">
@@ -78,6 +98,11 @@ export default function CommentTab() {
             <RibbonButton size="small" id="tool-measure-perimeter" title={t('comment.measurePerimeter')} icon={measurePerimeterIcon} label={t('comment.perimeter')}
               disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'measurePerimeter'} onClick={() => setTool('measurePerimeter')} />
           </RibbonButtonStack>
+          <RibbonButton id="tool-calibrate" title={t('comment.calibrateTitle')} icon={calibrateIcon} label={t('comment.calibrate')}
+            disabled={noPdf()} onClick={() => showCalibrationDialog()} />
+          <RibbonButton id="tool-snap-drawing" title={t('comment.snapToDrawingTitle')} icon={snapToDrawingIcon}
+            label={snapLoading() ? t('comment.loading') : snapLoaded() ? t('comment.snapActive') : t('comment.snapToDrawing')}
+            disabled={noPdf() || snapLoading()} active={snapLoaded()} onClick={handleSnapToDrawing} />
         </RibbonGroup>
 
         <RibbonGroup label={t('comment.redaction')}>

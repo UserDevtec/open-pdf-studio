@@ -226,8 +226,22 @@
   "calibration": {
     "title": "அளவீட்டு அளவுத்திருத்தம்",
     "helpText": "அறியப்பட்ட நீளத்தின் அளவீட்டுக் கோட்டை வரையவும், பின்னர் உண்மையான தூரத்தை இங்கே உள்ளிடவும்.",
-    "knownDistance": "அறியப்பட்ட தூரம்:",
-    "measuredPixels": "அளவிடப்பட்ட பிக்சல்கள்:"
+    "knownDistance": "Known distance:",
+    "measuredPixels": "Measured pixels:",
+    "methodReference": "Reference Line",
+    "methodRatio": "Scale Ratio",
+    "referenceHelp": "Enter the real-world distance for a known measurement line.",
+    "ratioHelp": "Enter the drawing scale ratio. The PDF page size is used to calculate the conversion.",
+    "scaleRatio": "Scale:",
+    "unit": "Unit:",
+    "customRatio": "Custom...",
+    "pageSize": "Page size:",
+    "calculatedScale": "Calculated:",
+    "pixelsPerUnit": "px/unit",
+    "autoDetect": "Auto-detect from title block",
+    "detecting": "Detecting...",
+    "scaleDetected": "Scale detected!",
+    "scaleNotFound": "No scale found in title block"
   },
   "pageSetup": {
     "title": "பக்க அமைப்பு",

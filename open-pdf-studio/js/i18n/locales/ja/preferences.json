@@ -93,7 +93,12 @@
     "measurementDefaults": "計測の既定値",
     "strokeColor": "線の色",
     "lineWidth": "線幅",
-    "opacity": "不透明度 (%)"
+    "opacity": "不透明度 (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "起動",

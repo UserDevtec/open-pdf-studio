@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Standaardstijl toepassen",
     "exportSubmenu": "Exporteren",
     "exportAsImage": "Exporteren als afbeelding...",
-    "properties": "Eigenschappen..."
+    "properties": "Eigenschappen...",
+    "calibrateFromLine": "Kalibreren vanuit deze lijn..."
   },
   "multiSelect": {
     "copyAnnotations": "{{count}} annotaties kopiëren",

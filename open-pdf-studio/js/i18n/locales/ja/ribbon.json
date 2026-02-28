@@ -88,7 +88,13 @@
     "clearPageConfirm": "現在のページのすべての注釈をクリアしますか？",
     "clearAllAnnotations": "すべての注釈をクリア",
     "clearAll": "すべてクリア",
-    "clearAllConfirm": "すべてのページのすべての注釈をクリアしますか？"
+    "clearAllConfirm": "すべてのページのすべての注釈をクリアしますか？",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "ページ表示",

@@ -182,6 +182,16 @@
     "reason": "Motivo",
     "location": "Ubicación",
     "date": "Fecha",
-    "contact": "Contacto"
+    "contact": "Contacto",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

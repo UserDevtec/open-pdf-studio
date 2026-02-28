@@ -88,7 +88,13 @@
     "clearPageConfirm": "Vymazat všechny anotace na aktuální stránce?",
     "clearAllAnnotations": "Vymazat všechny anotace",
     "clearAll": "Vymazat vše",
-    "clearAllConfirm": "Vymazat VŠECHNY anotace ze VŠECH stránek?"
+    "clearAllConfirm": "Vymazat VŠECHNY anotace ze VŠECH stránek?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Zobrazení stránky",
@@ -224,9 +230,9 @@
     "sameWidth": "Stejná šířka",
     "sameHeight": "Stejná výška",
     "rotate": "Otočit",
-    "rotate90CCW": "Otočit o 90\u00b0 vlevo",
-    "rotate90CW": "Otočit o 90\u00b0 vpravo",
-    "rotate180": "Otočit o 180\u00b0",
+    "rotate90CCW": "Otočit o 90° vlevo",
+    "rotate90CW": "Otočit o 90° vpravo",
+    "rotate180": "Otočit o 180°",
     "reflect": "Překlopit",
     "flipHorizontally": "Překlopit vodorovně",
     "horizontally": "Vodorovně",

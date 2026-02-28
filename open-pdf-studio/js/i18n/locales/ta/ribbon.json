@@ -88,7 +88,13 @@
     "clearPageConfirm": "தற்போதைய பக்கத்தில் உள்ள அனைத்து குறிப்புரைகளையும் அழிக்கவா?",
     "clearAllAnnotations": "அனைத்து குறிப்புரைகளையும் அழி",
     "clearAll": "அனைத்தையும் அழி",
-    "clearAllConfirm": "அனைத்து பக்கங்களிலிருந்தும் அனைத்து குறிப்புரைகளையும் அழிக்கவா?"
+    "clearAllConfirm": "அனைத்து பக்கங்களிலிருந்தும் அனைத்து குறிப்புரைகளையும் அழிக்கவா?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "பக்க காட்சி",
@@ -224,9 +230,9 @@
     "sameWidth": "ஒரே அகலம்",
     "sameHeight": "ஒரே உயரம்",
     "rotate": "சுழற்று",
-    "rotate90CCW": "90\u00b0 எதிர்கடிகாரச் சுழற்று",
-    "rotate90CW": "90\u00b0 கடிகாரச் சுழற்று",
-    "rotate180": "180\u00b0 சுழற்று",
+    "rotate90CCW": "90° எதிர்கடிகாரச் சுழற்று",
+    "rotate90CW": "90° கடிகாரச் சுழற்று",
+    "rotate180": "180° சுழற்று",
     "reflect": "பிரதிபலி",
     "flipHorizontally": "கிடையாகப் புரட்டு",
     "horizontally": "கிடையாக",

@@ -60,7 +60,8 @@
     "subtabComments": "Nhận xét",
     "subtabText": "Văn bản",
     "subtabDrawing": "Vẽ",
-    "subtabShapes": "Hình dạng"
+    "subtabShapes": "Hình dạng",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "drawing": {
     "freehandDefaults": "Mặc định Vẽ tay",
@@ -101,7 +102,12 @@
     "measurementDefaults": "Mặc định Đo lường",
     "strokeColor": "Màu viền",
     "lineWidth": "Độ rộng Nét",
-    "opacity": "Độ mờ (%)"
+    "opacity": "Độ mờ (%)",
+    "measureRounding": "Rounding",
+    "roundingNone": "None (exact)",
+    "rounding1mm": "1 mm",
+    "rounding5mm": "5 mm",
+    "rounding10mm": "10 mm"
   },
   "behavior": {
     "startup": "Khởi động",
@@ -124,7 +130,8 @@
     "creation": "Tạo mới",
     "autoSelectAfterCreation": "Tự động chọn chú thích sau khi tạo",
     "deletion": "Xóa",
-    "confirmBeforeDeleting": "Xác nhận trước khi xóa chú thích"
+    "confirmBeforeDeleting": "Xác nhận trước khi xóa chú thích",
+    "snapToPdfContent": "Snap to PDF Drawing Content"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Ứng dụng PDF Mặc định",

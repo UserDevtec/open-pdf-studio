@@ -22,8 +22,8 @@
     "sendToBack": "Стави на дно",
     "bringForward": "Помери напред",
     "sendBackward": "Помери назад",
-    "rotateLeft90": "Ротирај лево 90\u00b0",
-    "rotateRight90": "Ротирај десно 90\u00b0",
+    "rotateLeft90": "Ротирај лево 90°",
+    "rotateRight90": "Ротирај десно 90°",
     "flipHorizontal": "Обрни хоризонтално",
     "flipVertical": "Обрни вертикално",
     "transform": "Трансформација...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Примени подразумевани стил",
     "exportSubmenu": "Извези",
     "exportAsImage": "Извези као слику...",
-    "properties": "Својства..."
+    "properties": "Својства...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Копирај {{count}} анотација",

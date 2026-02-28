@@ -22,8 +22,8 @@
     "sendToBack": "Hantar ke Belakang Sekali",
     "bringForward": "Bawa ke Hadapan",
     "sendBackward": "Hantar ke Belakang",
-    "rotateLeft90": "Putar Kiri 90\u00b0",
-    "rotateRight90": "Putar Kanan 90\u00b0",
+    "rotateLeft90": "Putar Kiri 90°",
+    "rotateRight90": "Putar Kanan 90°",
     "flipHorizontal": "Balik Mendatar",
     "flipVertical": "Balik Menegak",
     "transform": "Transformasi...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Gunakan Gaya Lalai",
     "exportSubmenu": "Eksport",
     "exportAsImage": "Eksport sebagai Imej...",
-    "properties": "Sifat..."
+    "properties": "Sifat...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Salin {{count}} Anotasi",

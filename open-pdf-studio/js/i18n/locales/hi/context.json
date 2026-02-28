@@ -22,8 +22,8 @@
     "sendToBack": "सबसे पीछे भेजें",
     "bringForward": "आगे लाएं",
     "sendBackward": "पीछे भेजें",
-    "rotateLeft90": "बाएं 90\u00b0 घुमाएं",
-    "rotateRight90": "दाएं 90\u00b0 घुमाएं",
+    "rotateLeft90": "बाएं 90° घुमाएं",
+    "rotateRight90": "दाएं 90° घुमाएं",
     "flipHorizontal": "क्षैतिज पलटें",
     "flipVertical": "लंबवत पलटें",
     "transform": "रूपांतरण...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "डिफ़ॉल्ट शैली लागू करें",
     "exportSubmenu": "निर्यात करें",
     "exportAsImage": "छवि के रूप में निर्यात करें...",
-    "properties": "गुण..."
+    "properties": "गुण...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "{{count}} एनोटेशन कॉपी करें",

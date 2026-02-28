@@ -22,8 +22,8 @@
     "sendToBack": "Kirim ke Paling Belakang",
     "bringForward": "Bawa ke Depan",
     "sendBackward": "Kirim ke Belakang",
-    "rotateLeft90": "Putar Kiri 90\u00b0",
-    "rotateRight90": "Putar Kanan 90\u00b0",
+    "rotateLeft90": "Putar Kiri 90°",
+    "rotateRight90": "Putar Kanan 90°",
     "flipHorizontal": "Balik Horizontal",
     "flipVertical": "Balik Vertikal",
     "transform": "Transformasi...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Terapkan Gaya Bawaan",
     "exportSubmenu": "Ekspor",
     "exportAsImage": "Ekspor sebagai Gambar...",
-    "properties": "Properti..."
+    "properties": "Properti...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Salin {{count}} Anotasi",

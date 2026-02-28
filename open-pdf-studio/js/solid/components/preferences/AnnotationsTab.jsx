@@ -96,6 +96,12 @@ export default function AnnotationsTab(props) {
                 <label>{t('annotations.objectSnapRadius')}</label>
                 <PrefComboBox value={p.objectSnapRadius[0]} setValue={p.objectSnapRadius[1]} options={[5,8,10,15,20]} min={3} max={30} fallback={10} suffix="px" />
               </div>
+              <div class="pref-row pref-checkbox-row">
+                <label class="pref-checkbox-label">
+                  <input type="checkbox" checked={p.snapToPdfContent[0]()} onChange={e => p.snapToPdfContent[1](e.target.checked)} disabled={!p.enableObjectSnap[0]()} />
+                  <span>{t('annotations.snapToPdfContent')}</span>
+                </label>
+              </div>
             </fieldset>
 
             <fieldset class="pref-fieldset">

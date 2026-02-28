@@ -88,7 +88,13 @@
     "clearPageConfirm": "ล้างคำอธิบายประกอบทั้งหมดในหน้าปัจจุบัน?",
     "clearAllAnnotations": "ล้างคำอธิบายประกอบทั้งหมด",
     "clearAll": "ล้างทั้งหมด",
-    "clearAllConfirm": "ล้างคำอธิบายประกอบทั้งหมดจากทุกหน้า?"
+    "clearAllConfirm": "ล้างคำอธิบายประกอบทั้งหมดจากทุกหน้า?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "การแสดงหน้า",
@@ -224,9 +230,9 @@
     "sameWidth": "ความกว้างเท่ากัน",
     "sameHeight": "ความสูงเท่ากัน",
     "rotate": "หมุน",
-    "rotate90CCW": "หมุน 90\u00b0 ทวนเข็ม",
-    "rotate90CW": "หมุน 90\u00b0 ตามเข็ม",
-    "rotate180": "หมุน 180\u00b0",
+    "rotate90CCW": "หมุน 90° ทวนเข็ม",
+    "rotate90CW": "หมุน 90° ตามเข็ม",
+    "rotate180": "หมุน 180°",
     "reflect": "สะท้อน",
     "flipHorizontally": "พลิกแนวนอน",
     "horizontally": "แนวนอน",

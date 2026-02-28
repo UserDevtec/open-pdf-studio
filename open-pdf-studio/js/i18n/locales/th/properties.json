@@ -182,6 +182,16 @@
     "reason": "เหตุผล",
     "location": "ตำแหน่ง",
     "date": "วันที่",
-    "contact": "ติดต่อ"
+    "contact": "ติดต่อ",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

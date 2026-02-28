@@ -88,7 +88,13 @@
     "clearPageConfirm": "Effacer toutes les annotations de la page actuelle ?",
     "clearAllAnnotations": "Effacer toutes les annotations",
     "clearAll": "Tout effacer",
-    "clearAllConfirm": "Effacer TOUTES les annotations de TOUTES les pages ?"
+    "clearAllConfirm": "Effacer TOUTES les annotations de TOUTES les pages ?",
+    "calibrate": "Calibrer",
+    "calibrateTitle": "Calibration d'échelle",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Accrocher au dessin PDF",
+    "snapActive": "Snap Act.",
+    "loading": "Chargement..."
   },
   "view": {
     "pageDisplay": "Affichage de la page",

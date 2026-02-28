@@ -88,7 +88,13 @@
     "clearPageConfirm": "Očistiti sve oznake na trenutnoj stranici?",
     "clearAllAnnotations": "Očisti sve oznake",
     "clearAll": "Očisti sve",
-    "clearAllConfirm": "Očistiti SVE oznake sa SVIH stranica?"
+    "clearAllConfirm": "Očistiti SVE oznake sa SVIH stranica?",
+    "calibrate": "Calibrate",
+    "calibrateTitle": "Scale Calibration",
+    "snapToDrawing": "Snap",
+    "snapToDrawingTitle": "Snap to PDF Drawing",
+    "snapActive": "Snap On",
+    "loading": "Loading..."
   },
   "view": {
     "pageDisplay": "Prikaz stranice",
@@ -224,9 +230,9 @@
     "sameWidth": "Ista širina",
     "sameHeight": "Ista visina",
     "rotate": "Rotiraj",
-    "rotate90CCW": "Rotiraj 90\u00b0 u smjeru suprotnom od kazaljke",
-    "rotate90CW": "Rotiraj 90\u00b0 u smjeru kazaljke",
-    "rotate180": "Rotiraj 180\u00b0",
+    "rotate90CCW": "Rotiraj 90° u smjeru suprotnom od kazaljke",
+    "rotate90CW": "Rotiraj 90° u smjeru kazaljke",
+    "rotate180": "Rotiraj 180°",
     "reflect": "Zrcali",
     "flipHorizontally": "Okreni vodoravno",
     "horizontally": "Vodoravno",

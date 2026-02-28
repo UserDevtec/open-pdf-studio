@@ -1,5 +1,5 @@
 {
-  "title": "Propriet\u00e0",
+  "title": "Proprietà",
   "general": {
     "title": "Generale",
     "type": "Tipo",
@@ -13,7 +13,7 @@
     "readOnly": "Sola lettura",
     "marked": "Contrassegnato",
     "altText": "Testo alternativo",
-    "altTextPlaceholder": "Descrizione per l'accessibilit\u00e0...",
+    "altTextPlaceholder": "Descrizione per l'accessibilità...",
     "status": "Stato",
     "accepted": "Accettato",
     "rejected": "Rifiutato",
@@ -40,7 +40,7 @@
     "fillColor": "Colore di riempimento",
     "strokeColor": "Colore del tratto",
     "color": "Colore",
-    "opacity": "Opacit\u00e0",
+    "opacity": "Opacità",
     "borderStyle": "Stile bordo",
     "lineWidth": "Larghezza linea",
     "borderWidth": "Larghezza bordo",
@@ -56,7 +56,7 @@
     "length": "Lunghezza"
   },
   "lineEndings": {
-    "title": "Estremit\u00e0 della linea",
+    "title": "Estremità della linea",
     "start": "Inizio",
     "end": "Fine",
     "openArrow": "Freccia aperta",
@@ -110,7 +110,7 @@
     "annotations": "Annotazioni",
     "total": "Totale",
     "onPage": "Nella pagina",
-    "selectHint": "Selezionare un'annotazione per modificarne le propriet\u00e0",
+    "selectHint": "Selezionare un'annotazione per modificarne le proprietà",
     "noFileOpen": "Nessun file aperto",
     "onPageCount": "{{count}} (pagina {{page}})"
   },
@@ -182,6 +182,16 @@
     "reason": "Motivo",
     "location": "Posizione",
     "date": "Data",
-    "contact": "Contatto"
+    "contact": "Contatto",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

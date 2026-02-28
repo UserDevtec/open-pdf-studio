@@ -2,7 +2,7 @@
   "annotation": {
     "openPopUpNote": "Abrir nota emergente",
     "hidePopUpNote": "Ocultar nota emergente",
-    "resetPopUpLocation": "Restablecer ubicaci\u00f3n de nota emergente",
+    "resetPopUpLocation": "Restablecer ubicación de nota emergente",
     "editText": "Editar texto...",
     "addReply": "Agregar respuesta",
     "locked": "Bloqueado",
@@ -21,22 +21,23 @@
     "bringToFront": "Traer al frente",
     "sendToBack": "Enviar al fondo",
     "bringForward": "Traer adelante",
-    "sendBackward": "Enviar atr\u00e1s",
-    "rotateLeft90": "Girar 90\u00b0 a la izquierda",
-    "rotateRight90": "Girar 90\u00b0 a la derecha",
+    "sendBackward": "Enviar atrás",
+    "rotateLeft90": "Girar 90° a la izquierda",
+    "rotateRight90": "Girar 90° a la derecha",
     "flipHorizontal": "Voltear horizontalmente",
     "flipVertical": "Voltear verticalmente",
     "transform": "Transformar...",
-    "flipLine": "Voltear l\u00ednea",
-    "convertToMeasurement": "Convertir a medici\u00f3n",
-    "convertToPolyline": "Convertir a pol\u00edl\u00ednea",
-    "convertToPolygon": "Convertir a pol\u00edgono",
+    "flipLine": "Voltear línea",
+    "convertToMeasurement": "Convertir a medición",
+    "convertToPolyline": "Convertir a polílínea",
+    "convertToPolygon": "Convertir a polígono",
     "styleTools": "Herramientas de estilo",
     "setAsDefaultStyle": "Establecer como estilo predeterminado",
     "applyDefaultStyle": "Aplicar estilo predeterminado",
     "exportSubmenu": "Exportar",
     "exportAsImage": "Exportar como imagen...",
-    "properties": "Propiedades..."
+    "properties": "Propiedades...",
+    "calibrateFromLine": "Calibrar desde esta línea..."
   },
   "multiSelect": {
     "copyAnnotations": "Copiar {{count}} anotaciones",
@@ -52,23 +53,23 @@
     "distributeHorizontally": "Distribuir horizontalmente",
     "distributeVertically": "Distribuir verticalmente",
     "deleteAnnotations": "Eliminar {{count}} anotaciones",
-    "deleteConfirm": "\u00bfEliminar {{count}} anotaciones?",
+    "deleteConfirm": "¿Eliminar {{count}} anotaciones?",
     "deleteTitle": "Eliminar anotaciones"
   },
   "page": {
     "addBookmark": "Agregar marcador",
     "addStickyNote": "Agregar nota adhesiva",
     "addImage": "Agregar imagen...",
-    "addQrCode": "Agregar c\u00f3digo QR...",
+    "addQrCode": "Agregar código QR...",
     "handTool": "Herramienta Mano",
     "snapshotTool": "Herramienta de captura",
     "selectText": "Seleccionar texto",
     "zoomInOutTool": "Herramienta Acercar/Alejar",
     "goTo": "Ir a",
-    "firstPage": "Primera p\u00e1gina",
-    "lastPage": "\u00daltima p\u00e1gina",
-    "previousPage": "P\u00e1gina anterior",
-    "nextPage": "P\u00e1gina siguiente",
+    "firstPage": "Primera página",
+    "lastPage": "Última página",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
     "printMenu": "Imprimir...",
     "findMenu": "Buscar...",
     "searchMenu": "Buscar...",
@@ -85,21 +86,21 @@
   "thumbnail": {
     "rotateLeft": "Girar a la izquierda",
     "rotateRight": "Girar a la derecha",
-    "insertPages": "Insertar p\u00e1ginas...",
-    "extractPages": "Extraer p\u00e1ginas...",
-    "replacePages": "Reemplazar p\u00e1ginas...",
-    "deletePages": "Eliminar p\u00e1ginas",
-    "deletePageConfirm": "\u00bfEliminar la p\u00e1gina {{page}}?",
-    "deletePageTitle": "Eliminar p\u00e1gina",
+    "insertPages": "Insertar páginas...",
+    "extractPages": "Extraer páginas...",
+    "replacePages": "Reemplazar páginas...",
+    "deletePages": "Eliminar páginas",
+    "deletePageConfirm": "¿Eliminar la página {{page}}?",
+    "deletePageTitle": "Eliminar página",
     "properties": "Propiedades"
   },
   "textSelection": {
-    "highlightSelection": "Resaltar selecci\u00f3n",
-    "strikethroughSelection": "Tachar selecci\u00f3n",
-    "underlineSelection": "Subrayar selecci\u00f3n"
+    "highlightSelection": "Resaltar selección",
+    "strikethroughSelection": "Tachar selección",
+    "underlineSelection": "Subrayar selección"
   },
   "deleteAnnotation": {
-    "confirmSingle": "\u00bfEliminar esta anotaci\u00f3n?",
-    "title": "Eliminar anotaci\u00f3n"
+    "confirmSingle": "¿Eliminar esta anotación?",
+    "title": "Eliminar anotación"
   }
 }

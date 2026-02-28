@@ -22,8 +22,8 @@
     "sendToBack": "Peleka Nyuma Kabisa",
     "bringForward": "Peleka Mbele",
     "sendBackward": "Peleka Nyuma",
-    "rotateLeft90": "Zungusha Kushoto 90\u00b0",
-    "rotateRight90": "Zungusha Kulia 90\u00b0",
+    "rotateLeft90": "Zungusha Kushoto 90°",
+    "rotateRight90": "Zungusha Kulia 90°",
     "flipHorizontal": "Geuza Mlalo",
     "flipVertical": "Geuza Wima",
     "transform": "Badilisha...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Tekeleza Mtindo Chaguo-msingi",
     "exportSubmenu": "Hamisha nje",
     "exportAsImage": "Hamisha kama Picha...",
-    "properties": "Sifa..."
+    "properties": "Sifa...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Nakili Maoni {{count}}",

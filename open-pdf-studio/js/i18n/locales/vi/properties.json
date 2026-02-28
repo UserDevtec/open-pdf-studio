@@ -182,6 +182,16 @@
     "reason": "Lý do",
     "location": "Vị trí",
     "date": "Ngày",
-    "contact": "Liên hệ"
+    "contact": "Liên hệ",
+    "elements": "Element Detection",
+    "elementsOverlay": "Overlay",
+    "elementsDetect": "Detect",
+    "elementsDetecting": "Detecting...",
+    "elementsClear": "Clear",
+    "elementsWalls": "Walls",
+    "elementsRooms": "Rooms",
+    "elementsWall": "Wall",
+    "elementsGrids": "Grids",
+    "elementsGrid": "Grid"
   }
 }

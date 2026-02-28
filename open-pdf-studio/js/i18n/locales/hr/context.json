@@ -22,8 +22,8 @@
     "sendToBack": "Stavi iza svega",
     "bringForward": "Pomakni naprijed",
     "sendBackward": "Pomakni natrag",
-    "rotateLeft90": "Rotiraj lijevo 90\u00b0",
-    "rotateRight90": "Rotiraj desno 90\u00b0",
+    "rotateLeft90": "Rotiraj lijevo 90°",
+    "rotateRight90": "Rotiraj desno 90°",
     "flipHorizontal": "Okreni vodoravno",
     "flipVertical": "Okreni okomito",
     "transform": "Transformiraj...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Primijeni zadani stil",
     "exportSubmenu": "Izvoz",
     "exportAsImage": "Izvezi kao sliku...",
-    "properties": "Svojstva..."
+    "properties": "Svojstva...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Kopiraj {{count}} oznaka",

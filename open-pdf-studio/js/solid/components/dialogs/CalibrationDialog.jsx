@@ -1,45 +1,248 @@
-import { createSignal, onMount } from 'solid-js';
+import { createSignal, onMount, Show } from 'solid-js';
 import Dialog from '../Dialog.jsx';
 import { closeDialog } from '../../stores/dialogStore.js';
-import { state } from '../../../core/state.js';
+import { state, getActiveDocument } from '../../../core/state.js';
 import { savePreferences } from '../../../core/preferences.js';
+import { recalculateAllMeasurements, saveDocumentScale } from '../../../annotations/measurement.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
+
+const SCALE_PRESETS = [
+  '1:1', '1:2', '1:5', '1:10', '1:20', '1:25', '1:50',
+  '1:100', '1:200', '1:250', '1:500', '1:1000'
+];
+
+/**
+ * Auto-detect scale from the PDF title block (onderhoek).
+ * Scans text content in the bottom-right area of the page for patterns like "1:100".
+ */
+async function detectScaleFromTitleBlock() {
+  if (!state.pdfDoc) return null;
+
+  const page = await state.pdfDoc.getPage(state.currentPage);
+  const vp = page.getViewport({ scale: 1 });
+  const textContent = await page.getTextContent();
+
+  // Title block is typically in the bottom-right quadrant.
+  // We search the right 50% and bottom 40% of the page.
+  const regionLeft = vp.width * 0.5;
+  const regionTop = vp.height * 0.6;
+
+  // Scale pattern: matches "1:N" where N is a number (with optional spaces)
+  const scalePattern = /\b1\s*:\s*(\d+(?:[.,]\d+)?)\b/;
+
+  // Collect text items in the title block region
+  const candidates = [];
+
+  for (const item of textContent.items) {
+    if (!item.str || item.str.trim().length === 0) continue;
+    // item.transform = [scaleX, skewY, skewX, scaleY, translateX, translateY]
+    const tx = item.transform[4];
+    const ty = item.transform[5];
+
+    // Transform from PDF space to viewport space
+    const t = vp.transform;
+    const vx = t[0] * tx + t[2] * ty + t[4];
+    const vy = t[1] * tx + t[3] * ty + t[5];
+
+    if (vx >= regionLeft && vy >= regionTop) {
+      const match = item.str.match(scalePattern);
+      if (match) {
+        const denominator = parseFloat(match[1].replace(',', '.'));
+        if (denominator >= 1 && denominator <= 10000) {
+          candidates.push({ denominator, text: item.str, x: vx, y: vy });
+        }
+      }
+    }
+  }
+
+  // If no results in title block region, try the entire page as fallback
+  if (candidates.length === 0) {
+    for (const item of textContent.items) {
+      if (!item.str || item.str.trim().length === 0) continue;
+      // Look for explicit "schaal" / "scale" / "maßstab" / "échelle" labels
+      const lowerStr = item.str.toLowerCase();
+      const hasLabel = /(?:schaal|scale|ma[ßs]stab|[eé]chelle|escala)\s*/i.test(lowerStr);
+      if (!hasLabel) continue;
+
+      const match = item.str.match(scalePattern);
+      if (match) {
+        const denominator = parseFloat(match[1].replace(',', '.'));
+        if (denominator >= 1 && denominator <= 10000) {
+          candidates.push({ denominator, text: item.str, x: 0, y: 0 });
+        }
+      }
+    }
+  }
+
+  if (candidates.length === 0) return null;
+
+  // Return the first match (closest to bottom-right typically)
+  return candidates[0].denominator;
+}
 
 export default function CalibrationDialog(props) {
   const { t } = useTranslation('dialogs');
   const { t: tCommon } = useTranslation('common');
 
+  // Method tab: 'reference' or 'ratio'
+  const [method, setMethod] = createSignal('reference');
+
+  // Method 1: Reference line
   const [distance, setDistance] = createSignal(1);
-  const [unit, setUnit] = createSignal('px');
+  const [unit, setUnit] = createSignal('mm');
   const [pixels, setPixels] = createSignal(72);
 
-  onMount(() => {
-    const ms = state.preferences.measureScale;
-    if (ms) {
-      setUnit(ms.unit || 'px');
+  // Method 2: Scale ratio
+  const [scalePreset, setScalePreset] = createSignal('1:100');
+  const [customScale, setCustomScale] = createSignal(100);
+  const [ratioUnit, setRatioUnit] = createSignal('mm');
+  const [pageSizeText, setPageSizeText] = createSignal('');
+  const [detecting, setDetecting] = createSignal(false);
+  const [detectResult, setDetectResult] = createSignal(null); // null | 'found' | 'notfound'
+
+  onMount(async () => {
+    // Pre-fill pixels from reference line if provided
+    const refPx = props.data?.referencePixelLength;
+    if (refPx && refPx > 0) {
+      setPixels(Math.round(refPx * 100) / 100);
+      setMethod('reference');
     }
+
+    // Load existing scale from document
+    const ms = state.measureScale;
+    if (ms) {
+      setUnit(ms.unit || 'mm');
+      setRatioUnit(ms.unit || 'mm');
+      if (ms.method === 'ratio' && ms.scaleRatio) {
+        setMethod('ratio');
+        setScalePreset(SCALE_PRESETS.includes(ms.scaleRatio) ? ms.scaleRatio : 'custom');
+        if (!SCALE_PRESETS.includes(ms.scaleRatio)) {
+          const parts = ms.scaleRatio.split(':');
+          setCustomScale(parseInt(parts[1]) || 100);
+        }
+      }
+    }
+
+    // Detect PDF page size
+    try {
+      if (state.pdfDoc) {
+        const page = await state.pdfDoc.getPage(state.currentPage);
+        const vp = page.getViewport({ scale: 1 });
+        // PDF points to mm: 1 pt = 25.4/72 mm
+        const wMm = (vp.width * 25.4 / 72).toFixed(0);
+        const hMm = (vp.height * 25.4 / 72).toFixed(0);
+        setPageSizeText(`${wMm} \u00d7 ${hMm} mm`);
+      }
+    } catch { /* ignore */ }
   });
 
-  const cancel = () => { closeDialog('calibration'); };
+  const cancel = () => closeDialog('calibration');
+
+  function getScaleDenominator() {
+    const preset = scalePreset();
+    if (preset === 'custom') return customScale();
+    const parts = preset.split(':');
+    return parseInt(parts[1]) || 1;
+  }
+
+  async function handleAutoDetect() {
+    setDetecting(true);
+    setDetectResult(null);
+    try {
+      const denominator = await detectScaleFromTitleBlock();
+      if (denominator) {
+        const ratio = `1:${denominator}`;
+        if (SCALE_PRESETS.includes(ratio)) {
+          setScalePreset(ratio);
+        } else {
+          setScalePreset('custom');
+          setCustomScale(denominator);
+        }
+        setDetectResult('found');
+      } else {
+        setDetectResult('notfound');
+      }
+    } catch {
+      setDetectResult('notfound');
+    } finally {
+      setDetecting(false);
+    }
+  }
 
   function handleApply() {
-    const d = parseFloat(distance());
-    const p = parseFloat(pixels());
-    if (d > 0 && p > 0) {
-      state.preferences.measureScale = { pixelsPerUnit: p / d, unit: unit() };
-      savePreferences();
+    let scaleData = null;
+
+    if (method() === 'reference') {
+      const d = parseFloat(distance());
+      const p = parseFloat(pixels());
+      if (d > 0 && p > 0) {
+        scaleData = {
+          pixelsPerUnit: p / d,
+          unit: unit(),
+          method: 'reference',
+          scaleRatio: null
+        };
+      }
+    } else {
+      // Scale ratio method
+      // PDF units are points (1/72 inch). Scale S means 1 drawing unit = S real units.
+      // For mm: 1 pt = 25.4/72 mm on paper. At scale 1:S, 1 pt on paper = S * 25.4/72 mm real.
+      // So pixelsPerUnit (how many PDF pts per 1 real unit) = 72 / (S * 25.4) for mm
+      const S = getScaleDenominator();
+      const u = ratioUnit();
+      let pixelsPerUnit;
+
+      if (u === 'mm') {
+        pixelsPerUnit = 72 / (S * 25.4);
+      } else if (u === 'cm') {
+        pixelsPerUnit = 72 / (S * 2.54);
+      } else if (u === 'm') {
+        pixelsPerUnit = 72 / (S * 0.0254);
+      } else if (u === 'in') {
+        pixelsPerUnit = 72 / S;
+      } else if (u === 'ft') {
+        pixelsPerUnit = 72 / (S * 12);
+      } else {
+        pixelsPerUnit = 72 / (S * 25.4); // fallback mm
+      }
+
+      const ratioStr = `1:${S}`;
+      scaleData = {
+        pixelsPerUnit,
+        unit: u,
+        method: 'ratio',
+        scaleRatio: ratioStr
+      };
+    }
+
+    if (scaleData) {
+      state.measureScale = scaleData;
+      saveDocumentScale();
+      recalculateAllMeasurements();
     }
     closeDialog('calibration');
   }
 
   function handleReset() {
-    delete state.preferences.measureScale;
-    savePreferences();
+    state.measureScale = null;
+    saveDocumentScale();
+    recalculateAllMeasurements();
     closeDialog('calibration');
   }
 
+  const tabStyle = (active) => ({
+    padding: '6px 16px',
+    border: 'none',
+    'border-bottom': active ? '2px solid #0078d4' : '2px solid transparent',
+    background: 'transparent',
+    cursor: 'pointer',
+    'font-size': '12px',
+    'font-weight': active ? '600' : '400',
+    color: active ? '#0078d4' : 'inherit'
+  });
+
   const footer = (
-    <div style={{ display: 'flex', 'justify-content': 'flex-end', gap: '8px' }}>
+    <div style={{ display: 'flex', 'justify-content': 'space-between' }}>
       <button
         style={{
           padding: '4px 12px',
@@ -53,20 +256,35 @@ export default function CalibrationDialog(props) {
       >
         {tCommon('reset')}
       </button>
-      <button
-        style={{
-          padding: '4px 12px',
-          border: '1px solid #0078d4',
-          background: '#0078d4',
-          color: '#fff',
-          cursor: 'pointer',
-          'font-size': '12px',
-          'border-radius': '0'
-        }}
-        onClick={handleApply}
-      >
-        {tCommon('apply')}
-      </button>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <button
+          style={{
+            padding: '4px 12px',
+            border: '1px solid #ccc',
+            background: '#fff',
+            cursor: 'pointer',
+            'font-size': '12px',
+            'border-radius': '0'
+          }}
+          onClick={cancel}
+        >
+          {tCommon('cancel')}
+        </button>
+        <button
+          style={{
+            padding: '4px 12px',
+            border: '1px solid #0078d4',
+            background: '#0078d4',
+            color: '#fff',
+            cursor: 'pointer',
+            'font-size': '12px',
+            'border-radius': '0'
+          }}
+          onClick={handleApply}
+        >
+          {tCommon('apply')}
+        </button>
+      </div>
     </div>
   );
 
@@ -78,41 +296,130 @@ export default function CalibrationDialog(props) {
       onClose={cancel}
       footer={footer}
     >
-      <p style={{ 'font-size': '12px', color: '#666', margin: '0 0 12px 0' }}>
-        {t('calibration.helpText')}
-      </p>
-      <div style={{ display: 'flex', gap: '8px', 'align-items': 'center', 'margin-bottom': '12px' }}>
-        <label style={{ 'font-size': '13px' }}>{t('calibration.knownDistance')}</label>
-        <input
-          type="number"
-          style={{ width: '80px', padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
-          min="0.01"
-          step="0.01"
-          value={distance()}
-          onInput={(e) => setDistance(e.target.value)}
-        />
-        <select
-          style={{ padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
-          value={unit()}
-          onChange={(e) => setUnit(e.target.value)}
-        >
-          <option value="mm">{tCommon('mm')}</option>
-          <option value="cm">{tCommon('cm')}</option>
-          <option value="in">{tCommon('in')}</option>
-          <option value="pt">{tCommon('pt')}</option>
-          <option value="px">{tCommon('px')}</option>
-        </select>
+      {/* Method tabs */}
+      <div style={{ display: 'flex', 'border-bottom': '1px solid #e0e0e0', 'margin-bottom': '12px' }}>
+        <button style={tabStyle(method() === 'reference')} onClick={() => setMethod('reference')}>
+          {t('calibration.methodReference')}
+        </button>
+        <button style={tabStyle(method() === 'ratio')} onClick={() => setMethod('ratio')}>
+          {t('calibration.methodRatio')}
+        </button>
       </div>
-      <div style={{ display: 'flex', gap: '8px', 'align-items': 'center', 'margin-bottom': '12px' }}>
-        <label style={{ 'font-size': '13px' }}>{t('calibration.measuredPixels')}</label>
-        <input
-          type="number"
-          style={{ width: '80px', padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
-          min="1"
-          value={pixels()}
-          onInput={(e) => setPixels(e.target.value)}
-        />
-      </div>
+
+      {/* Method 1: Reference Line */}
+      <Show when={method() === 'reference'}>
+        <p style={{ 'font-size': '12px', color: '#666', margin: '0 0 12px 0' }}>
+          {t('calibration.referenceHelp')}
+        </p>
+        <div style={{ display: 'flex', gap: '8px', 'align-items': 'center', 'margin-bottom': '12px' }}>
+          <label style={{ 'font-size': '13px', 'min-width': '110px' }}>{t('calibration.measuredPixels')}</label>
+          <input
+            type="number"
+            style={{ width: '100px', padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
+            min="1"
+            step="0.01"
+            value={pixels()}
+            onInput={(e) => setPixels(e.target.value)}
+          />
+          <span style={{ 'font-size': '12px', color: '#888' }}>px</span>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', 'align-items': 'center', 'margin-bottom': '12px' }}>
+          <label style={{ 'font-size': '13px', 'min-width': '110px' }}>{t('calibration.knownDistance')}</label>
+          <input
+            type="number"
+            style={{ width: '100px', padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
+            min="0.001"
+            step="0.01"
+            value={distance()}
+            onInput={(e) => setDistance(e.target.value)}
+          />
+          <select
+            style={{ padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
+            value={unit()}
+            onChange={(e) => setUnit(e.target.value)}
+          >
+            <option value="mm">mm</option>
+            <option value="cm">cm</option>
+            <option value="m">m</option>
+            <option value="in">in</option>
+            <option value="ft">ft</option>
+          </select>
+        </div>
+      </Show>
+
+      {/* Method 2: Scale Ratio */}
+      <Show when={method() === 'ratio'}>
+        <p style={{ 'font-size': '12px', color: '#666', margin: '0 0 12px 0' }}>
+          {t('calibration.ratioHelp')}
+        </p>
+        <div style={{ display: 'flex', gap: '8px', 'align-items': 'center', 'margin-bottom': '12px' }}>
+          <label style={{ 'font-size': '13px', 'min-width': '110px' }}>{t('calibration.scaleRatio')}</label>
+          <select
+            style={{ padding: '4px', border: '1px solid #ccc', 'border-radius': '0', width: '120px' }}
+            value={scalePreset()}
+            onChange={(e) => setScalePreset(e.target.value)}
+          >
+            {SCALE_PRESETS.map(s => <option value={s}>{s}</option>)}
+            <option value="custom">{t('calibration.customRatio')}</option>
+          </select>
+          <Show when={scalePreset() === 'custom'}>
+            <span style={{ 'font-size': '13px' }}>1:</span>
+            <input
+              type="number"
+              style={{ width: '80px', padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
+              min="1"
+              value={customScale()}
+              onInput={(e) => setCustomScale(parseInt(e.target.value) || 1)}
+            />
+          </Show>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', 'align-items': 'center', 'margin-bottom': '12px' }}>
+          <label style={{ 'font-size': '13px', 'min-width': '110px' }}>{t('calibration.unit')}</label>
+          <select
+            style={{ padding: '4px', border: '1px solid #ccc', 'border-radius': '0' }}
+            value={ratioUnit()}
+            onChange={(e) => setRatioUnit(e.target.value)}
+          >
+            <option value="mm">mm</option>
+            <option value="cm">cm</option>
+            <option value="m">m</option>
+            <option value="in">in</option>
+            <option value="ft">ft</option>
+          </select>
+        </div>
+        <Show when={pageSizeText()}>
+          <div style={{ 'font-size': '12px', color: '#888', 'margin-bottom': '8px' }}>
+            {t('calibration.pageSize')} {pageSizeText()}
+          </div>
+        </Show>
+        <div style={{ 'margin-top': '4px', 'border-top': '1px solid #e0e0e0', 'padding-top': '10px' }}>
+          <button
+            style={{
+              padding: '5px 14px',
+              border: '1px solid #0078d4',
+              background: '#f0f7ff',
+              cursor: detecting() ? 'wait' : 'pointer',
+              'font-size': '12px',
+              'border-radius': '0',
+              color: '#0078d4'
+            }}
+            onClick={handleAutoDetect}
+            disabled={detecting()}
+          >
+            {detecting() ? t('calibration.detecting') : t('calibration.autoDetect')}
+          </button>
+          <Show when={detectResult() === 'found'}>
+            <span style={{ 'font-size': '12px', color: '#107c10', 'margin-left': '8px' }}>
+              {t('calibration.scaleDetected')}
+            </span>
+          </Show>
+          <Show when={detectResult() === 'notfound'}>
+            <span style={{ 'font-size': '12px', color: '#d83b01', 'margin-left': '8px' }}>
+              {t('calibration.scaleNotFound')}
+            </span>
+          </Show>
+        </div>
+      </Show>
     </Dialog>
   );
 }

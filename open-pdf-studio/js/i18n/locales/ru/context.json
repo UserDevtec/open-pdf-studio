@@ -22,8 +22,8 @@
     "sendToBack": "На задний план",
     "bringForward": "На уровень вперед",
     "sendBackward": "На уровень назад",
-    "rotateLeft90": "Повернуть влево на 90\u00b0",
-    "rotateRight90": "Повернуть вправо на 90\u00b0",
+    "rotateLeft90": "Повернуть влево на 90°",
+    "rotateRight90": "Повернуть вправо на 90°",
     "flipHorizontal": "Отразить по горизонтали",
     "flipVertical": "Отразить по вертикали",
     "transform": "Трансформация...",
@@ -36,7 +36,8 @@
     "applyDefaultStyle": "Применить стиль по умолчанию",
     "exportSubmenu": "Экспорт",
     "exportAsImage": "Экспортировать как изображение...",
-    "properties": "Свойства..."
+    "properties": "Свойства...",
+    "calibrateFromLine": "Calibrate from this Line..."
   },
   "multiSelect": {
     "copyAnnotations": "Копировать {{count}} аннотаций",
