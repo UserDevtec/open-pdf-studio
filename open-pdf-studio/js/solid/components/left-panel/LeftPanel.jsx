@@ -4,7 +4,7 @@ import LeftPanelTab from './LeftPanelTab.jsx';
 import {
   thumbnailsIcon, bookmarksIcon, annotationsIcon, attachmentsIcon,
   signaturesIcon, layersIcon, formFieldsIcon, destinationsIcon,
-  tagsIcon, linksIcon, toggleIcon
+  tagsIcon, linksIcon, elementsIcon, toggleIcon
 } from '../../data/leftPanelIcons.js';
 import ThumbnailsPanel from './panels/ThumbnailsPanel.jsx';
 import BookmarksPanel from './panels/BookmarksPanel.jsx';
@@ -16,6 +16,7 @@ import FormFieldsPanel from './panels/FormFieldsPanel.jsx';
 import DestinationsPanel from './panels/DestinationsPanel.jsx';
 import TagsPanel from './panels/TagsPanel.jsx';
 import LinksPanel from './panels/LinksPanel.jsx';
+import ElementDetectionPanel from './panels/ElementDetectionPanel.jsx';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 export default function LeftPanel() {
@@ -32,6 +33,7 @@ export default function LeftPanel() {
     { panelId: 'destinations', title: () => t('leftPanel.destinations'), label: () => t('leftPanel.destinations'), icon: destinationsIcon },
     { panelId: 'tags', title: () => t('leftPanel.tags'), label: () => t('leftPanel.tags'), icon: tagsIcon },
     { panelId: 'links', title: () => t('leftPanel.links'), label: () => t('leftPanel.links'), icon: linksIcon },
+    { panelId: 'elements', title: () => t('leftPanel.elements'), label: () => t('leftPanel.elements'), icon: elementsIcon },
   ];
 
   return (
@@ -62,6 +64,7 @@ export default function LeftPanel() {
         <DestinationsPanel />
         <TagsPanel />
         <LinksPanel />
+        <ElementDetectionPanel />
       </div>
 
       <button class="left-panel-toggle" id="left-panel-toggle" title={t('leftPanel.togglePanel')} onClick={toggleLeftPanelCollapsed}>
