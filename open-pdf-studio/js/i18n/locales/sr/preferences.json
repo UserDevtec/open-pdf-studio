@@ -8,7 +8,8 @@
     "markup": "Означавање",
     "behavior": "Понашање",
     "fileAssociation": "Асоцијација фајлова",
-    "virtualPrinter": "Виртуелни штампач"
+    "virtualPrinter": "Виртуелни штампач",
+    "pageDisplay": "Приказ странице"
   },
   "resetToDefaults": "Врати на подразумевано",
   "resetConfirm": "Вратити сва подешавања на подразумеване вредности?",
@@ -18,7 +19,7 @@
     "startup": "Покретање",
     "restoreLastSession": "Врати последњу сесију при покретању апликације",
     "author": "Аутор",
-    "defaultAuthorName": "Подразумевано име аутора",
+    "defaultAuthorName": "Име аутора",
     "language": "Језик",
     "interfaceLanguage": "Језик интерфејса"
   },
@@ -113,7 +114,7 @@
     "startup": "Покретање",
     "restoreLastSession": "Врати последњу сесију при покретању апликације",
     "author": "Аутор",
-    "defaultAuthorName": "Подразумевано име аутора",
+    "defaultAuthorName": "Име аутора",
     "snapping": "Привлачење",
     "angleSnap": "Фиксирање угла (степени)",
     "enableAngleSnapping": "Омогући фиксирање угла (држи Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Уклањање није успело",
     "failedToInstall": "Неуспешна инсталација виртуелног штампача:",
     "failedToRemove": "Неуспешно уклањање виртуелног штампача:"
+  },
+  "pageDisplay": {
+    "rendering": "Исцртавање",
+    "thinLines": "Танке линије (прикажи све линије ширином 1px)"
   }
 }

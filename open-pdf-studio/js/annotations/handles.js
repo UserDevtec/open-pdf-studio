@@ -186,16 +186,11 @@ export function getAnnotationHandles(annotation, scale = 1) {
       break;
 
     case 'polyline':
-      // For polyline, show bounding box handles
+      // Per-node handles for polyline
       if (annotation.points && annotation.points.length > 0) {
-        const plMinX = Math.min(...annotation.points.map(p => p.x));
-        const plMinY = Math.min(...annotation.points.map(p => p.y));
-        const plMaxX = Math.max(...annotation.points.map(p => p.x));
-        const plMaxY = Math.max(...annotation.points.map(p => p.y));
-        handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: plMinX - hs/2, y: plMinY - hs/2 });
-        handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: plMaxX - hs/2, y: plMinY - hs/2 });
-        handles.push({ type: HANDLE_TYPES.BOTTOM_LEFT, x: plMinX - hs/2, y: plMaxY - hs/2 });
-        handles.push({ type: HANDLE_TYPES.BOTTOM_RIGHT, x: plMaxX - hs/2, y: plMaxY - hs/2 });
+        annotation.points.forEach((p, i) => {
+          handles.push({ type: HANDLE_TYPES.POLYLINE_NODE, x: p.x - hs/2, y: p.y - hs/2, nodeIndex: i });
+        });
       }
       break;
 
@@ -261,18 +256,38 @@ export function getAnnotationHandles(annotation, scale = 1) {
 }
 
 // Find which handle is at the given coordinates
+// Uses an expanded hit area (larger than visual handle) so handles are easy to grab.
+// When multiple handles overlap in the expanded zone, the nearest one wins.
 export function findHandleAt(x, y, annotation, scale = 1) {
   if (!annotation) return null;
   const handles = getAnnotationHandles(annotation, scale);
   const hs = HANDLE_SIZE / scale;
+  // Hit tolerance: expand clickable area by this much on each side of the handle
+  const hitPad = 4 / scale;
+
+  let bestHandle = null;
+  let bestDist = Infinity;
 
   for (const handle of handles) {
-    if (x >= handle.x && x <= handle.x + hs &&
-        y >= handle.y && y <= handle.y + hs) {
-      return handle.type;
+    if (x >= handle.x - hitPad && x <= handle.x + hs + hitPad &&
+        y >= handle.y - hitPad && y <= handle.y + hs + hitPad) {
+      // Distance from click to handle center
+      const hcx = handle.x + hs / 2;
+      const hcy = handle.y + hs / 2;
+      const dist = (x - hcx) * (x - hcx) + (y - hcy) * (y - hcy);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestHandle = handle;
+      }
     }
   }
-  return null;
+
+  if (!bestHandle) return null;
+  // For polyline nodes, encode the index in the type string
+  if (bestHandle.type === HANDLE_TYPES.POLYLINE_NODE) {
+    return `${bestHandle.type}_${bestHandle.nodeIndex}`;
+  }
+  return bestHandle.type;
 }
 
 // Cache for generated cursor SVG data URIs
@@ -353,6 +368,11 @@ function createRotatedResizeCursor(angleDeg) {
 
 // Get cursor style for handle type, accounting for annotation rotation
 export function getCursorForHandle(handleType, rotation, annotation) {
+  // Polyline node handles
+  if (typeof handleType === 'string' && handleType.startsWith(HANDLE_TYPES.POLYLINE_NODE + '_')) {
+    return 'crosshair';
+  }
+
   // Non-directional cursors - rotation doesn't affect these
   switch (handleType) {
     case HANDLE_TYPES.LINE_START:

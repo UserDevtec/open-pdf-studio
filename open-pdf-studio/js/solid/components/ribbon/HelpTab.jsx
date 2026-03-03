@@ -1,9 +1,9 @@
 import RibbonGroup from './RibbonGroup.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import { aboutIcon, shortcutsIcon, updatesIcon, fileAssocIcon } from '../../data/ribbonIcons.js';
-import { openAppMenu, setActivePanel } from '../../stores/appMenuStore.js';
 import { showPreferencesDialog } from '../../../core/preferences.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
+import { openDialog, showMessage } from '../../stores/dialogStore.js';
 
 export default function HelpTab() {
   const { t } = useTranslation('ribbon');
@@ -17,7 +17,7 @@ export default function HelpTab() {
             title={t('help.aboutTitle')}
             icon={aboutIcon}
             label={t('help.about')}
-            onClick={() => { openAppMenu(); setActivePanel('about'); }}
+            onClick={() => openDialog('about')}
           />
           <RibbonButton
             id="ribbon-shortcuts"
@@ -25,7 +25,7 @@ export default function HelpTab() {
             icon={shortcutsIcon}
             label={t('help.shortcuts')}
             onClick={() => {
-              alert(t('help.keyboardShortcutsContent'));
+              showMessage(t('help.keyboardShortcutsContent'));
             }}
           />
         </RibbonGroup>

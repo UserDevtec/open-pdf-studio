@@ -4,7 +4,6 @@
     "home": "ホーム",
     "comment": "コメント",
     "view": "表示",
-    "forms": "フォーム",
     "organize": "整理",
     "help": "ヘルプ",
     "format": "書式",
@@ -34,6 +33,8 @@
     "edit": "編集",
     "editText": "テキスト編集",
     "addText": "テキスト追加",
+    "cropMargins": "余白をトリミング",
+    "crop": "トリミング",
     "navigate": "ナビゲーション",
     "firstPage": "最初のページ",
     "first": "最初",
@@ -110,13 +111,6 @@
     "annotationsList": "注釈一覧 (F11)",
     "annotationsLabel": "注釈",
     "appearance": "外観"
-  },
-  "forms": {
-    "formFields": "フォームフィールド",
-    "textField": "テキストフィールド",
-    "checkbox": "チェックボックス",
-    "radioButton": "ラジオボタン",
-    "radio": "ラジオ"
   },
   "organize": {
     "pages": "ページ",
@@ -250,7 +244,7 @@
     "h": "高さ："
   },
   "theme": {
-    "system": "システム",
+    "system": "システム (自動検出)",
     "light": "ライト",
     "dark": "ダーク",
     "blue": "ブルー",

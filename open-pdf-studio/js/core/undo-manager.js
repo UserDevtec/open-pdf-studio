@@ -68,6 +68,14 @@ export async function undo() {
       showProperties(state.selectedAnnotation);
     }
   } else {
+    // Clear selection of annotations that no longer exist
+    const doc = getActiveDocument();
+    if (doc) {
+      const remaining = doc.selectedAnnotations.filter(a => doc.annotations.includes(a));
+      if (remaining.length !== doc.selectedAnnotations.length) {
+        state.selectedAnnotations = remaining;
+      }
+    }
     const { hideProperties } = await import('../ui/panels/properties-panel.js');
     hideProperties();
   }
@@ -102,6 +110,14 @@ export async function redo() {
       showProperties(state.selectedAnnotation);
     }
   } else {
+    // Clear selection of annotations that no longer exist
+    const doc = getActiveDocument();
+    if (doc) {
+      const remaining = doc.selectedAnnotations.filter(a => doc.annotations.includes(a));
+      if (remaining.length !== doc.selectedAnnotations.length) {
+        state.selectedAnnotations = remaining;
+      }
+    }
     const { hideProperties } = await import('../ui/panels/properties-panel.js');
     hideProperties();
   }

@@ -4,7 +4,6 @@
     "home": "হোম",
     "comment": "মন্তব্য",
     "view": "দৃশ্য",
-    "forms": "ফর্ম",
     "organize": "সংগঠিত",
     "help": "সাহায্য",
     "format": "বিন্যাস",
@@ -34,6 +33,8 @@
     "edit": "সম্পাদনা",
     "editText": "পাঠ্য সম্পাদনা",
     "addText": "পাঠ্য যোগ করুন",
+    "cropMargins": "মার্জিন ক্রপ",
+    "crop": "ক্রপ",
     "navigate": "নেভিগেশন",
     "firstPage": "প্রথম পৃষ্ঠা",
     "first": "প্রথম",
@@ -110,13 +111,6 @@
     "annotationsList": "টীকার তালিকা (F11)",
     "annotationsLabel": "টীকা",
     "appearance": "চেহারা"
-  },
-  "forms": {
-    "formFields": "ফর্ম ক্ষেত্র",
-    "textField": "পাঠ্য ক্ষেত্র",
-    "checkbox": "চেকবক্স",
-    "radioButton": "রেডিও বোতাম",
-    "radio": "রেডিও"
   },
   "organize": {
     "pages": "পৃষ্ঠাসমূহ",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "সিস্টেম",
+    "system": "সিস্টেম (স্বয়ংক্রিয়)",
     "light": "হালকা",
     "dark": "গাঢ়",
     "blue": "নীল",

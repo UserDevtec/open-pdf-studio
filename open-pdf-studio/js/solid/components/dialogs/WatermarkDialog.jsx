@@ -1,6 +1,6 @@
 import { createSignal, Show } from 'solid-js';
 import Dialog from '../Dialog.jsx';
-import { closeDialog } from '../../stores/dialogStore.js';
+import { closeDialog, showMessage } from '../../stores/dialogStore.js';
 import { state } from '../../../core/state.js';
 import { recordAddWatermark, recordModifyWatermark } from '../../../core/undo-manager.js';
 import { markDocumentModified } from '../../../ui/chrome/tabs.js';
@@ -147,7 +147,7 @@ export default function WatermarkDialog(props) {
     const wm = tab === 'image' ? buildImageWatermark() : buildTextWatermark();
 
     if (tab === 'image' && !wm.imageData) {
-      alert(t('watermark.selectImageFirst'));
+      showMessage(t('watermark.selectImageFirst'));
       return;
     }
 

@@ -4,7 +4,6 @@
     "home": "Inici",
     "comment": "Comentari",
     "view": "Visualitza",
-    "forms": "Formularis",
     "organize": "Organitza",
     "help": "Ajuda",
     "format": "Format",
@@ -34,6 +33,8 @@
     "edit": "Edita",
     "editText": "Edita text",
     "addText": "Afegeix text",
+    "cropMargins": "Retalla els marges",
+    "crop": "Retalla",
     "navigate": "Navega",
     "firstPage": "Primera pàgina",
     "first": "Primera",
@@ -110,13 +111,6 @@
     "annotationsList": "Llista d'anotacions (F11)",
     "annotationsLabel": "Anotacions",
     "appearance": "Aparça"
-  },
-  "forms": {
-    "formFields": "Camps de formulari",
-    "textField": "Camp de text",
-    "checkbox": "Casella de verificació",
-    "radioButton": "Botó d'opció",
-    "radio": "Opció"
   },
   "organize": {
     "pages": "Pàgines",
@@ -250,7 +244,7 @@
     "h": "Al:"
   },
   "theme": {
-    "system": "Sistema",
+    "system": "Sistema (Autodetecció)",
     "light": "Clar",
     "dark": "Fosc",
     "blue": "Blau",

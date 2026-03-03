@@ -25,9 +25,18 @@ export default function PrefComboBox(props) {
 
   function handleInput(e) {
     if (isDisabled()) return;
-    let val = parseFloat(e.target.value);
+    // Strip non-numeric characters (allow digits, minus, dot)
+    const cleaned = e.target.value.replace(/[^0-9.\-]/g, '');
+    if (cleaned !== e.target.value) {
+      e.target.value = cleaned;
+    }
+    let val = parseFloat(cleaned);
     if (!isNaN(val)) {
-      props.setValue(val);
+      const clamped = Math.max(min, Math.min(max, val));
+      props.setValue(clamped);
+      if (clamped !== val) {
+        e.target.value = clamped;
+      }
     }
   }
 

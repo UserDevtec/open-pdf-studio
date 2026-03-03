@@ -8,7 +8,8 @@
     "markup": "Markup",
     "behavior": "Behavior",
     "fileAssociation": "File Association",
-    "virtualPrinter": "Virtual Printer"
+    "virtualPrinter": "Virtual Printer",
+    "pageDisplay": "Page Display"
   },
   "resetToDefaults": "Reset to Defaults",
   "resetConfirm": "Reset all preferences to default values?",
@@ -18,7 +19,7 @@
     "startup": "Startup",
     "restoreLastSession": "Restore last session when application starts",
     "author": "Author",
-    "defaultAuthorName": "Default Author Name",
+    "defaultAuthorName": "Author Name",
     "language": "Language",
     "interfaceLanguage": "Interface Language"
   },
@@ -113,7 +114,7 @@
     "startup": "Startup",
     "restoreLastSession": "Restore last session when application starts",
     "author": "Author",
-    "defaultAuthorName": "Default Author Name",
+    "defaultAuthorName": "Author Name",
     "snapping": "Snapping",
     "angleSnap": "Angle Snap (degrees)",
     "enableAngleSnapping": "Enable Angle Snapping (hold Shift)",
@@ -132,6 +133,10 @@
     "autoSelectAfterCreation": "Auto-select annotation after creation",
     "deletion": "Deletion",
     "confirmBeforeDeleting": "Confirm before deleting annotations"
+  },
+  "pageDisplay": {
+    "rendering": "Rendering",
+    "thinLines": "Thin Lines (display all lines at 1px width)"
   },
   "fileAssoc": {
     "defaultPdfApplication": "Default PDF Application",

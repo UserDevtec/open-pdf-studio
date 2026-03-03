@@ -8,7 +8,8 @@
     "markup": "Marcatge",
     "behavior": "Comportament",
     "fileAssociation": "Associació de fitxers",
-    "virtualPrinter": "Impressora virtual"
+    "virtualPrinter": "Impressora virtual",
+    "pageDisplay": "Visualització de pàgina"
   },
   "resetToDefaults": "Reinicia als valors per defecte",
   "resetConfirm": "Voleu reiniciar totes les preferències als valors per defecte?",
@@ -18,7 +19,7 @@
     "startup": "Inici",
     "restoreLastSession": "Restaura l'última sessió en iniciar l'aplicació",
     "author": "Autor",
-    "defaultAuthorName": "Nom d'autor per defecte",
+    "defaultAuthorName": "Nom d'autor",
     "language": "Idioma",
     "interfaceLanguage": "Idioma de la interfície"
   },
@@ -113,7 +114,7 @@
     "startup": "Inici",
     "restoreLastSession": "Restaura l'última sessió en iniciar l'aplicació",
     "author": "Autor",
-    "defaultAuthorName": "Nom d'autor per defecte",
+    "defaultAuthorName": "Nom d'autor",
     "snapping": "Ajust",
     "angleSnap": "Ajust d'angle (graus)",
     "enableAngleSnapping": "Activa l'ajust d'angle (manté Maj)",
@@ -158,5 +159,9 @@
     "removalFailed": "La supressió ha fallat",
     "failedToInstall": "No s'ha pogut instal·lar la impressora virtual:",
     "failedToRemove": "No s'ha pogut suprimir la impressora virtual:"
+  },
+  "pageDisplay": {
+    "rendering": "Renderització",
+    "thinLines": "Línies fines (mostra totes les línies amb 1px d'amplada)"
   }
 }

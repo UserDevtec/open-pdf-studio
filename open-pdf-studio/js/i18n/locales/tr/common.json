@@ -99,6 +99,8 @@
     "signatureUnknown": "Doğrulama mevcut değil",
     "documentLevel": "Belge Düzeyi",
     "goToPage": "Sayfa {{page}} sayfasına git",
+    "goToPageLink": "Sayfaya git",
+    "openExternalFile": "Aç: {{filename}}",
     "destination": "Hedef: {{name}}",
     "internalLink": "Dahili Bağlantı"
   }

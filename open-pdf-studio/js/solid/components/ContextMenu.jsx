@@ -20,7 +20,8 @@ import { state, clearSelection, isSelected } from '../../core/state.js';
 import { showProperties, hideProperties } from '../../ui/panels/properties-panel.js';
 import { redrawAnnotations, redrawContinuous } from '../../annotations/rendering.js';
 import { copyAnnotation, copyAnnotations, pasteFromClipboard, duplicateAnnotation } from '../../annotations/clipboard.js';
-import { recordDelete, recordBulkDelete } from '../../core/undo-manager.js';
+import { cloneAnnotation } from '../../annotations/factory.js';
+import { recordDelete, recordBulkDelete, recordModify } from '../../core/undo-manager.js';
 import { bringToFront, sendToBack, bringForward, sendBackward, rotateAnnotation, flipHorizontal, flipVertical } from '../../annotations/z-order.js';
 import { startTextEditing } from '../../tools/text-editing.js';
 import { createTextMarkupAnnotation } from '../../text/text-markup.js';
@@ -233,10 +234,30 @@ function AnnotationMenuContent() {
           <ArrangeButton svg={sendBackwardSvg} title={t('annotation.sendBackward')} onClick={() => sendBackward(ann())} />
         </div>
         <div class="arrange-icon-grid">
-          <ArrangeButton svg={rotateLeftSvg} title={t('annotation.rotateLeft90')} onClick={() => rotateAnnotation(ann(), -90)} />
-          <ArrangeButton svg={rotateRightSvg} title={t('annotation.rotateRight90')} onClick={() => rotateAnnotation(ann(), 90)} />
-          <ArrangeButton svg={flipHorizontalSvg} title={t('annotation.flipHorizontal')} onClick={() => flipHorizontal(ann())} />
-          <ArrangeButton svg={flipVerticalSvg} title={t('annotation.flipVertical')} onClick={() => flipVertical(ann())} />
+          <ArrangeButton svg={rotateLeftSvg} title={t('annotation.rotateLeft90')} onClick={() => {
+            const a = ann(); if (!a) return;
+            const old = cloneAnnotation(a);
+            rotateAnnotation(a, -90);
+            recordModify(a.id, old, a);
+          }} />
+          <ArrangeButton svg={rotateRightSvg} title={t('annotation.rotateRight90')} onClick={() => {
+            const a = ann(); if (!a) return;
+            const old = cloneAnnotation(a);
+            rotateAnnotation(a, 90);
+            recordModify(a.id, old, a);
+          }} />
+          <ArrangeButton svg={flipHorizontalSvg} title={t('annotation.flipHorizontal')} onClick={() => {
+            const a = ann(); if (!a) return;
+            const old = cloneAnnotation(a);
+            flipHorizontal(a);
+            recordModify(a.id, old, a);
+          }} />
+          <ArrangeButton svg={flipVerticalSvg} title={t('annotation.flipVertical')} onClick={() => {
+            const a = ann(); if (!a) return;
+            const old = cloneAnnotation(a);
+            flipVertical(a);
+            recordModify(a.id, old, a);
+          }} />
         </div>
         <Separator />
         <MenuItem icon={transformIcon} label={t('annotation.transform')} onClick={() => showProperties(ann())} />
@@ -315,9 +336,12 @@ function AnnotationMenuContent() {
       </Submenu>
 
       <Submenu icon={exportIcon} label={t('annotation.exportSubmenu')}>
-        <MenuItem label={t('annotation.exportAsImage')} onClick={() => {
+        <MenuItem label={t('annotation.exportAsImage')} onClick={async () => {
           const a = ann();
-          if (a) showProperties(a);
+          if (a) {
+            const { exportAnnotationAsImage } = await import('../../pdf/exporter.js');
+            await exportAnnotationAsImage(a);
+          }
         }} />
       </Submenu>
 

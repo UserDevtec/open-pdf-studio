@@ -1,6 +1,6 @@
 import { createSignal, onMount, onCleanup, For, Show } from 'solid-js';
 import Dialog from '../Dialog.jsx';
-import { closeDialog } from '../../stores/dialogStore.js';
+import { closeDialog, showMessage } from '../../stores/dialogStore.js';
 import { state } from '../../../core/state.js';
 import { createAnnotation } from '../../../annotations/factory.js';
 import { recordAdd } from '../../../core/undo-manager.js';
@@ -219,7 +219,7 @@ export default function SignatureDialog(props) {
 
   function handlePlace() {
     if (strokes.length === 0) {
-      alert(t('signature.drawFirst'));
+      showMessage(t('signature.drawFirst'));
       return;
     }
     const dataUrl = getCroppedDataUrl(canvasRef);
@@ -229,7 +229,7 @@ export default function SignatureDialog(props) {
 
   function handleSaveAndPlace() {
     if (strokes.length === 0) {
-      alert(t('signature.drawFirst'));
+      showMessage(t('signature.drawFirst'));
       return;
     }
     const dataUrl = getCroppedDataUrl(canvasRef);

@@ -4,7 +4,6 @@
     "home": "בית",
     "comment": "הערה",
     "view": "תצוגה",
-    "forms": "טפסים",
     "organize": "ארגון",
     "help": "עזרה",
     "format": "עיצוב",
@@ -34,6 +33,8 @@
     "edit": "עריכה",
     "editText": "עריכת טקסט",
     "addText": "הוספת טקסט",
+    "cropMargins": "חיתוך שוליים",
+    "crop": "חיתוך",
     "navigate": "ניווט",
     "firstPage": "עמוד ראשון",
     "first": "ראשון",
@@ -110,13 +111,6 @@
     "annotationsList": "רשימת הערות (F11)",
     "annotationsLabel": "הערות",
     "appearance": "מראה"
-  },
-  "forms": {
-    "formFields": "שדות טופס",
-    "textField": "שדה טקסט",
-    "checkbox": "תיבת סימון",
-    "radioButton": "לחצן בחירה",
-    "radio": "בחירה"
   },
   "organize": {
     "pages": "עמודים",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "מערכת",
+    "system": "מערכת (אוטומטי)",
     "light": "בהיר",
     "dark": "כהה",
     "blue": "כחול",

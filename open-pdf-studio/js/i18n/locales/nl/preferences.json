@@ -8,7 +8,8 @@
     "markup": "Markering",
     "behavior": "Gedrag",
     "fileAssociation": "Bestandskoppeling",
-    "virtualPrinter": "Virtuele printer"
+    "virtualPrinter": "Virtuele printer",
+    "pageDisplay": "Paginaweergave"
   },
   "resetToDefaults": "Standaardwaarden herstellen",
   "resetConfirm": "Alle voorkeuren terugzetten naar standaardwaarden?",
@@ -18,7 +19,7 @@
     "startup": "Opstarten",
     "restoreLastSession": "Laatste sessie herstellen bij het starten van de toepassing",
     "author": "Auteur",
-    "defaultAuthorName": "Standaard auteursnaam",
+    "defaultAuthorName": "Auteursnaam",
     "language": "Taal",
     "interfaceLanguage": "Interfacetaal"
   },
@@ -104,7 +105,7 @@
     "startup": "Opstarten",
     "restoreLastSession": "Laatste sessie herstellen bij het starten van de toepassing",
     "author": "Auteur",
-    "defaultAuthorName": "Standaard auteursnaam",
+    "defaultAuthorName": "Auteursnaam",
     "snapping": "Uitlijnen",
     "angleSnap": "Hoek uitlijnen (graden)",
     "enableAngleSnapping": "Hoek uitlijnen inschakelen (houd Shift ingedrukt)",
@@ -141,5 +142,9 @@
     "removalFailed": "Verwijdering mislukt",
     "failedToInstall": "Kan virtuele printer niet installeren:",
     "failedToRemove": "Kan virtuele printer niet verwijderen:"
+  },
+  "pageDisplay": {
+    "rendering": "Weergave",
+    "thinLines": "Dunne lijnen (alle lijnen weergeven met 1px breedte)"
   }
 }

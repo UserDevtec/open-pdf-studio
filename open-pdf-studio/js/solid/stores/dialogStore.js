@@ -16,3 +16,7 @@ export function closeDialog(name) {
 export function getDialogs() {
   return dialogs();
 }
+
+export function showMessage(message, title) {
+  openDialog('message', { message, title });
+}

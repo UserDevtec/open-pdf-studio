@@ -99,6 +99,8 @@
     "signatureUnknown": "Verifikasi tidak tersedia",
     "documentLevel": "Tingkat Dokumen",
     "goToPage": "Ke Halaman {{page}}",
+    "goToPageLink": "Ke Halaman",
+    "openExternalFile": "Buka: {{filename}}",
     "destination": "Tujuan: {{name}}",
     "internalLink": "Tautan Internal"
   }

@@ -4,7 +4,6 @@
     "home": "Utama",
     "comment": "Komen",
     "view": "Paparan",
-    "forms": "Borang",
     "organize": "Susun",
     "help": "Bantuan",
     "format": "Format",
@@ -34,6 +33,8 @@
     "edit": "Sunting",
     "editText": "Sunting Teks",
     "addText": "Tambah Teks",
+    "cropMargins": "Pangkas Jidar",
+    "crop": "Pangkas",
     "navigate": "Navigasi",
     "firstPage": "Halaman Pertama",
     "first": "Pertama",
@@ -110,13 +111,6 @@
     "annotationsList": "Senarai Anotasi (F11)",
     "annotationsLabel": "Anotasi",
     "appearance": "Penampilan"
-  },
-  "forms": {
-    "formFields": "Medan Borang",
-    "textField": "Medan Teks",
-    "checkbox": "Kotak Semak",
-    "radioButton": "Butang Radio",
-    "radio": "Radio"
   },
   "organize": {
     "pages": "Halaman",
@@ -250,7 +244,7 @@
     "h": "T:"
   },
   "theme": {
-    "system": "Sistem",
+    "system": "Sistem (Auto Kesan)",
     "light": "Cerah",
     "dark": "Gelap",
     "blue": "Biru",

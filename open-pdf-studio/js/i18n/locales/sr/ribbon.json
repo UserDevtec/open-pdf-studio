@@ -4,7 +4,6 @@
     "home": "Почетна",
     "comment": "Коментар",
     "view": "Приказ",
-    "forms": "Обрасци",
     "organize": "Организуј",
     "help": "Помоћ",
     "format": "Формат",
@@ -34,6 +33,8 @@
     "edit": "Уреди",
     "editText": "Уреди текст",
     "addText": "Додај текст",
+    "cropMargins": "Опсеци маргине",
+    "crop": "Опсеци",
     "navigate": "Навигација",
     "firstPage": "Прва страница",
     "first": "Прва",
@@ -110,13 +111,6 @@
     "annotationsList": "Листа анотација (F11)",
     "annotationsLabel": "Анотације",
     "appearance": "Изглед"
-  },
-  "forms": {
-    "formFields": "Поља обрасца",
-    "textField": "Текстуално поље",
-    "checkbox": "Поље за потврду",
-    "radioButton": "Радио дугме",
-    "radio": "Радио"
   },
   "organize": {
     "pages": "Странице",
@@ -250,7 +244,7 @@
     "h": "В:"
   },
   "theme": {
-    "system": "Системска",
+    "system": "Системска (Аутоматски)",
     "light": "Светла",
     "dark": "Тамна",
     "blue": "Плава",

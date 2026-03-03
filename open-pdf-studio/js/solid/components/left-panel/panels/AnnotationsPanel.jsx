@@ -158,7 +158,12 @@ export default function AnnotationsPanel() {
             onClick={() => {
               if (!menuOpen() && menuBtnRef) {
                 const rect = menuBtnRef.getBoundingClientRect();
-                setMenuPos({ top: rect.bottom, left: rect.left });
+                const isRtl = document.documentElement.dir === 'rtl';
+                if (isRtl) {
+                  setMenuPos({ top: rect.bottom, right: window.innerWidth - rect.right });
+                } else {
+                  setMenuPos({ top: rect.bottom, left: rect.left });
+                }
               }
               setMenuOpen(!menuOpen());
             }}
@@ -170,7 +175,10 @@ export default function AnnotationsPanel() {
             </svg>
           </button>
           <Show when={menuOpen()}>
-            <div class="annotations-menu" ref={menuRef} style={{ top: `${menuPos().top}px`, left: `${menuPos().left}px` }}>
+            <div class="annotations-menu" ref={menuRef} style={{
+              top: `${menuPos().top}px`,
+              ...(menuPos().right !== undefined ? { right: `${menuPos().right}px` } : { left: `${menuPos().left}px` })
+            }}>
               {/* Cut / Copy / Delete / Flatten */}
               <div
                 class={`annotations-menu-item${!hasSelection() ? ' disabled' : ''}`}

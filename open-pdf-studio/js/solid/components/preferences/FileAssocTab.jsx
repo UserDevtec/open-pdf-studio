@@ -1,6 +1,7 @@
 import { createSignal, onMount } from 'solid-js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 import { openExternal } from '../../../core/platform.js';
+import { showMessage } from '../../stores/dialogStore.js';
 
 export default function FileAssocTab() {
   const { t } = useTranslation('preferences');
@@ -53,14 +54,14 @@ export default function FileAssocTab() {
     if (platform.includes('win')) {
       try {
         await openExternal('ms-settings:defaultapps');
-        alert(t('fileAssoc.windowsInstructions'));
+        showMessage(t('fileAssoc.windowsInstructions'));
       } catch {
-        alert(t('fileAssoc.windowsFailed'));
+        showMessage(t('fileAssoc.windowsFailed'));
       }
     } else if (platform.includes('mac')) {
-      alert(t('fileAssoc.macInstructions'));
+      showMessage(t('fileAssoc.macInstructions'));
     } else {
-      alert(t('fileAssoc.linuxInstructions'));
+      showMessage(t('fileAssoc.linuxInstructions'));
     }
   }
 

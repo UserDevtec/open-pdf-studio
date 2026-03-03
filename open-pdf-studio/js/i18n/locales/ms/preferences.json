@@ -8,7 +8,8 @@
     "markup": "Penanda",
     "behavior": "Kelakuan",
     "fileAssociation": "Perkaitan Fail",
-    "virtualPrinter": "Pencetak Maya"
+    "virtualPrinter": "Pencetak Maya",
+    "pageDisplay": "Paparan Halaman"
   },
   "resetToDefaults": "Tetapkan Semula kepada Lalai",
   "resetConfirm": "Tetapkan semula semua keutamaan kepada nilai lalai?",
@@ -18,7 +19,7 @@
     "startup": "Permulaan",
     "restoreLastSession": "Pulihkan sesi terakhir apabila aplikasi dimulakan",
     "author": "Pengarang",
-    "defaultAuthorName": "Nama Pengarang Lalai",
+    "defaultAuthorName": "Nama Pengarang",
     "language": "Bahasa",
     "interfaceLanguage": "Bahasa Antaramuka"
   },
@@ -113,7 +114,7 @@
     "startup": "Permulaan",
     "restoreLastSession": "Pulihkan sesi terakhir apabila aplikasi dimulakan",
     "author": "Pengarang",
-    "defaultAuthorName": "Nama Pengarang Lalai",
+    "defaultAuthorName": "Nama Pengarang",
     "snapping": "Perakaman",
     "angleSnap": "Perakaman Sudut (darjah)",
     "enableAngleSnapping": "Dayakan Perakaman Sudut (tahan Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Pembuangan gagal",
     "failedToInstall": "Gagal memasang pencetak maya:",
     "failedToRemove": "Gagal membuang pencetak maya:"
+  },
+  "pageDisplay": {
+    "rendering": "Rendering",
+    "thinLines": "Garisan nipis (paparkan semua garisan dengan lebar 1px)"
   }
 }

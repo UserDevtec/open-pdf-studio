@@ -8,7 +8,8 @@
     "markup": "标记",
     "behavior": "行为",
     "fileAssociation": "文件关联",
-    "virtualPrinter": "虚拟打印机"
+    "virtualPrinter": "虚拟打印机",
+    "pageDisplay": "页面显示"
   },
   "resetToDefaults": "恢复默认设置",
   "resetConfirm": "将所有首选项恢复为默认值？",
@@ -18,7 +19,7 @@
     "startup": "启动",
     "restoreLastSession": "启动时恢复上次会话",
     "author": "作者",
-    "defaultAuthorName": "默认作者姓名",
+    "defaultAuthorName": "作者姓名",
     "language": "语言",
     "interfaceLanguage": "界面语言"
   },
@@ -104,7 +105,7 @@
     "startup": "启动",
     "restoreLastSession": "启动时恢复上次会话",
     "author": "作者",
-    "defaultAuthorName": "默认作者姓名",
+    "defaultAuthorName": "作者姓名",
     "snapping": "吸附",
     "angleSnap": "角度吸附（度）",
     "enableAngleSnapping": "启用角度吸附（按住 Shift）",
@@ -141,5 +142,9 @@
     "removalFailed": "移除失败",
     "failedToInstall": "无法安装虚拟打印机：",
     "failedToRemove": "无法移除虚拟打印机："
+  },
+  "pageDisplay": {
+    "rendering": "渲染",
+    "thinLines": "细线（以1像素宽度显示所有线条）"
   }
 }

@@ -8,7 +8,8 @@
     "markup": "मार्कअप",
     "behavior": "व्यवहार",
     "fileAssociation": "फ़ाइल संबद्धता",
-    "virtualPrinter": "वर्चुअल प्रिंटर"
+    "virtualPrinter": "वर्चुअल प्रिंटर",
+    "pageDisplay": "पृष्ठ प्रदर्शन"
   },
   "resetToDefaults": "डिफ़ॉल्ट पर रीसेट करें",
   "resetConfirm": "सभी प्राथमिकताएं डिफ़ॉल्ट मानों पर रीसेट करें?",
@@ -18,7 +19,7 @@
     "startup": "स्टार्टअप",
     "restoreLastSession": "एप्लिकेशन शुरू होने पर अंतिम सत्र पुनर्स्थापित करें",
     "author": "लेखक",
-    "defaultAuthorName": "डिफ़ॉल्ट लेखक का नाम",
+    "defaultAuthorName": "लेखक का नाम",
     "language": "भाषा",
     "interfaceLanguage": "इंटरफ़ेस भाषा"
   },
@@ -113,7 +114,7 @@
     "startup": "स्टार्टअप",
     "restoreLastSession": "एप्लिकेशन शुरू होने पर अंतिम सत्र पुनर्स्थापित करें",
     "author": "लेखक",
-    "defaultAuthorName": "डिफ़ॉल्ट लेखक का नाम",
+    "defaultAuthorName": "लेखक का नाम",
     "snapping": "स्नैपिंग",
     "angleSnap": "कोण स्नैप (डिग्री)",
     "enableAngleSnapping": "कोण स्नैपिंग सक्षम करें (Shift दबाए रखें)",
@@ -158,5 +159,9 @@
     "removalFailed": "हटाना विफल",
     "failedToInstall": "वर्चुअल प्रिंटर स्थापित करने में विफल:",
     "failedToRemove": "वर्चुअल प्रिंटर हटाने में विफल:"
+  },
+  "pageDisplay": {
+    "rendering": "रेंडरिंग",
+    "thinLines": "पतली रेखाएँ (सभी रेखाओं को 1px चौड़ाई में प्रदर्शित करें)"
   }
 }

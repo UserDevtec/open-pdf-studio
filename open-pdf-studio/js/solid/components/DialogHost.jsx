@@ -20,6 +20,8 @@ import StampPickerDialog from './dialogs/StampPickerDialog.jsx';
 import CalibrationDialog from './dialogs/CalibrationDialog.jsx';
 import CropMarginsDialog from './dialogs/CropMarginsDialog.jsx';
 import FeedbackDialog from './dialogs/FeedbackDialog.jsx';
+import MessageDialog from './dialogs/MessageDialog.jsx';
+import AboutDialog from './dialogs/AboutDialog.jsx';
 import TextEditOverlay from './TextEditOverlay.jsx';
 import PdfTextEditOverlay from './PdfTextEditOverlay.jsx';
 
@@ -44,6 +46,8 @@ const DIALOG_MAP = {
   'calibration': CalibrationDialog,
   'crop-margins': CropMarginsDialog,
   'feedback': FeedbackDialog,
+  'message': MessageDialog,
+  'about': AboutDialog,
 };
 
 export default function DialogHost() {

@@ -8,7 +8,8 @@
     "markup": "마크업",
     "behavior": "동작",
     "fileAssociation": "파일 연결",
-    "virtualPrinter": "가상 프린터"
+    "virtualPrinter": "가상 프린터",
+    "pageDisplay": "페이지 표시"
   },
   "resetToDefaults": "기본값으로 초기화",
   "resetConfirm": "모든 환경 설정을 기본값으로 초기화하시겠습니까?",
@@ -18,7 +19,7 @@
     "startup": "시작",
     "restoreLastSession": "응용 프로그램 시작 시 마지막 세션 복원",
     "author": "작성자",
-    "defaultAuthorName": "기본 작성자 이름",
+    "defaultAuthorName": "작성자 이름",
     "language": "언어",
     "interfaceLanguage": "인터페이스 언어"
   },
@@ -104,7 +105,7 @@
     "startup": "시작",
     "restoreLastSession": "응용 프로그램 시작 시 마지막 세션 복원",
     "author": "작성자",
-    "defaultAuthorName": "기본 작성자 이름",
+    "defaultAuthorName": "작성자 이름",
     "snapping": "스냅",
     "angleSnap": "각도 스냅 (도)",
     "enableAngleSnapping": "각도 스냅 사용 (Shift 키를 누른 채)",
@@ -141,5 +142,9 @@
     "removalFailed": "제거 실패",
     "failedToInstall": "가상 프린터를 설치하지 못했습니다:",
     "failedToRemove": "가상 프린터를 제거하지 못했습니다:"
+  },
+  "pageDisplay": {
+    "rendering": "렌더링",
+    "thinLines": "가는 선 (모든 선을 1px 너비로 표시)"
   }
 }

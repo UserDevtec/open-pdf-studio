@@ -3,7 +3,9 @@ import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
 import { state } from '../../../core/state.js';
 import { isPdfAReadOnly } from '../../../pdf/loader.js';
-import { bringToFront, sendToBack, bringForward, sendBackward } from '../../../annotations/z-order.js';
+import { bringToFront, sendToBack, bringForward, sendBackward, flipHorizontal, flipVertical, rotateAnnotation } from '../../../annotations/z-order.js';
+import { cloneAnnotation } from '../../../annotations/factory.js';
+import { recordBulkModify } from '../../../core/undo-manager.js';
 import {
   alignLeft, alignCenter, alignRight, alignTop, alignMiddle, alignBottom,
   distributeSpaceH, distributeSpaceV, distributeLeft, distributeCenter,
@@ -100,15 +102,33 @@ export default function ArrangeTab() {
 
         <RibbonGroup label={t('arrange.rotate')}>
           <div class="ribbon-grid-col">
-            <button class="ribbon-row-btn" id="arr-rotate-ccw" title={t('arrange.rotate90CCW')} disabled={isPdfAReadOnly()}>
+            <button class="ribbon-row-btn" id="arr-rotate-ccw" title={t('arrange.rotate90CCW')} disabled={isPdfAReadOnly()}
+              onClick={() => {
+                const anns = [...state.selectedAnnotations];
+                const originals = anns.map(a => cloneAnnotation(a));
+                for (const ann of anns) rotateAnnotation(ann, -90);
+                recordBulkModify(anns, originals);
+              }}>
               <span ref={el => { el.innerHTML = rotateCcwIcon; }} />
               <span>{t('arrange.rotate90CCW')}</span>
             </button>
-            <button class="ribbon-row-btn" id="arr-rotate-cw" title={t('arrange.rotate90CW')} disabled={isPdfAReadOnly()}>
+            <button class="ribbon-row-btn" id="arr-rotate-cw" title={t('arrange.rotate90CW')} disabled={isPdfAReadOnly()}
+              onClick={() => {
+                const anns = [...state.selectedAnnotations];
+                const originals = anns.map(a => cloneAnnotation(a));
+                for (const ann of anns) rotateAnnotation(ann, 90);
+                recordBulkModify(anns, originals);
+              }}>
               <span ref={el => { el.innerHTML = rotateCwIcon; }} />
               <span>{t('arrange.rotate90CW')}</span>
             </button>
-            <button class="ribbon-row-btn" id="arr-rotate-180" title={t('arrange.rotate180')} disabled={isPdfAReadOnly()}>
+            <button class="ribbon-row-btn" id="arr-rotate-180" title={t('arrange.rotate180')} disabled={isPdfAReadOnly()}
+              onClick={() => {
+                const anns = [...state.selectedAnnotations];
+                const originals = anns.map(a => cloneAnnotation(a));
+                for (const ann of anns) rotateAnnotation(ann, 180);
+                recordBulkModify(anns, originals);
+              }}>
               <span ref={el => { el.innerHTML = rotate180Icon; }} />
               <span>{t('arrange.rotate180')}</span>
             </button>
@@ -117,11 +137,23 @@ export default function ArrangeTab() {
 
         <RibbonGroup label={t('arrange.reflect')}>
           <div class="ribbon-grid-col">
-            <button class="ribbon-row-btn" id="arr-flip-h" title={t('arrange.flipHorizontally')} disabled={isPdfAReadOnly()}>
+            <button class="ribbon-row-btn" id="arr-flip-h" title={t('arrange.flipHorizontally')} disabled={isPdfAReadOnly()}
+              onClick={() => {
+                const anns = [...state.selectedAnnotations];
+                const originals = anns.map(a => cloneAnnotation(a));
+                for (const ann of anns) flipHorizontal(ann);
+                recordBulkModify(anns, originals);
+              }}>
               <span ref={el => { el.innerHTML = flipHIcon; }} />
               <span>{t('arrange.horizontally')}</span>
             </button>
-            <button class="ribbon-row-btn" id="arr-flip-v" title={t('arrange.flipVertically')} disabled={isPdfAReadOnly()}>
+            <button class="ribbon-row-btn" id="arr-flip-v" title={t('arrange.flipVertically')} disabled={isPdfAReadOnly()}
+              onClick={() => {
+                const anns = [...state.selectedAnnotations];
+                const originals = anns.map(a => cloneAnnotation(a));
+                for (const ann of anns) flipVertical(ann);
+                recordBulkModify(anns, originals);
+              }}>
               <span ref={el => { el.innerHTML = flipVIcon; }} />
               <span>{t('arrange.vertically')}</span>
             </button>
@@ -155,26 +187,6 @@ export default function ArrangeTab() {
           </div>
         </RibbonGroup>
 
-        <RibbonGroup label={t('arrange.transform')}>
-          <div class="ribbon-transform-grid">
-            <div class="ribbon-transform-row">
-              <label>{t('arrange.x')}</label>
-              <input type="number" class="ribbon-transform-input" id="arr-pos-x" step="0.01" disabled={isPdfAReadOnly()} />
-              <span class="ribbon-transform-unit">mm</span>
-              <label>{t('arrange.w')}</label>
-              <input type="number" class="ribbon-transform-input" id="arr-size-w" step="0.01" disabled={isPdfAReadOnly()} />
-              <span class="ribbon-transform-unit">mm</span>
-            </div>
-            <div class="ribbon-transform-row">
-              <label>{t('arrange.y')}</label>
-              <input type="number" class="ribbon-transform-input" id="arr-pos-y" step="0.01" disabled={isPdfAReadOnly()} />
-              <span class="ribbon-transform-unit">mm</span>
-              <label>{t('arrange.h')}</label>
-              <input type="number" class="ribbon-transform-input" id="arr-size-h" step="0.01" disabled={isPdfAReadOnly()} />
-              <span class="ribbon-transform-unit">mm</span>
-            </div>
-          </div>
-        </RibbonGroup>
       </div>
     </div>
   );

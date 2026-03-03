@@ -8,7 +8,8 @@
     "markup": "Znaczniki",
     "behavior": "Zachowanie",
     "fileAssociation": "Skojarzenie plików",
-    "virtualPrinter": "Drukarka wirtualna"
+    "virtualPrinter": "Drukarka wirtualna",
+    "pageDisplay": "Wyświetlanie strony"
   },
   "resetToDefaults": "Przywróć ustawienia domyślne",
   "resetConfirm": "Przywrócić wszystkie preferencje do wartości domyślnych?",
@@ -18,7 +19,7 @@
     "startup": "Uruchamianie",
     "restoreLastSession": "Przywróć ostatnią sesję przy uruchamianiu aplikacji",
     "author": "Autor",
-    "defaultAuthorName": "Domyślna nazwa autora",
+    "defaultAuthorName": "Nazwa autora",
     "language": "Język",
     "interfaceLanguage": "Język interfejsu"
   },
@@ -104,7 +105,7 @@
     "startup": "Uruchamianie",
     "restoreLastSession": "Przywróć ostatnią sesję przy uruchamianiu aplikacji",
     "author": "Autor",
-    "defaultAuthorName": "Domyślna nazwa autora",
+    "defaultAuthorName": "Nazwa autora",
     "snapping": "Przyciąganie",
     "angleSnap": "Przyciąganie kąta (stopnie)",
     "enableAngleSnapping": "Włącz przyciąganie kąta (przytrzymaj Shift)",
@@ -141,5 +142,9 @@
     "removalFailed": "Usunięcie nie powiodło się",
     "failedToInstall": "Nie udało się zainstalować drukarki wirtualnej:",
     "failedToRemove": "Nie udało się usunąć drukarki wirtualnej:"
+  },
+  "pageDisplay": {
+    "rendering": "Renderowanie",
+    "thinLines": "Cienkie linie (wyświetlaj wszystkie linie o szerokości 1px)"
   }
 }

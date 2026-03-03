@@ -4,7 +4,6 @@
     "home": "Start",
     "comment": "Opmerkingen",
     "view": "Beeld",
-    "forms": "Formulieren",
     "organize": "Ordenen",
     "help": "Help",
     "format": "Opmaak",
@@ -34,6 +33,8 @@
     "edit": "Bewerken",
     "editText": "Tekst bewerken",
     "addText": "Tekst toevoegen",
+    "cropMargins": "Marges bijsnijden",
+    "crop": "Bijsnijden",
     "navigate": "Navigeren",
     "firstPage": "Eerste pagina",
     "first": "Eerste",
@@ -110,13 +111,6 @@
     "annotationsList": "Annotatielijst (F11)",
     "annotationsLabel": "Annotaties",
     "appearance": "Weergave"
-  },
-  "forms": {
-    "formFields": "Formuliervelden",
-    "textField": "Tekstveld",
-    "checkbox": "Selectievakje",
-    "radioButton": "Keuzerondje",
-    "radio": "Keuzerondje"
   },
   "organize": {
     "pages": "Pagina's",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "Systeem",
+    "system": "Systeem (Automatisch)",
     "light": "Licht",
     "dark": "Donker",
     "blue": "Blauw",

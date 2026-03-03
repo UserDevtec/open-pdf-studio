@@ -11,6 +11,8 @@ import { recordPageStructure } from '../core/undo-manager.js';
 import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 import { resetAnnotationStorage } from './form-layer.js';
+import i18next from '../i18n/config.js';
+import { showMessage } from '../solid/stores/dialogStore.js';
 
 // Page clipboard for cut/copy/paste
 let pageClipboard = null; // { bytes: Uint8Array, cut: boolean, sourcePageNum: number }
@@ -275,7 +277,7 @@ export async function deletePages(pageNumbers) {
 
   // Guard: can't delete all pages
   if (pageNumbers.length >= numPages) {
-    alert('Cannot delete all pages. At least one page must remain.');
+    showMessage(i18next.t('cannotDeleteAllPages'));
     return;
   }
 
@@ -338,7 +340,7 @@ export async function extractPages(pageNumbers, deleteFromOriginal) {
   if (!state.pdfDoc) return;
 
   if (pageNumbers.length === 0) {
-    alert('No pages selected for extraction.');
+    showMessage(i18next.t('noPagesSelected'));
     return;
   }
 
@@ -373,7 +375,7 @@ export async function extractPages(pageNumbers, deleteFromOriginal) {
     if (deleteFromOriginal) {
       const numPages = state.pdfDoc.numPages;
       if (pageNumbers.length >= numPages) {
-        alert('Cannot delete all pages from the source document.');
+        showMessage(i18next.t('cannotDeleteAllPagesSource'));
       } else {
         await deletePages(pageNumbers);
       }
@@ -500,7 +502,7 @@ export async function replacePages(pageNumber) {
     const srcPageCount = srcDoc.getPageCount();
 
     if (srcPageCount === 0) {
-      alert('The selected PDF has no pages.');
+      showMessage(i18next.t('selectedPdfNoPages'));
       return;
     }
 
@@ -547,7 +549,7 @@ export async function replacePages(pageNumber) {
     recordPageStructure(currentBytes, oldAnnotations, oldRotations, oldPage, newBytes, newAnnotations, newRotations, targetPage);
   } catch (err) {
     console.error('Failed to replace page:', err);
-    alert(`Failed to replace page: ${err.message}`);
+    showMessage(i18next.t('failedToReplacePage', { error: err.message }));
   } finally {
     hideLoading();
   }
@@ -610,7 +612,7 @@ export async function mergeFiles(filePaths, position) {
         totalInserted += srcPageCount;
       } catch (err) {
         console.error(`Failed to merge file: ${filePath}`, err);
-        alert(`Failed to merge: ${filePath.split(/[\\/]/).pop()}\n${err.message}`);
+        showMessage(i18next.t('failedToMergeFile', { file: filePath.split(/[\\/]/).pop(), error: err.message }));
       }
     }
 

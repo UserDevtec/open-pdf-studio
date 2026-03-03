@@ -4,12 +4,14 @@ import { recordBulkAdd } from '../core/undo-manager.js';
 import { redrawAnnotations, redrawContinuous } from './rendering.js';
 import { updateStatusMessage } from '../ui/chrome/status-bar.js';
 import { isTauri, readBinaryFile, writeBinaryFile, saveFileDialog, openFileDialog } from '../core/platform.js';
+import i18next from '../i18n/config.js';
+import { showMessage } from '../solid/stores/dialogStore.js';
 
 // Export annotations to XFDF XML format
 export function exportToXFDF() {
   const annotations = state.annotations;
   if (annotations.length === 0) {
-    alert('No annotations to export.');
+    showMessage(i18next.t('noAnnotationsToExport'));
     return;
   }
 
@@ -59,7 +61,7 @@ export async function exportXFDFToFile() {
 // Import annotations from XFDF file
 export async function importXFDFFromFile() {
   if (!isTauri()) {
-    alert('Import requires Tauri environment');
+    showMessage(i18next.t('importRequiresTauri'));
     return;
   }
 
@@ -80,13 +82,13 @@ export function importFromXFDF(xml) {
 
   const parseError = doc.querySelector('parsererror');
   if (parseError) {
-    alert('Invalid XFDF file');
+    showMessage(i18next.t('invalidXfdfFile'));
     return;
   }
 
   const annots = doc.querySelector('annots');
   if (!annots) {
-    alert('No annotations found in XFDF file');
+    showMessage(i18next.t('noAnnotationsInXfdf'));
     return;
   }
 
@@ -138,35 +140,35 @@ function annotationToXFDF(ann) {
     case 'box':
       return `    <square ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
              (ann.fillColor ? ` interior-color="${colorToXFDF(ann.fillColor)}"` : '') +
-             ` width="${ann.lineWidth || 2}">\n` +
+             ` width="${ann.lineWidth ?? 2}">\n` +
              `      <contents>${escapeXml(ann.subject || '')}</contents>\n` +
              `    </square>\n`;
 
     case 'circle':
       return `    <circle ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
              (ann.fillColor ? ` interior-color="${colorToXFDF(ann.fillColor)}"` : '') +
-             ` width="${ann.lineWidth || 2}">\n` +
+             ` width="${ann.lineWidth ?? 2}">\n` +
              `      <contents>${escapeXml(ann.subject || '')}</contents>\n` +
              `    </circle>\n`;
 
     case 'line':
       return `    <line ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
              ` start="${ann.startX},${ann.startY}" end="${ann.endX},${ann.endY}"` +
-             ` width="${ann.lineWidth || 2}">\n` +
+             ` width="${ann.lineWidth ?? 2}">\n` +
              `      <contents>${escapeXml(ann.subject || '')}</contents>\n` +
              `    </line>\n`;
 
     case 'arrow':
       return `    <line ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
              ` start="${ann.startX},${ann.startY}" end="${ann.endX},${ann.endY}"` +
-             ` width="${ann.lineWidth || 2}" head="${ann.startHead || 'none'}" tail="${ann.endHead || 'open'}">\n` +
+             ` width="${ann.lineWidth ?? 2}" head="${ann.startHead || 'none'}" tail="${ann.endHead || 'open'}">\n` +
              `      <contents>${escapeXml(ann.subject || '')}</contents>\n` +
              `    </line>\n`;
 
     case 'draw':
       if (!ann.path || ann.path.length < 2) return '';
       const inkPoints = ann.path.map(p => `${p.x},${p.y}`).join(';');
-      return `    <ink ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}" width="${ann.lineWidth || 2}">\n` +
+      return `    <ink ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}" width="${ann.lineWidth ?? 2}">\n` +
              `      <inklist><gesture>${inkPoints}</gesture></inklist>\n` +
              `      <contents>${escapeXml(ann.subject || '')}</contents>\n` +
              `    </ink>\n`;

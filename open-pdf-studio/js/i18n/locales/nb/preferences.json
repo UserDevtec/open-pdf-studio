@@ -8,7 +8,8 @@
     "markup": "Markering",
     "behavior": "Oppførsel",
     "fileAssociation": "Filtilknytning",
-    "virtualPrinter": "Virtuell skriver"
+    "virtualPrinter": "Virtuell skriver",
+    "pageDisplay": "Sidevisning"
   },
   "resetToDefaults": "Tilbakestill til standardverdier",
   "resetConfirm": "Tilbakestille alle innstillinger til standardverdier?",
@@ -18,7 +19,7 @@
     "startup": "Oppstart",
     "restoreLastSession": "Gjenopprett siste økt når programmet starter",
     "author": "Forfatter",
-    "defaultAuthorName": "Standard forfatternavn",
+    "defaultAuthorName": "Forfatternavn",
     "language": "Språk",
     "interfaceLanguage": "Grensesnittspråk"
   },
@@ -113,7 +114,7 @@
     "startup": "Oppstart",
     "restoreLastSession": "Gjenopprett siste økt når programmet starter",
     "author": "Forfatter",
-    "defaultAuthorName": "Standard forfatternavn",
+    "defaultAuthorName": "Forfatternavn",
     "snapping": "Festing",
     "angleSnap": "Vinkelsnapp (grader)",
     "enableAngleSnapping": "Aktiver vinkelsnapping (hold Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Fjerning mislyktes",
     "failedToInstall": "Kunne ikke installere virtuell skriver:",
     "failedToRemove": "Kunne ikke fjerne virtuell skriver:"
+  },
+  "pageDisplay": {
+    "rendering": "Gjengivelse",
+    "thinLines": "Tynne linjer (vis alle linjer med 1px bredde)"
   }
 }

@@ -8,7 +8,8 @@
     "markup": "Alama",
     "behavior": "Tabia",
     "fileAssociation": "Ushirikiano wa Faili",
-    "virtualPrinter": "Printa Pepe"
+    "virtualPrinter": "Printa Pepe",
+    "pageDisplay": "Onyesho la Ukurasa"
   },
   "resetToDefaults": "Weka Upya Chaguo-msingi",
   "resetConfirm": "Weka upya mapendeleo yote kuwa chaguo-msingi?",
@@ -18,7 +19,7 @@
     "startup": "Kuanza",
     "restoreLastSession": "Rejesha kipindi cha mwisho programu inapoanza",
     "author": "Mwandishi",
-    "defaultAuthorName": "Jina Chaguo-msingi la Mwandishi",
+    "defaultAuthorName": "Jina la Mwandishi",
     "language": "Lugha",
     "interfaceLanguage": "Lugha ya Kiolesura"
   },
@@ -113,7 +114,7 @@
     "startup": "Kuanza",
     "restoreLastSession": "Rejesha kipindi cha mwisho programu inapoanza",
     "author": "Mwandishi",
-    "defaultAuthorName": "Jina Chaguo-msingi la Mwandishi",
+    "defaultAuthorName": "Jina la Mwandishi",
     "snapping": "Kupachika",
     "angleSnap": "Kupachika Pembe (digrii)",
     "enableAngleSnapping": "Wezesha Kupachika Pembe (shikilia Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Uondoaji umeshindwa",
     "failedToInstall": "Imeshindwa kuweka printa pepe:",
     "failedToRemove": "Imeshindwa kuondoa printa pepe:"
+  },
+  "pageDisplay": {
+    "rendering": "Uonyeshaji",
+    "thinLines": "Mistari nyembamba (onyesha mistari yote kwa upana wa 1px)"
   }
 }

@@ -8,7 +8,8 @@
     "markup": "Merkintä",
     "behavior": "Toiminta",
     "fileAssociation": "Tiedostoyhteys",
-    "virtualPrinter": "Virtuaalitulostin"
+    "virtualPrinter": "Virtuaalitulostin",
+    "pageDisplay": "Sivun näyttö"
   },
   "resetToDefaults": "Palauta oletukset",
   "resetConfirm": "Palautetaanko kaikki asetukset oletusarvoihin?",
@@ -18,7 +19,7 @@
     "startup": "Käynnistys",
     "restoreLastSession": "Palauta edellinen istunto sovelluksen käynnistyessä",
     "author": "Tekijä",
-    "defaultAuthorName": "Oletustekijän nimi",
+    "defaultAuthorName": "Tekijän nimi",
     "language": "Kieli",
     "interfaceLanguage": "Käyttöliittymän kieli"
   },
@@ -113,7 +114,7 @@
     "startup": "Käynnistys",
     "restoreLastSession": "Palauta edellinen istunto sovelluksen käynnistyessä",
     "author": "Tekijä",
-    "defaultAuthorName": "Oletustekijän nimi",
+    "defaultAuthorName": "Tekijän nimi",
     "snapping": "Kiinnitys",
     "angleSnap": "Kulman lukitus (astetta)",
     "enableAngleSnapping": "Ota kulman lukitus käyttöön (pidä Shift pohjassa)",
@@ -158,5 +159,9 @@
     "removalFailed": "Poistaminen epäonnistui",
     "failedToInstall": "Virtuaalitulostimen asennus epäonnistui:",
     "failedToRemove": "Virtuaalitulostimen poistaminen epäonnistui:"
+  },
+  "pageDisplay": {
+    "rendering": "Renderöinti",
+    "thinLines": "Ohuet viivat (näytä kaikki viivat 1px leveydellä)"
   }
 }

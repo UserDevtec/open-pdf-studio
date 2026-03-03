@@ -11,6 +11,7 @@ import GeneralTab from './GeneralTab.jsx';
 import AnnotationsTab from './AnnotationsTab.jsx';
 import MarkupTab from './MarkupTab.jsx';
 import BehaviorTab from './BehaviorTab.jsx';
+import PageDisplayTab from './PageDisplayTab.jsx';
 import FileAssocTab from './FileAssocTab.jsx';
 import VirtualPrinterTab from './VirtualPrinterTab.jsx';
 
@@ -21,6 +22,7 @@ const TAB_IDS = [
   { id: 'annotations', key: 'tabs.annotations' },
   { id: 'markup', key: 'tabs.markup' },
   { id: 'behavior', key: 'tabs.behavior' },
+  { id: 'pageDisplay', key: 'tabs.pageDisplay' },
   { id: 'fileassoc', key: 'tabs.fileAssociation' },
   { id: 'vprinter', key: 'tabs.virtualPrinter' },
 ];
@@ -49,6 +51,11 @@ const TAB_ICONS = {
   fileassoc: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+    </svg>
+  ),
+  pageDisplay: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="1"/><path d="M7 8h10M7 12h10M7 16h10"/>
     </svg>
   ),
   vprinter: (
@@ -80,11 +87,20 @@ export default function PreferencesDialog(props) {
   }
 
   function handleSave() {
+    const prevThinLines = state.preferences.thinLines;
     for (const key of Object.keys(DEFAULT_PREFERENCES)) {
       state.preferences[key] = prefs[key][0]();
     }
     savePreferences();
     applyTheme(state.preferences.theme);
+    // Re-render pages when thin lines setting changed
+    if (state.preferences.thinLines !== prevThinLines && state.pdfDoc) {
+      if (state.viewMode === 'continuous') {
+        import('../../../pdf/renderer.js').then(m => m.renderContinuous());
+      } else {
+        import('../../../pdf/renderer.js').then(m => m.renderPage(state.currentPage));
+      }
+    }
     close();
   }
 
@@ -159,6 +175,9 @@ export default function PreferencesDialog(props) {
             </Match>
             <Match when={activeTab() === 'behavior'}>
               <BehaviorTab prefs={prefs} />
+            </Match>
+            <Match when={activeTab() === 'pageDisplay'}>
+              <PageDisplayTab prefs={prefs} />
             </Match>
             <Match when={activeTab() === 'fileassoc'}>
               <FileAssocTab />

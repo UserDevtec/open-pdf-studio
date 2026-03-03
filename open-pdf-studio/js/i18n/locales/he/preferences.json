@@ -8,7 +8,8 @@
     "markup": "סימון",
     "behavior": "התנהגות",
     "fileAssociation": "שיוך קבצים",
-    "virtualPrinter": "מדפסת וירטואלית"
+    "virtualPrinter": "מדפסת וירטואלית",
+    "pageDisplay": "תצוגת עמוד"
   },
   "resetToDefaults": "איפוס לברירת מחדל",
   "resetConfirm": "לאפס את כל ההעדפות לערכי ברירת המחדל?",
@@ -18,7 +19,7 @@
     "startup": "הפעלה",
     "restoreLastSession": "שחזור ההפעלה האחרונה בעת הפעלת היישום",
     "author": "מחבר",
-    "defaultAuthorName": "שם מחבר ברירת מחדל",
+    "defaultAuthorName": "שם מחבר",
     "language": "שפה",
     "interfaceLanguage": "שפת ממשק"
   },
@@ -113,7 +114,7 @@
     "startup": "הפעלה",
     "restoreLastSession": "שחזור ההפעלה האחרונה בעת הפעלת היישום",
     "author": "מחבר",
-    "defaultAuthorName": "שם מחבר ברירת מחדל",
+    "defaultAuthorName": "שם מחבר",
     "snapping": "הצמדה",
     "angleSnap": "הצמדת זווית (מעלות)",
     "enableAngleSnapping": "הפעלת הצמדת זווית (החזק Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "ההסרה נכשלה",
     "failedToInstall": "נכשלה התקנת מדפסת וירטואלית:",
     "failedToRemove": "נכשלה הסרת מדפסת וירטואלית:"
+  },
+  "pageDisplay": {
+    "rendering": "עיבוד",
+    "thinLines": "קווים דקים (הצגת כל הקווים ברוחב 1px)"
   }
 }

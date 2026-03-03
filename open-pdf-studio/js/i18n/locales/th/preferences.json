@@ -8,7 +8,8 @@
     "markup": "การมาร์กอัป",
     "behavior": "พฤติกรรม",
     "fileAssociation": "การเชื่อมโยงไฟล์",
-    "virtualPrinter": "เครื่องพิมพ์เสมือน"
+    "virtualPrinter": "เครื่องพิมพ์เสมือน",
+    "pageDisplay": "การแสดงหน้า"
   },
   "resetToDefaults": "รีเซ็ตเป็นค่าเริ่มต้น",
   "resetConfirm": "รีเซ็ตการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น?",
@@ -18,7 +19,7 @@
     "startup": "การเริ่มต้น",
     "restoreLastSession": "กู้คืนเซสชันล่าสุดเมื่อเปิดแอปพลิเคชัน",
     "author": "ผู้เขียน",
-    "defaultAuthorName": "ชื่อผู้เขียนเริ่มต้น",
+    "defaultAuthorName": "ชื่อผู้เขียน",
     "language": "ภาษา",
     "interfaceLanguage": "ภาษาของส่วนติดต่อ"
   },
@@ -113,7 +114,7 @@
     "startup": "การเริ่มต้น",
     "restoreLastSession": "กู้คืนเซสชันล่าสุดเมื่อเปิดแอปพลิเคชัน",
     "author": "ผู้เขียน",
-    "defaultAuthorName": "ชื่อผู้เขียนเริ่มต้น",
+    "defaultAuthorName": "ชื่อผู้เขียน",
     "snapping": "การสแนป",
     "angleSnap": "สแนปมุม (องศา)",
     "enableAngleSnapping": "เปิดใช้การสแนปมุม (กด Shift ค้าง)",
@@ -158,5 +159,9 @@
     "removalFailed": "การลบล้มเหลว",
     "failedToInstall": "ไม่สามารถติดตั้งเครื่องพิมพ์เสมือน:",
     "failedToRemove": "ไม่สามารถลบเครื่องพิมพ์เสมือน:"
+  },
+  "pageDisplay": {
+    "rendering": "การเรนเดอร์",
+    "thinLines": "เส้นบาง (แสดงเส้นทั้งหมดด้วยความกว้าง 1px)"
   }
 }

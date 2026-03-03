@@ -1,5 +1,6 @@
 import { createSignal, onMount } from 'solid-js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
+import { showMessage } from '../../stores/dialogStore.js';
 
 export default function VirtualPrinterTab() {
   const { t } = useTranslation('preferences');
@@ -49,7 +50,7 @@ export default function VirtualPrinterTab() {
     } catch (err) {
       setStatus(t('virtualPrinter.installationFailed'));
       setStatusColor('#c62828');
-      alert(t('virtualPrinter.failedToInstall') + '\n' + (err.message || err));
+      showMessage(t('virtualPrinter.failedToInstall') + '\n' + (err.message || err));
     }
     setBusy(false);
   }
@@ -67,7 +68,7 @@ export default function VirtualPrinterTab() {
     } catch (err) {
       setStatus(t('virtualPrinter.removalFailed'));
       setStatusColor('#c62828');
-      alert(t('virtualPrinter.failedToRemove') + '\n' + (err.message || err));
+      showMessage(t('virtualPrinter.failedToRemove') + '\n' + (err.message || err));
     }
     setBusy(false);
   }

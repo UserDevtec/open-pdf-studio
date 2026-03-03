@@ -99,6 +99,8 @@
     "signatureUnknown": "无法验证",
     "documentLevel": "文档级别",
     "goToPage": "跳转到第 {{page}} 页",
+    "goToPageLink": "跳转到页面",
+    "openExternalFile": "打开：{{filename}}",
     "destination": "目标：{{name}}",
     "internalLink": "内部链接"
   }

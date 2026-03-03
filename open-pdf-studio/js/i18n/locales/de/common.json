@@ -99,6 +99,8 @@
     "signatureUnknown": "Überprüfung nicht verfügbar",
     "documentLevel": "Dokumentebene",
     "goToPage": "Gehe zu Seite {{page}}",
+    "goToPageLink": "Gehe zu Seite",
+    "openExternalFile": "Öffnen: {{filename}}",
     "destination": "Ziel: {{name}}",
     "internalLink": "Interner Link"
   }

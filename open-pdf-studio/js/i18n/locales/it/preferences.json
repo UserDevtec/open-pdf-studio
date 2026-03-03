@@ -8,7 +8,8 @@
     "markup": "Marcatura",
     "behavior": "Comportamento",
     "fileAssociation": "Associazione file",
-    "virtualPrinter": "Stampante virtuale"
+    "virtualPrinter": "Stampante virtuale",
+    "pageDisplay": "Visualizzazione pagina"
   },
   "resetToDefaults": "Ripristina predefiniti",
   "resetConfirm": "Ripristinare tutte le preferenze ai valori predefiniti?",
@@ -18,7 +19,7 @@
     "startup": "Avvio",
     "restoreLastSession": "Ripristina l'ultima sessione all'avvio dell'applicazione",
     "author": "Autore",
-    "defaultAuthorName": "Nome autore predefinito",
+    "defaultAuthorName": "Nome autore",
     "language": "Lingua",
     "interfaceLanguage": "Lingua dell'interfaccia"
   },
@@ -104,7 +105,7 @@
     "startup": "Avvio",
     "restoreLastSession": "Ripristina l'ultima sessione all'avvio dell'applicazione",
     "author": "Autore",
-    "defaultAuthorName": "Nome autore predefinito",
+    "defaultAuthorName": "Nome autore",
     "snapping": "Aggancio",
     "angleSnap": "Angolo di aggancio (gradi)",
     "enableAngleSnapping": "Abilita aggancio angolare (tenere premuto Shift)",
@@ -141,5 +142,9 @@
     "removalFailed": "Rimozione non riuscita",
     "failedToInstall": "Impossibile installare la stampante virtuale:",
     "failedToRemove": "Impossibile rimuovere la stampante virtuale:"
+  },
+  "pageDisplay": {
+    "rendering": "Rendering",
+    "thinLines": "Linee sottili (visualizza tutte le linee con larghezza 1px)"
   }
 }

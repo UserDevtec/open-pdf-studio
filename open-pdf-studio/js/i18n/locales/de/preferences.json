@@ -8,7 +8,8 @@
     "markup": "Markierung",
     "behavior": "Verhalten",
     "fileAssociation": "Dateizuordnung",
-    "virtualPrinter": "Virtueller Drucker"
+    "virtualPrinter": "Virtueller Drucker",
+    "pageDisplay": "Seitenanzeige"
   },
   "resetToDefaults": "Standardwerte wiederherstellen",
   "resetConfirm": "Alle Einstellungen auf Standardwerte zurücksetzen?",
@@ -18,7 +19,7 @@
     "startup": "Start",
     "restoreLastSession": "Letzte Sitzung beim Starten der Anwendung wiederherstellen",
     "author": "Autor",
-    "defaultAuthorName": "Standard-Autorname",
+    "defaultAuthorName": "Autorname",
     "language": "Sprache",
     "interfaceLanguage": "Oberflächensprache"
   },
@@ -104,7 +105,7 @@
     "startup": "Start",
     "restoreLastSession": "Letzte Sitzung beim Starten der Anwendung wiederherstellen",
     "author": "Autor",
-    "defaultAuthorName": "Standard-Autorname",
+    "defaultAuthorName": "Autorname",
     "snapping": "Einrasten",
     "angleSnap": "Winkeleinrastung (Grad)",
     "enableAngleSnapping": "Winkeleinrastung aktivieren (Shift gedrückt halten)",
@@ -141,5 +142,9 @@
     "removalFailed": "Entfernung fehlgeschlagen",
     "failedToInstall": "Virtueller Drucker konnte nicht installiert werden:",
     "failedToRemove": "Virtueller Drucker konnte nicht entfernt werden:"
+  },
+  "pageDisplay": {
+    "rendering": "Darstellung",
+    "thinLines": "Dünne Linien (alle Linien mit 1px Breite anzeigen)"
   }
 }

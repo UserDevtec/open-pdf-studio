@@ -4,7 +4,6 @@
     "home": "الرئيسية",
     "comment": "تعليق",
     "view": "عرض",
-    "forms": "نماذج",
     "organize": "تنظيم",
     "help": "مساعدة",
     "format": "تنسيق",
@@ -34,6 +33,8 @@
     "edit": "تحرير",
     "editText": "تحرير النص",
     "addText": "إضافة نص",
+    "cropMargins": "قص الهوامش",
+    "crop": "قص",
     "navigate": "تنقل",
     "firstPage": "الصفحة الأولى",
     "first": "الأولى",
@@ -110,13 +111,6 @@
     "annotationsList": "قائمة التعليقات (F11)",
     "annotationsLabel": "التعليقات",
     "appearance": "المظهر"
-  },
-  "forms": {
-    "formFields": "حقول النماذج",
-    "textField": "حقل نصي",
-    "checkbox": "خانة اختيار",
-    "radioButton": "زر اختيار",
-    "radio": "اختيار"
   },
   "organize": {
     "pages": "صفحات",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "النظام",
+    "system": "النظام (كشف تلقائي)",
     "light": "فاتح",
     "dark": "داكن",
     "blue": "أزرق",

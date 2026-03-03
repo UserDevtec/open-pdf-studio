@@ -145,11 +145,10 @@ export function drawSelectionHandles(ctx, annotation) {
       return;
     }
 
-    // Square handles
-    const isLineEndpoint = handle.type === HANDLE_TYPES.LINE_START || handle.type === HANDLE_TYPES.LINE_END;
-    ctx.fillStyle = isLineEndpoint ? '#0066cc' : '#ffffff';
+    // Square handles (white fill, blue border for all)
+    ctx.fillStyle = '#ffffff';
     ctx.fillRect(cx - hs / 2, cy - hs / 2, hs, hs);
-    ctx.strokeStyle = isLineEndpoint ? '#ffffff' : '#0066cc';
+    ctx.strokeStyle = '#0066cc';
     ctx.lineWidth = lw;
     ctx.strokeRect(cx - hs / 2, cy - hs / 2, hs, hs);
   });

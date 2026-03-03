@@ -99,6 +99,8 @@
     "signatureUnknown": "التحقق غير متاح",
     "documentLevel": "مستوى المستند",
     "goToPage": "انتقل إلى الصفحة {{page}}",
+    "goToPageLink": "انتقل إلى الصفحة",
+    "openExternalFile": "فتح: {{filename}}",
     "destination": "الوجهة: {{name}}",
     "internalLink": "رابط داخلي"
   }

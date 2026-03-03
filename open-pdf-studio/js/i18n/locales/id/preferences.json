@@ -8,7 +8,8 @@
     "markup": "Markup",
     "behavior": "Perilaku",
     "fileAssociation": "Asosiasi File",
-    "virtualPrinter": "Printer Virtual"
+    "virtualPrinter": "Printer Virtual",
+    "pageDisplay": "Tampilan Halaman"
   },
   "resetToDefaults": "Atur Ulang ke Bawaan",
   "resetConfirm": "Atur ulang semua preferensi ke nilai bawaan?",
@@ -18,7 +19,7 @@
     "startup": "Saat Memulai",
     "restoreLastSession": "Pulihkan sesi terakhir saat aplikasi dimulai",
     "author": "Penulis",
-    "defaultAuthorName": "Nama Penulis Bawaan",
+    "defaultAuthorName": "Nama Penulis",
     "language": "Bahasa",
     "interfaceLanguage": "Bahasa Antarmuka"
   },
@@ -113,7 +114,7 @@
     "startup": "Saat Memulai",
     "restoreLastSession": "Pulihkan sesi terakhir saat aplikasi dimulai",
     "author": "Penulis",
-    "defaultAuthorName": "Nama Penulis Bawaan",
+    "defaultAuthorName": "Nama Penulis",
     "snapping": "Snap",
     "angleSnap": "Snap Sudut (derajat)",
     "enableAngleSnapping": "Aktifkan Snap Sudut (tahan Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Penghapusan gagal",
     "failedToInstall": "Gagal menginstal printer virtual:",
     "failedToRemove": "Gagal menghapus printer virtual:"
+  },
+  "pageDisplay": {
+    "rendering": "Rendering",
+    "thinLines": "Garis tipis (tampilkan semua garis dengan lebar 1px)"
   }
 }

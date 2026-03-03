@@ -51,15 +51,8 @@ function resolveTheme(themeName) {
   return themeName;
 }
 
-// Detect OS theme using Tauri native API first, CSS media query as fallback
+// Detect OS theme via CSS media query (Tauri's webview respects the OS setting)
 function getSystemTheme() {
-  try {
-    const win = window.__TAURI__?.window;
-    if (win) {
-      const theme = win.getCurrentWindow().theme();
-      if (theme) return theme === 'dark' ? 'dark' : 'light';
-    }
-  } catch (e) { /* fall through */ }
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
@@ -71,18 +64,6 @@ export function applyTheme(themeName) {
 }
 
 // Listen for OS theme changes (applies when user has "System" selected)
-// Tauri native listener
-try {
-  const win = window.__TAURI__?.window;
-  if (win) {
-    win.getCurrentWindow().onThemeChanged(({ payload }) => {
-      if (state.preferences.theme === 'system') {
-        applyTheme('system');
-      }
-    });
-  }
-} catch (e) { /* ignore */ }
-// CSS fallback listener
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
   if (state.preferences.theme === 'system') {
     applyTheme('system');
@@ -123,7 +104,7 @@ export function setAsDefaultStyle(annotation) {
   switch (type) {
     case 'draw':
       prefs.drawStrokeColor = annotation.strokeColor || annotation.color || prefs.drawStrokeColor;
-      prefs.drawLineWidth = annotation.lineWidth || prefs.drawLineWidth;
+      prefs.drawLineWidth = annotation.lineWidth ?? prefs.drawLineWidth;
       if (annotation.opacity !== undefined) prefs.drawOpacity = Math.round(annotation.opacity * 100);
       break;
     case 'highlight':
@@ -132,14 +113,14 @@ export function setAsDefaultStyle(annotation) {
       break;
     case 'line':
       prefs.lineStrokeColor = annotation.strokeColor || annotation.color || prefs.lineStrokeColor;
-      prefs.lineLineWidth = annotation.lineWidth || prefs.lineLineWidth;
+      prefs.lineLineWidth = annotation.lineWidth ?? prefs.lineLineWidth;
       if (annotation.borderStyle) prefs.lineBorderStyle = annotation.borderStyle;
       if (annotation.opacity !== undefined) prefs.lineOpacity = Math.round(annotation.opacity * 100);
       break;
     case 'arrow':
       prefs.arrowStrokeColor = annotation.strokeColor || annotation.color || prefs.arrowStrokeColor;
       prefs.arrowFillColor = annotation.fillColor || prefs.arrowFillColor;
-      prefs.arrowLineWidth = annotation.lineWidth || prefs.arrowLineWidth;
+      prefs.arrowLineWidth = annotation.lineWidth ?? prefs.arrowLineWidth;
       if (annotation.borderStyle) prefs.arrowBorderStyle = annotation.borderStyle;
       if (annotation.startHead) prefs.arrowStartHead = annotation.startHead;
       if (annotation.endHead) prefs.arrowEndHead = annotation.endHead;
@@ -150,7 +131,7 @@ export function setAsDefaultStyle(annotation) {
       prefs.rectStrokeColor = annotation.strokeColor || annotation.color || prefs.rectStrokeColor;
       prefs.rectFillColor = annotation.fillColor || prefs.rectFillColor;
       prefs.rectFillNone = !annotation.fillColor || annotation.fillColor === 'transparent' || annotation.fillColor === null;
-      prefs.rectBorderWidth = annotation.lineWidth || prefs.rectBorderWidth;
+      prefs.rectBorderWidth = annotation.lineWidth ?? prefs.rectBorderWidth;
       if (annotation.borderStyle) prefs.rectBorderStyle = annotation.borderStyle;
       if (annotation.opacity !== undefined) prefs.rectOpacity = Math.round(annotation.opacity * 100);
       break;
@@ -158,7 +139,7 @@ export function setAsDefaultStyle(annotation) {
       prefs.circleStrokeColor = annotation.strokeColor || annotation.color || prefs.circleStrokeColor;
       prefs.circleFillColor = annotation.fillColor || prefs.circleFillColor;
       prefs.circleFillNone = !annotation.fillColor || annotation.fillColor === 'transparent' || annotation.fillColor === null;
-      prefs.circleBorderWidth = annotation.lineWidth || prefs.circleBorderWidth;
+      prefs.circleBorderWidth = annotation.lineWidth ?? prefs.circleBorderWidth;
       if (annotation.borderStyle) prefs.circleBorderStyle = annotation.borderStyle;
       if (annotation.opacity !== undefined) prefs.circleOpacity = Math.round(annotation.opacity * 100);
       break;
@@ -166,7 +147,7 @@ export function setAsDefaultStyle(annotation) {
       prefs.textboxStrokeColor = annotation.strokeColor || annotation.color || prefs.textboxStrokeColor;
       prefs.textboxFillColor = annotation.fillColor || prefs.textboxFillColor;
       prefs.textboxFillNone = !annotation.fillColor || annotation.fillColor === 'transparent';
-      prefs.textboxBorderWidth = annotation.lineWidth || prefs.textboxBorderWidth;
+      prefs.textboxBorderWidth = annotation.lineWidth ?? prefs.textboxBorderWidth;
       if (annotation.borderStyle) prefs.textboxBorderStyle = annotation.borderStyle;
       if (annotation.fontSize) prefs.textboxFontSize = annotation.fontSize;
       if (annotation.opacity !== undefined) prefs.textboxOpacity = Math.round(annotation.opacity * 100);
@@ -175,19 +156,19 @@ export function setAsDefaultStyle(annotation) {
       prefs.calloutStrokeColor = annotation.strokeColor || annotation.color || prefs.calloutStrokeColor;
       prefs.calloutFillColor = annotation.fillColor || prefs.calloutFillColor;
       prefs.calloutFillNone = !annotation.fillColor || annotation.fillColor === 'transparent';
-      prefs.calloutBorderWidth = annotation.lineWidth || prefs.calloutBorderWidth;
+      prefs.calloutBorderWidth = annotation.lineWidth ?? prefs.calloutBorderWidth;
       if (annotation.borderStyle) prefs.calloutBorderStyle = annotation.borderStyle;
       if (annotation.fontSize) prefs.calloutFontSize = annotation.fontSize;
       if (annotation.opacity !== undefined) prefs.calloutOpacity = Math.round(annotation.opacity * 100);
       break;
     case 'polygon':
       prefs.polygonStrokeColor = annotation.strokeColor || annotation.color || prefs.polygonStrokeColor;
-      prefs.polygonLineWidth = annotation.lineWidth || prefs.polygonLineWidth;
+      prefs.polygonLineWidth = annotation.lineWidth ?? prefs.polygonLineWidth;
       if (annotation.opacity !== undefined) prefs.polygonOpacity = Math.round(annotation.opacity * 100);
       break;
     case 'cloud':
       prefs.cloudStrokeColor = annotation.strokeColor || annotation.color || prefs.cloudStrokeColor;
-      prefs.cloudLineWidth = annotation.lineWidth || prefs.cloudLineWidth;
+      prefs.cloudLineWidth = annotation.lineWidth ?? prefs.cloudLineWidth;
       if (annotation.opacity !== undefined) prefs.cloudOpacity = Math.round(annotation.opacity * 100);
       break;
     case 'comment':
@@ -196,7 +177,7 @@ export function setAsDefaultStyle(annotation) {
       break;
     case 'polyline':
       prefs.polylineStrokeColor = annotation.strokeColor || annotation.color || prefs.polylineStrokeColor;
-      prefs.polylineLineWidth = annotation.lineWidth || prefs.polylineLineWidth;
+      prefs.polylineLineWidth = annotation.lineWidth ?? prefs.polylineLineWidth;
       if (annotation.opacity !== undefined) prefs.polylineOpacity = Math.round(annotation.opacity * 100);
       break;
     case 'redaction':
@@ -206,7 +187,7 @@ export function setAsDefaultStyle(annotation) {
     case 'measureArea':
     case 'measurePerimeter':
       prefs.measureStrokeColor = annotation.strokeColor || annotation.color || prefs.measureStrokeColor;
-      prefs.measureLineWidth = annotation.lineWidth || prefs.measureLineWidth;
+      prefs.measureLineWidth = annotation.lineWidth ?? prefs.measureLineWidth;
       if (annotation.opacity !== undefined) prefs.measureOpacity = Math.round(annotation.opacity * 100);
       break;
   }

@@ -99,6 +99,8 @@
     "signatureUnknown": "Перевірка недоступна",
     "documentLevel": "Рівень документа",
     "goToPage": "Перейти на сторінку {{page}}",
+    "goToPageLink": "Перейти на сторінку",
+    "openExternalFile": "Відкрити: {{filename}}",
     "destination": "Призначення: {{name}}",
     "internalLink": "Внутрішнє посилання"
   }

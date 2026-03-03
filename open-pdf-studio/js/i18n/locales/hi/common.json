@@ -99,6 +99,8 @@
     "signatureUnknown": "सत्यापन उपलब्ध नहीं",
     "documentLevel": "दस्तावेज़ स्तर",
     "goToPage": "पृष्ठ {{page}} पर जाएं",
+    "goToPageLink": "पृष्ठ पर जाएं",
+    "openExternalFile": "खोलें: {{filename}}",
     "destination": "गंतव्य: {{name}}",
     "internalLink": "आंतरिक लिंक"
   }

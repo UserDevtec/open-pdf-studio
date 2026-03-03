@@ -3,7 +3,6 @@ import RibbonTab from './RibbonTab.jsx';
 import HomeTab from './HomeTab.jsx';
 import CommentTab from './CommentTab.jsx';
 import ViewTab from './ViewTab.jsx';
-import FormsTab from './FormsTab.jsx';
 import OrganizeTab from './OrganizeTab.jsx';
 import HelpTab from './HelpTab.jsx';
 import FormatTab from './FormatTab.jsx';
@@ -29,9 +28,6 @@ export default function Ribbon() {
         <RibbonTab label={t('tabs.view')} dataTab="view"
           isActive={activeTab() === 'view'}
           onClick={() => setActiveTab('view')} />
-        <RibbonTab label={t('tabs.forms')} dataTab="forms"
-          isActive={activeTab() === 'forms'}
-          onClick={() => setActiveTab('forms')} />
         <RibbonTab label={t('tabs.organize')} dataTab="organize"
           isActive={activeTab() === 'organize'}
           onClick={() => setActiveTab('organize')} />
@@ -53,7 +49,6 @@ export default function Ribbon() {
         <Match when={activeTab() === 'home'}><HomeTab /></Match>
         <Match when={activeTab() === 'comment'}><CommentTab /></Match>
         <Match when={activeTab() === 'view'}><ViewTab /></Match>
-        <Match when={activeTab() === 'forms'}><FormsTab /></Match>
         <Match when={activeTab() === 'organize'}><OrganizeTab /></Match>
         <Match when={activeTab() === 'help'}><HelpTab /></Match>
         <Match when={activeTab() === 'format'}><FormatTab /></Match>

@@ -10,6 +10,8 @@ import { PDFDocument } from 'pdf-lib';
 import { resetAnnotationStorage } from './form-layer.js';
 import { addRecentFile } from '../mobile/recent-files.js';
 import { extractFileName } from '../core/platform.js';
+import i18next from '../i18n/config.js';
+import { showMessage } from '../solid/stores/dialogStore.js';
 
 // Sub-module imports
 import { extractAnnotationColors } from './loader/color-extraction.js';
@@ -244,7 +246,7 @@ export async function loadPDF(filePath, docIndex, preloadedData = null) {
     if (isClosed()) return;
     console.error('Error loading PDF:', error);
     if (isActive()) {
-      alert('Failed to load PDF: ' + error.message);
+      showMessage(i18next.t('failedToLoadPdf', { error: error.message }));
     }
   } finally {
     doc._isLoading = false;
@@ -286,7 +288,10 @@ export async function createBlankPDF(widthPt, heightPt, numPages) {
 
     // Generate untitled name and create tab
     const fileName = getNextUntitledName();
-    const { doc, index } = createTab(null);
+    const { index } = createTab(null);
+    // Use the proxy-wrapped document from state so that Solid reactivity
+    // picks up property changes (e.g. pdfDoc) and updates the UI.
+    const doc = state.documents[index];
     doc.fileName = fileName;
 
     // Cache bytes under a memory key for saving later
@@ -329,7 +334,7 @@ export async function createBlankPDF(widthPt, heightPt, numPages) {
 
   } catch (error) {
     console.error('Error creating blank PDF:', error);
-    alert('Failed to create document: ' + error.message);
+    showMessage(i18next.t('failedToCreateDocument', { error: error.message }));
   } finally {
     hideLoading();
   }

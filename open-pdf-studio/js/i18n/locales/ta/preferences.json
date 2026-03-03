@@ -8,7 +8,8 @@
     "markup": "குறியீடு",
     "behavior": "நடத்தை",
     "fileAssociation": "கோப்பு தொடர்பு",
-    "virtualPrinter": "மெய்நிகர் அச்சுப்பொறி"
+    "virtualPrinter": "மெய்நிகர் அச்சுப்பொறி",
+    "pageDisplay": "பக்க காட்சி"
   },
   "resetToDefaults": "இயல்புநிலைக்கு மீட்டமை",
   "resetConfirm": "அனைத்து விருப்பத்தேர்வுகளையும் இயல்பு மதிப்புகளுக்கு மீட்டமைக்கவா?",
@@ -18,7 +19,7 @@
     "startup": "தொடக்கம்",
     "restoreLastSession": "பயன்பாடு தொடங்கும்போது கடைசி அமர்வை மீட்டமை",
     "author": "ஆசிரியர்",
-    "defaultAuthorName": "இயல்புநிலை ஆசிரியர் பெயர்",
+    "defaultAuthorName": "ஆசிரியர் பெயர்",
     "language": "மொழி",
     "interfaceLanguage": "இடைமுகப்பு மொழி"
   },
@@ -113,7 +114,7 @@
     "startup": "தொடக்கம்",
     "restoreLastSession": "பயன்பாடு தொடங்கும்போது கடைசி அமர்வை மீட்டமை",
     "author": "ஆசிரியர்",
-    "defaultAuthorName": "இயல்புநிலை ஆசிரியர் பெயர்",
+    "defaultAuthorName": "ஆசிரியர் பெயர்",
     "snapping": "பொருத்தம்",
     "angleSnap": "கோண பொருத்தம் (பாகைகள்)",
     "enableAngleSnapping": "கோண பொருத்தத்தை இயக்கு (Shift அழுத்திப்பிடி)",
@@ -158,5 +159,9 @@
     "removalFailed": "நீக்கம் தோல்வியடைந்தது",
     "failedToInstall": "மெய்நிகர் அச்சுப்பொறியை நிறுவ இயலவில்லை:",
     "failedToRemove": "மெய்நிகர் அச்சுப்பொறியை நீக்க இயலவில்லை:"
+  },
+  "pageDisplay": {
+    "rendering": "ரெண்டரிங்",
+    "thinLines": "மெல்லிய கோடுகள் (அனைத்து கோடுகளையும் 1px அகலத்தில் காட்டு)"
   }
 }

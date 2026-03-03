@@ -99,6 +99,8 @@
     "signatureUnknown": "Η επαλήθευση δεν είναι διαθέσιμη",
     "documentLevel": "Επίπεδο εγγράφου",
     "goToPage": "Μετάβαση στη σελίδα {{page}}",
+    "goToPageLink": "Μετάβαση στη σελίδα",
+    "openExternalFile": "Άνοιγμα: {{filename}}",
     "destination": "Προορισμός: {{name}}",
     "internalLink": "Εσωτερικός σύνδεσμος"
   }

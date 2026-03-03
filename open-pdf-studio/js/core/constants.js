@@ -17,7 +17,8 @@ export const HANDLE_TYPES = {
   ROTATE: 'rotate',
   CALLOUT_ARROW: 'callout_arrow',
   CALLOUT_KNEE: 'callout_knee',
-  CALLOUT_MOVE: 'callout_move'
+  CALLOUT_MOVE: 'callout_move',
+  POLYLINE_NODE: 'polyline_node'
 };
 
 // Default application preferences
@@ -150,6 +151,9 @@ export const DEFAULT_PREFERENCES = {
   // Display
   showHandles: true,
   handleSize: 8,
+
+  // View
+  thinLines: false,
 
   // Language
   language: 'auto'

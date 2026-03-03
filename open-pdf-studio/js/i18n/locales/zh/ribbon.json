@@ -4,7 +4,6 @@
     "home": "主页",
     "comment": "批注",
     "view": "视图",
-    "forms": "表单",
     "organize": "组织",
     "help": "帮助",
     "format": "格式",
@@ -34,6 +33,8 @@
     "edit": "编辑",
     "editText": "编辑文本",
     "addText": "添加文本",
+    "cropMargins": "裁剪边距",
+    "crop": "裁剪",
     "navigate": "导航",
     "firstPage": "第一页",
     "first": "第一页",
@@ -110,13 +111,6 @@
     "annotationsList": "批注列表 (F11)",
     "annotationsLabel": "批注",
     "appearance": "外观"
-  },
-  "forms": {
-    "formFields": "表单字段",
-    "textField": "文本字段",
-    "checkbox": "复选框",
-    "radioButton": "单选按钮",
-    "radio": "单选"
   },
   "organize": {
     "pages": "页面",
@@ -250,7 +244,7 @@
     "h": "高："
   },
   "theme": {
-    "system": "跟随系统",
+    "system": "跟随系统 (自动检测)",
     "light": "浅色",
     "dark": "深色",
     "blue": "蓝色",

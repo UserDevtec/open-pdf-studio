@@ -8,6 +8,7 @@ import { updateDestinationsList } from './destinations.js';
 import { updateTagsList } from './tags.js';
 import { updateLinksList } from './links.js';
 import { updateBookmarksList } from './bookmarks.js';
+import { showMessage } from '../../solid/stores/dialogStore.js';
 import { switchToLeftPanelTab, toggleLeftPanelCollapsed, activeTab, setActiveTab, setCollapsed } from '../../solid/stores/leftPanelStore.js';
 import {
   setPageCount, setActivePage, setPlaceholderSize,
@@ -440,7 +441,7 @@ export async function showPageProperties(pageNum) {
     if (window.__TAURI__?.dialog?.message) {
       await window.__TAURI__.dialog.message(msg, { title: 'Page Properties', kind: 'info' });
     } else {
-      alert(msg);
+      showMessage(msg);
     }
   } catch (err) {
     console.error('Error showing page properties:', err);

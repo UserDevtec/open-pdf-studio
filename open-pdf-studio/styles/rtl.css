@@ -29,9 +29,6 @@
   border-left: none;
 }
 
-[dir="rtl"] .panel-resize-handle {
-  order: -1;
-}
 
 /* Properties panel: swap border to right side */
 [dir="rtl"] .properties-panel {
@@ -77,6 +74,26 @@
   border-left: 1px solid var(--theme-app-menu-border);
 }
 
+[dir="rtl"] .app-menu-back svg {
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .app-menu-item {
+  text-align: right;
+}
+
+[dir="rtl"] .app-menu-item.active {
+  border-left: none;
+  padding-left: 20px;
+  border-right: 3px solid #3b82f6;
+  padding-right: 17px;
+}
+
+[dir="rtl"] .app-menu-item-shortcut {
+  margin-left: 0;
+  margin-right: auto;
+}
+
 [dir="rtl"] .app-menu-menu-item .shortcut {
   margin-left: 0;
   margin-right: auto;
@@ -115,6 +132,34 @@
   border-left: 1px solid var(--theme-panel-border);
 }
 
+/* Left panel scrollable containers: keep scrollbar on right side in RTL */
+[dir="rtl"] .thumbnails-container,
+[dir="rtl"] .bookmarks-container,
+[dir="rtl"] .annotations-list-content,
+[dir="rtl"] .attachments-container,
+[dir="rtl"] .signatures-container,
+[dir="rtl"] .layers-container,
+[dir="rtl"] .form-fields-container,
+[dir="rtl"] .destinations-container,
+[dir="rtl"] .tags-container,
+[dir="rtl"] .links-container {
+  direction: ltr;
+}
+
+[dir="rtl"] .thumbnails-container > *,
+[dir="rtl"] .bookmarks-container > *,
+[dir="rtl"] .annotations-list-content > *,
+[dir="rtl"] .attachments-container > *,
+[dir="rtl"] .signatures-container > *,
+[dir="rtl"] .layers-container > *,
+[dir="rtl"] .form-fields-container > *,
+[dir="rtl"] .destinations-container > *,
+[dir="rtl"] .tags-container > *,
+[dir="rtl"] .links-container > * {
+  direction: rtl;
+  text-align: right;
+}
+
 /* Find bar */
 [dir="rtl"] .find-bar input[type="text"] {
   text-align: right;
@@ -141,6 +186,76 @@
 [dir="rtl"] #next-page-ribbon .ribbon-btn-icon,
 [dir="rtl"] #last-page .ribbon-btn-icon {
   transform: scaleX(-1);
+}
+
+/* ===== Dialog / Modal RTL overrides ===== */
+
+/* Modal header: swap title padding */
+[dir="rtl"] .modal-header {
+  padding-left: 0;
+  padding-right: 10px;
+}
+
+/* Modal footer: keep symmetric but ensure proper alignment */
+[dir="rtl"] .modal-footer {
+  direction: rtl;
+}
+
+/* Preferences tabs: swap active border and text alignment */
+[dir="rtl"] .pref-tab {
+  text-align: right;
+  border-right: none;
+  border-left: 3px solid transparent;
+}
+[dir="rtl"] .pref-tab.active {
+  border-right: none;
+  border-left-color: var(--theme-active, #0078d7);
+}
+
+/* Print dialog: swap directional margins/padding */
+[dir="rtl"] .print-custom-row {
+  margin-left: 0;
+  margin-right: 52px;
+}
+[dir="rtl"] .print-checkbox-row {
+  padding-left: 0;
+  padding-right: 58px;
+}
+[dir="rtl"] .print-collate-label {
+  margin-left: 0;
+  margin-right: 12px;
+}
+[dir="rtl"] .print-zoom-row {
+  margin-left: 0;
+  margin-right: 58px;
+}
+[dir="rtl"] .print-preview-panel {
+  border-left: none;
+  border-right: 1px solid #b0b0b0;
+}
+
+/* Doc properties: swap label alignment */
+[dir="rtl"] .doc-props-label {
+  text-align: right;
+}
+
+/* Signature dialog: swap margins */
+[dir="rtl"] .signature-color-label {
+  margin-left: 0;
+  margin-right: 4px;
+}
+
+/* Stamp grid: keep LTR for visual layout */
+[dir="rtl"] .stamp-grid {
+  direction: ltr;
+}
+
+/* Message dialog */
+[dir="rtl"] .message-dialog-body {
+  text-align: right;
+}
+[dir="rtl"] .message-dialog-footer {
+  justify-content: flex-start;
 }
 
 /* Scrollbars - keep LTR direction for scroll behavior */

@@ -1,7 +1,7 @@
-import { state } from '../core/state.js';
+import { state, getAnnotationBounds } from '../core/state.js';
 import { showLoading, hideLoading } from '../ui/chrome/dialogs.js';
 import { isTauri, writeBinaryFile, saveFileDialog, openFolderDialog } from '../core/platform.js';
-import { renderAnnotationsForPage } from '../annotations/rendering.js';
+import { renderAnnotationsForPage, drawAnnotation } from '../annotations/rendering.js';
 import { getPageRotation } from '../core/state.js';
 import { PDFDocument } from 'pdf-lib';
 
@@ -241,4 +241,60 @@ export async function exportAsRasterPdf({ dpi = 300, pages }) {
   } finally {
     hideLoading();
   }
+}
+
+/**
+ * Export a single annotation as a PNG image.
+ * @param {Object} annotation - The annotation object to export
+ */
+export async function exportAnnotationAsImage(annotation) {
+  if (!annotation || !isTauri()) return;
+
+  const bounds = getAnnotationBounds(annotation);
+  if (!bounds) return;
+
+  const exportScale = 3; // 3x for high-res output
+  const padding = 10; // padding in annotation units
+
+  const x = bounds.x - padding;
+  const y = bounds.y - padding;
+  const w = bounds.width + padding * 2;
+  const h = bounds.height + padding * 2;
+
+  // Account for line width so strokes aren't clipped
+  const lw = annotation.lineWidth ?? 3;
+  const extra = lw / 2;
+
+  const canvasW = Math.ceil((w + extra * 2) * exportScale);
+  const canvasH = Math.ceil((h + extra * 2) * exportScale);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasW;
+  canvas.height = canvasH;
+  const ctx = canvas.getContext('2d');
+
+  // Transparent background
+  ctx.clearRect(0, 0, canvasW, canvasH);
+
+  // Scale and translate so the annotation draws at the correct position
+  ctx.save();
+  ctx.scale(exportScale, exportScale);
+  ctx.translate(-(x - extra), -(y - extra));
+
+  drawAnnotation(ctx, annotation);
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  const baseName = getPdfBaseName();
+  const defaultName = `${baseName}_annotation.png`;
+
+  const outputPath = await saveFileDialog(defaultName, [
+    { name: 'PNG Images', extensions: ['png'] }
+  ]);
+  if (!outputPath) return;
+
+  const bytes = await canvasToBytes(canvas, 'png');
+  await writeBinaryFile(outputPath, bytes);
 }

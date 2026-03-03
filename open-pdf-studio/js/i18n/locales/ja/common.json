@@ -99,6 +99,8 @@
     "signatureUnknown": "検証できません",
     "documentLevel": "ドキュメントレベル",
     "goToPage": "{{page}} ページへ移動",
+    "goToPageLink": "ページへ移動",
+    "openExternalFile": "開く: {{filename}}",
     "destination": "移動先：{{name}}",
     "internalLink": "内部リンク"
   }

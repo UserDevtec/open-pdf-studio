@@ -99,6 +99,8 @@
     "signatureUnknown": "Overenie nie je k dispozícii",
     "documentLevel": "Úroveň dokumentu",
     "goToPage": "Prejsť na stranu {{page}}",
+    "goToPageLink": "Prejsť na stranu",
+    "openExternalFile": "Otvoriť: {{filename}}",
     "destination": "Cieľ: {{name}}",
     "internalLink": "Interný odkaz"
   }

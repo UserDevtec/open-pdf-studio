@@ -8,7 +8,8 @@
     "markup": "Jelölés",
     "behavior": "Viselkedés",
     "fileAssociation": "Fájltársítás",
-    "virtualPrinter": "Virtuális nyomtató"
+    "virtualPrinter": "Virtuális nyomtató",
+    "pageDisplay": "Oldal megjelenítése"
   },
   "resetToDefaults": "Alapértelmezések visszaállítása",
   "resetConfirm": "Visszaállítja az összes beállítást az alapértelmezett értékekre?",
@@ -18,7 +19,7 @@
     "startup": "Indítás",
     "restoreLastSession": "Utolsó munkamenet visszaállítása az alkalmazás indításakor",
     "author": "Szerző",
-    "defaultAuthorName": "Alapértelmezett szerzőnév",
+    "defaultAuthorName": "Szerzőnév",
     "language": "Nyelv",
     "interfaceLanguage": "Felület nyelve"
   },
@@ -113,7 +114,7 @@
     "startup": "Indítás",
     "restoreLastSession": "Utolsó munkamenet visszaállítása az alkalmazás indításakor",
     "author": "Szerző",
-    "defaultAuthorName": "Alapértelmezett szerzőnév",
+    "defaultAuthorName": "Szerzőnév",
     "snapping": "Bekötés",
     "angleSnap": "Szögbekötés (fok)",
     "enableAngleSnapping": "Szögbekötés engedélyezése (Shift lenyomva)",
@@ -158,5 +159,9 @@
     "removalFailed": "Az eltávolítás sikertelen",
     "failedToInstall": "Nem sikerült telepíteni a virtuális nyomtatót:",
     "failedToRemove": "Nem sikerült eltávolítani a virtuális nyomtatót:"
+  },
+  "pageDisplay": {
+    "rendering": "Megjelenítés",
+    "thinLines": "Vékony vonalak (minden vonal megjelenítése 1px szélességgel)"
   }
 }

@@ -341,14 +341,17 @@ exit 1
         .map_err(|e| format!("Failed to write temp script: {}", e))?;
 
     // Launch elevated: Start-Process -Verb RunAs -Wait on the .ps1 file
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
     let output = std::process::Command::new("powershell")
         .args(&[
             "-NoProfile", "-NonInteractive", "-Command",
             &format!(
-                "Start-Process powershell -Verb RunAs -Wait -ArgumentList '-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File','{}'",
+                "Start-Process powershell -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList '-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File','{}'",
                 script_path.to_string_lossy()
             )
         ])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|e| format!("Failed to launch elevated process: {}", e))?;
 
@@ -434,11 +437,14 @@ Get-PrinterPort | Where-Object { $_.Name -like '*OpenPDFStudio*print-capture*' }
 fn is_virtual_printer_installed() -> bool {
     #[cfg(target_os = "windows")]
     {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
         let output = std::process::Command::new("powershell")
             .args(&[
                 "-NoProfile", "-NonInteractive", "-Command",
                 "Get-Printer -Name 'Open PDF Studio' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Name"
             ])
+            .creation_flags(CREATE_NO_WINDOW)
             .output();
 
         match output {

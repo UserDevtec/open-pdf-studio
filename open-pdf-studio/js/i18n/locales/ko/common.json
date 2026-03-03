@@ -99,6 +99,8 @@
     "signatureUnknown": "검증할 수 없습니다",
     "documentLevel": "문서 수준",
     "goToPage": "{{page}} 페이지로 이동",
+    "goToPageLink": "페이지로 이동",
+    "openExternalFile": "열기: {{filename}}",
     "destination": "대상: {{name}}",
     "internalLink": "내부 링크"
   }

@@ -734,6 +734,19 @@
   margin: 0;
 }
 
+/* About Dialog */
+.about-dialog {
+  width: 480px;
+}
+
+.about-dialog .bs-about-panel {
+  max-width: none;
+}
+
+.about-dialog .bs-about-title {
+  display: none;
+}
+
 /* Loading Overlay */
 .loading-overlay {
   position: fixed;
@@ -3402,4 +3415,27 @@
   font-size: 12px;
   margin-top: 8px;
   text-align: center;
+}
+
+/* ===== Message Dialog ===== */
+.message-dialog-overlay {
+  z-index: 3000;
+}
+.message-dialog {
+  min-width: 320px;
+  max-width: 460px;
+}
+.message-dialog-body {
+  padding: 16px 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--theme-text, #1a1a1a);
+}
+.message-dialog-body p {
+  margin: 0;
+}
+.message-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }

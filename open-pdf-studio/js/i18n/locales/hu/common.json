@@ -99,6 +99,8 @@
     "signatureUnknown": "Az ellenőrzés nem elérhető",
     "documentLevel": "Dokumentum szint",
     "goToPage": "Ugrás a(z) {{page}}. oldalra",
+    "goToPageLink": "Ugrás az oldalra",
+    "openExternalFile": "Megnyitás: {{filename}}",
     "destination": "Célpont: {{name}}",
     "internalLink": "Belső hivatkozás"
   }

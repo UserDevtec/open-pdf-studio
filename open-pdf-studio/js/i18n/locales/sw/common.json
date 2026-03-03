@@ -99,6 +99,8 @@
     "signatureUnknown": "Uthibitisho haupatikani",
     "documentLevel": "Kiwango cha Hati",
     "goToPage": "Nenda ukurasa {{page}}",
+    "goToPageLink": "Nenda ukurasa",
+    "openExternalFile": "Fungua: {{filename}}",
     "destination": "Marudio: {{name}}",
     "internalLink": "Kiungo cha ndani"
   }

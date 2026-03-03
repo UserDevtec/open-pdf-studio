@@ -3,6 +3,7 @@ import { closeAppMenu } from '../../stores/appMenuStore.js';
 import { state } from '../../../core/state.js';
 import { exportAsImages, exportAsRasterPdf, parsePageRange } from '../../../pdf/exporter.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
+import { showMessage } from '../../stores/dialogStore.js';
 
 export default function ExportPanel() {
   const { t } = useTranslation('appMenu');
@@ -33,7 +34,7 @@ export default function ExportPanel() {
 
   const handleExport = async () => {
     if (!state.pdfDoc) {
-      alert(tCommon('noDocumentOpen'));
+      showMessage(tCommon('noDocumentOpen'));
       return;
     }
 
@@ -45,7 +46,7 @@ export default function ExportPanel() {
     } else if (pageRange() === 'custom') {
       pages = parsePageRange(customPages(), totalPages);
       if (pages.length === 0) {
-        alert(tCommon('invalidPageRange'));
+        showMessage(tCommon('invalidPageRange'));
         return;
       }
     } else {

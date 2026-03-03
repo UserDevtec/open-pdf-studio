@@ -8,7 +8,8 @@
     "markup": "Markering",
     "behavior": "Adfærd",
     "fileAssociation": "Filtilknytning",
-    "virtualPrinter": "Virtuel printer"
+    "virtualPrinter": "Virtuel printer",
+    "pageDisplay": "Sidevisning"
   },
   "resetToDefaults": "Nulstil til standarder",
   "resetConfirm": "Nulstil alle indstillinger til standardværdier?",
@@ -18,7 +19,7 @@
     "startup": "Opstart",
     "restoreLastSession": "Gendan sidste session, når programmet starter",
     "author": "Forfatter",
-    "defaultAuthorName": "Standard forfatternavn",
+    "defaultAuthorName": "Forfatternavn",
     "language": "Sprog",
     "interfaceLanguage": "Brugerfladesprog"
   },
@@ -113,7 +114,7 @@
     "startup": "Opstart",
     "restoreLastSession": "Gendan sidste session, når programmet starter",
     "author": "Forfatter",
-    "defaultAuthorName": "Standard forfatternavn",
+    "defaultAuthorName": "Forfatternavn",
     "snapping": "Snapping",
     "angleSnap": "Vinkelsnap (grader)",
     "enableAngleSnapping": "Aktiver vinkelsnapping (hold Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Fjernelse mislykkedes",
     "failedToInstall": "Kunne ikke installere virtuel printer:",
     "failedToRemove": "Kunne ikke fjerne virtuel printer:"
+  },
+  "pageDisplay": {
+    "rendering": "Gengivelse",
+    "thinLines": "Tynde linjer (vis alle linjer med 1px bredde)"
   }
 }

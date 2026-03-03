@@ -99,6 +99,8 @@
     "signatureUnknown": "Verificarea nu este disponibila",
     "documentLevel": "Nivel document",
     "goToPage": "Mergi la pagina {{page}}",
+    "goToPageLink": "Mergi la pagina",
+    "openExternalFile": "Deschidere: {{filename}}",
     "destination": "Destinatie: {{name}}",
     "internalLink": "Link intern"
   }

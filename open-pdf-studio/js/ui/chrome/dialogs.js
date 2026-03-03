@@ -1,8 +1,9 @@
 import { state } from '../../core/state.js';
 import { isTauri } from '../../core/platform.js';
-import { openDialog, closeDialog } from '../../solid/stores/dialogStore.js';
+import { openDialog, closeDialog, showMessage } from '../../solid/stores/dialogStore.js';
 import { openAppMenu, setActivePanel } from '../../solid/stores/appMenuStore.js';
 import { setVisible, setMessage } from '../../solid/stores/loadingStore.js';
+import i18next from '../../i18n/config.js';
 
 // Show loading overlay
 export function showLoading(message = 'Loading...') {
@@ -30,7 +31,7 @@ export function showAboutPanel() {
 
 export async function showDocPropertiesDialog() {
   if (!state.pdfDoc) {
-    alert('No document is open.');
+    showMessage(i18next.t('noDocumentOpen'));
     return;
   }
 
@@ -142,7 +143,7 @@ export function hideNewDocDialog() {
 
 export function showInsertPageDialog() {
   if (!state.pdfDoc) {
-    alert('No document is open.');
+    showMessage(i18next.t('noDocumentOpen'));
     return;
   }
   openDialog('insert-page');
@@ -158,7 +159,7 @@ export function hideInsertPageDialog() {
 
 export function showExtractPagesDialog() {
   if (!state.pdfDoc) {
-    alert('No document is open.');
+    showMessage(i18next.t('noDocumentOpen'));
     return;
   }
   openDialog('extract-pages', {
@@ -177,7 +178,7 @@ export function hideExtractPagesDialog() {
 
 export function showMergePdfsDialog() {
   if (!state.pdfDoc) {
-    alert('No document is open.');
+    showMessage(i18next.t('noDocumentOpen'));
     return;
   }
   openDialog('merge-pdfs');
@@ -193,7 +194,7 @@ export function hideMergePdfsDialog() {
 
 export function showPrintDialog() {
   if (!state.pdfDoc) {
-    alert('No document is open.');
+    showMessage(i18next.t('noDocumentOpen'));
     return;
   }
   openDialog('print', { currentPage: state.currentPage });

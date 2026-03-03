@@ -14,8 +14,13 @@ import { updateQuickAccessButtons, updateContextualTabs, drawGrid, snapToGrid } 
 export { drawPolygonShape, drawCloudShape } from './rendering/shapes.js';
 export { updateQuickAccessButtons, snapToGrid } from './rendering/ui-state.js';
 
+// Resolve line width, clamping to 1px when thin-lines view mode is active
+function thinLw(width) {
+  return state.preferences?.thinLines ? Math.min(width, 1) : width;
+}
+
 // Draw single annotation
-function drawAnnotation(ctx, annotation) {
+export function drawAnnotation(ctx, annotation) {
   // Skip hidden annotations
   if (annotation.hidden) return;
 
@@ -29,7 +34,12 @@ function drawAnnotation(ctx, annotation) {
 
   ctx.strokeStyle = strokeColor;
   ctx.fillStyle = fillColor;
-  ctx.lineWidth = annotation.lineWidth || 3;
+  let lw = annotation.lineWidth ?? 3;
+  // Ensure a minimum visible stroke when there's no fill, so the annotation stays visible
+  const hasFill = annotation.fillColor && annotation.fillColor !== 'transparent';
+  if (lw === 0 && !hasFill) lw = 0.5;
+  lw = thinLw(lw);
+  ctx.lineWidth = lw;
   ctx.globalAlpha = baseOpacity;
   ctx.globalCompositeOperation = annotation.blendMode === 'multiply' ? 'multiply' : 'source-over';
 
@@ -74,7 +84,9 @@ function drawAnnotation(ctx, annotation) {
       const endHead = annotation.endHead || 'open';
       const startHead = annotation.startHead || 'none';
       const headSize = annotation.headSize || 12;
-      const lw = annotation.lineWidth || 3;
+      let lw = annotation.lineWidth ?? 3;
+      if (lw === 0) lw = 0.5;
+      lw = thinLw(lw);
 
       // Calculate bounding box with padding for arrowheads
       const pad = headSize + lw + 2;
@@ -155,10 +167,10 @@ function drawAnnotation(ctx, annotation) {
       const ellipseCY = ellipseY + ellipseH / 2;
 
       ctx.save();
-      // Apply rotation if set
-      if (annotation.rotation) {
+      if (annotation.rotation || annotation.flipX || annotation.flipY) {
         ctx.translate(ellipseCX, ellipseCY);
-        ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.translate(-ellipseCX, -ellipseCY);
       }
 
@@ -180,12 +192,12 @@ function drawAnnotation(ctx, annotation) {
 
     case 'box':
       ctx.save();
-      // Apply rotation if set
-      if (annotation.rotation) {
+      if (annotation.rotation || annotation.flipX || annotation.flipY) {
         const boxCenterX = annotation.x + annotation.width / 2;
         const boxCenterY = annotation.y + annotation.height / 2;
         ctx.translate(boxCenterX, boxCenterY);
-        ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.translate(-boxCenterX, -boxCenterY);
       }
 
@@ -203,15 +215,35 @@ function drawAnnotation(ctx, annotation) {
       break;
 
     case 'polygon':
+      ctx.save();
+      if (annotation.rotation || annotation.flipX || annotation.flipY) {
+        const polyCX = annotation.x + annotation.width / 2;
+        const polyCY = annotation.y + annotation.height / 2;
+        ctx.translate(polyCX, polyCY);
+        if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
+        ctx.translate(-polyCX, -polyCY);
+      }
       ctx.strokeStyle = strokeColor;
       applyBorderStyle(ctx, annotation.borderStyle);
       drawPolygonShape(ctx, annotation.x, annotation.y, annotation.width, annotation.height, annotation.sides || 6);
       ctx.setLineDash([]);
+      ctx.restore();
       break;
 
     case 'cloud':
+      ctx.save();
+      if (annotation.rotation || annotation.flipX || annotation.flipY) {
+        const cloudCX = annotation.x + annotation.width / 2;
+        const cloudCY = annotation.y + annotation.height / 2;
+        ctx.translate(cloudCX, cloudCY);
+        if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
+        ctx.translate(-cloudCX, -cloudCY);
+      }
       ctx.strokeStyle = strokeColor;
       drawCloudShape(ctx, annotation.x, annotation.y, annotation.width, annotation.height);
+      ctx.restore();
       break;
 
     case 'comment':
@@ -221,12 +253,12 @@ function drawAnnotation(ctx, annotation) {
       ctx.save();
       ctx.globalAlpha = baseOpacity;
 
-      // Apply rotation if set
-      if (annotation.rotation) {
+      if (annotation.rotation || annotation.flipX || annotation.flipY) {
         const cCenterX = annotation.x + cWidth / 2;
         const cCenterY = annotation.y + cHeight / 2;
         ctx.translate(cCenterX, cCenterY);
-        ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.translate(-cCenterX, -cCenterY);
       }
 
@@ -294,16 +326,16 @@ function drawAnnotation(ctx, annotation) {
       // Draw text box with border and optional fill
       const tbWidth = annotation.width || 150;
       const tbHeight = annotation.height || 50;
-      const tbLineWidth = annotation.lineWidth !== undefined ? annotation.lineWidth : 1;
+      const tbLineWidth = thinLw(annotation.lineWidth !== undefined ? annotation.lineWidth : 1);
       const tbBorderStyle = annotation.borderStyle || 'solid';
 
       ctx.save();
-      // Apply rotation if set
-      if (annotation.rotation) {
+      if (annotation.rotation || annotation.flipX || annotation.flipY) {
         const tbCenterX = annotation.x + tbWidth / 2;
         const tbCenterY = annotation.y + tbHeight / 2;
         ctx.translate(tbCenterX, tbCenterY);
-        ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.translate(-tbCenterX, -tbCenterY);
       }
 
@@ -342,7 +374,7 @@ function drawAnnotation(ctx, annotation) {
       // Draw callout annotation (text box with two-segment leader line)
       const coWidth = annotation.width || 150;
       const coHeight = annotation.height || 50;
-      const coLineWidth = annotation.lineWidth !== undefined ? annotation.lineWidth : 1;
+      const coLineWidth = thinLw(annotation.lineWidth !== undefined ? annotation.lineWidth : 1);
       const coBorderStyle = annotation.borderStyle || 'solid';
 
       // Set stroke style for leader line and border
@@ -396,12 +428,12 @@ function drawAnnotation(ctx, annotation) {
       ctx.stroke();
 
       ctx.save();
-      // Apply rotation to text box if set
-      if (annotation.rotation) {
+      if (annotation.rotation || annotation.flipX || annotation.flipY) {
         const coCenterX = annotation.x + coWidth / 2;
         const coCenterY = annotation.y + coHeight / 2;
         ctx.translate(coCenterX, coCenterY);
-        ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.translate(-coCenterX, -coCenterY);
       }
 
@@ -481,7 +513,7 @@ function drawAnnotation(ctx, annotation) {
     case 'textStrikethrough':
       // Draw strikethrough line through the middle of each text rect
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = annotation.lineWidth || 1;
+      ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
       ctx.lineCap = 'round';
       if (annotation.rects && annotation.rects.length > 0) {
         annotation.rects.forEach(rect => {
@@ -503,7 +535,7 @@ function drawAnnotation(ctx, annotation) {
     case 'textUnderline':
       // Draw underline at the bottom of each text rect
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = annotation.lineWidth || 1;
+      ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
       ctx.lineCap = 'round';
       if (annotation.rects && annotation.rects.length > 0) {
         annotation.rects.forEach(rect => {
@@ -531,6 +563,7 @@ function drawAnnotation(ctx, annotation) {
         const cy = annotation.y + annotation.height / 2;
         ctx.translate(cx, cy);
         ctx.rotate((annotation.rotation || 0) * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.drawImage(stampImg, -annotation.width / 2, -annotation.height / 2, annotation.width, annotation.height);
         ctx.restore();
       } else if (annotation.stampText) {
@@ -540,6 +573,7 @@ function drawAnnotation(ctx, annotation) {
         const cy = annotation.y + annotation.height / 2;
         ctx.translate(cx, cy);
         ctx.rotate((annotation.rotation || 0) * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
 
         const color = annotation.stampColor || annotation.color || '#ef4444';
         ctx.strokeStyle = color;
@@ -567,6 +601,7 @@ function drawAnnotation(ctx, annotation) {
         const cy = annotation.y + annotation.height / 2;
         ctx.translate(cx, cy);
         ctx.rotate((annotation.rotation || 0) * Math.PI / 180);
+        if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.drawImage(sigImg, -annotation.width / 2, -annotation.height / 2, annotation.width, annotation.height);
         ctx.restore();
       } else {
@@ -588,7 +623,7 @@ function drawAnnotation(ctx, annotation) {
     case 'measureDistance': {
       // Distance measurement line with label
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = annotation.lineWidth || 1;
+      ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
       ctx.setLineDash([]);
       ctx.beginPath();
       ctx.moveTo(annotation.startX, annotation.startY);
@@ -634,7 +669,7 @@ function drawAnnotation(ctx, annotation) {
       // Area measurement polygon
       if (!annotation.points || annotation.points.length < 3) break;
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = annotation.lineWidth || 1;
+      ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
       ctx.fillStyle = (annotation.color || '#ff0000') + '20';
       ctx.setLineDash([4, 2]);
 
@@ -699,7 +734,7 @@ function drawAnnotation(ctx, annotation) {
       // Perimeter measurement polyline
       if (!annotation.points || annotation.points.length < 2) break;
       ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = annotation.lineWidth || 1;
+      ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
       ctx.setLineDash([4, 2]);
 
       ctx.beginPath();

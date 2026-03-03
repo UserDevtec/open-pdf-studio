@@ -99,6 +99,8 @@
     "signatureUnknown": "ไม่สามารถตรวจสอบได้",
     "documentLevel": "ระดับเอกสาร",
     "goToPage": "ไปที่หน้า {{page}}",
+    "goToPageLink": "ไปที่หน้า",
+    "openExternalFile": "เปิด: {{filename}}",
     "destination": "ปลายทาง: {{name}}",
     "internalLink": "ลิงก์ภายใน"
   }

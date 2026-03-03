@@ -4,7 +4,6 @@
     "home": "خانه",
     "comment": "نظر",
     "view": "نمایش",
-    "forms": "فرم‌ها",
     "organize": "سازمان‌دهی",
     "help": "راهنما",
     "format": "قالب‌بندی",
@@ -34,6 +33,8 @@
     "edit": "ویرایش",
     "editText": "ویرایش متن",
     "addText": "افزودن متن",
+    "cropMargins": "برش حاشیه‌ها",
+    "crop": "برش",
     "navigate": "ناوبری",
     "firstPage": "صفحه اول",
     "first": "اول",
@@ -110,13 +111,6 @@
     "annotationsList": "فهرست حاشیه‌نویسی‌ها (F11)",
     "annotationsLabel": "حاشیه‌نویسی‌ها",
     "appearance": "ظاهر"
-  },
-  "forms": {
-    "formFields": "فیلدهای فرم",
-    "textField": "فیلد متنی",
-    "checkbox": "کادر انتخاب",
-    "radioButton": "دکمه رادیویی",
-    "radio": "رادیویی"
   },
   "organize": {
     "pages": "صفحات",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "سیستم",
+    "system": "سیستم (خودکار)",
     "light": "روشن",
     "dark": "تاریک",
     "blue": "آبی",

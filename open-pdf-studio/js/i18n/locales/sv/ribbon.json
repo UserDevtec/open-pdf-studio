@@ -4,7 +4,6 @@
     "home": "Hem",
     "comment": "Kommentar",
     "view": "Visa",
-    "forms": "Formulär",
     "organize": "Organisera",
     "help": "Hjälp",
     "format": "Format",
@@ -34,6 +33,8 @@
     "edit": "Redigera",
     "editText": "Redigera text",
     "addText": "Lägg till text",
+    "cropMargins": "Beskärningsmarginaler",
+    "crop": "Beskär",
     "navigate": "Navigera",
     "firstPage": "Första sidan",
     "first": "Första",
@@ -110,13 +111,6 @@
     "annotationsList": "Anteckningslista (F11)",
     "annotationsLabel": "Anteckningar",
     "appearance": "Utseende"
-  },
-  "forms": {
-    "formFields": "Formulärfält",
-    "textField": "Textfält",
-    "checkbox": "Kryssruta",
-    "radioButton": "Alternativknapp",
-    "radio": "Alternativ"
   },
   "organize": {
     "pages": "Sidor",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "System",
+    "system": "System (Automatisk)",
     "light": "Ljust",
     "dark": "Mörkt",
     "blue": "Blått",

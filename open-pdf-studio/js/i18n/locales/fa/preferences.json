@@ -8,7 +8,8 @@
     "markup": "نشانه‌گذاری",
     "behavior": "رفتار",
     "fileAssociation": "اقتران فایل",
-    "virtualPrinter": "چاپگر مجازی"
+    "virtualPrinter": "چاپگر مجازی",
+    "pageDisplay": "نمایش صفحه"
   },
   "resetToDefaults": "بازنشانی به پیش‌فرض",
   "resetConfirm": "آیا تمام ترجیحات به مقادیر پیش‌فرض بازنشانی شوند؟",
@@ -18,7 +19,7 @@
     "startup": "راه‌اندازی",
     "restoreLastSession": "بازیابی آخرین نشست هنگام راه‌اندازی برنامه",
     "author": "نویسنده",
-    "defaultAuthorName": "نام نویسنده پیش‌فرض",
+    "defaultAuthorName": "نام نویسنده",
     "language": "زبان",
     "interfaceLanguage": "زبان رابط کاربری"
   },
@@ -104,7 +105,7 @@
     "startup": "راه‌اندازی",
     "restoreLastSession": "بازیابی آخرین نشست هنگام راه‌اندازی برنامه",
     "author": "نویسنده",
-    "defaultAuthorName": "نام نویسنده پیش‌فرض",
+    "defaultAuthorName": "نام نویسنده",
     "snapping": "چسبندگی",
     "angleSnap": "چسبندگی زاویه (درجه)",
     "enableAngleSnapping": "فعال‌سازی چسبندگی زاویه (نگه داشتن Shift)",
@@ -141,5 +142,9 @@
     "removalFailed": "حذف ناموفق بود",
     "failedToInstall": "نصب چاپگر مجازی ناموفق بود:",
     "failedToRemove": "حذف چاپگر مجازی ناموفق بود:"
+  },
+  "pageDisplay": {
+    "rendering": "رندر",
+    "thinLines": "خطوط نازک (نمایش تمام خطوط با عرض 1 پیکسل)"
   }
 }

@@ -4,7 +4,6 @@
     "home": "Ana Sayfa",
     "comment": "Yorum",
     "view": "Görünüm",
-    "forms": "Formlar",
     "organize": "Düzenle",
     "help": "Yardım",
     "format": "Biçim",
@@ -34,6 +33,8 @@
     "edit": "Düzenle",
     "editText": "Metni Düzenle",
     "addText": "Metin Ekle",
+    "cropMargins": "Kırpma Kenar Boşlukları",
+    "crop": "Kırp",
     "navigate": "Gezinme",
     "firstPage": "İlk Sayfa",
     "first": "İlk",
@@ -110,13 +111,6 @@
     "annotationsList": "Açıklama Listesi (F11)",
     "annotationsLabel": "Açıklamalar",
     "appearance": "Görünüm"
-  },
-  "forms": {
-    "formFields": "Form Alanları",
-    "textField": "Metin Alanı",
-    "checkbox": "Onay Kutusu",
-    "radioButton": "Seçenek Düğmesi",
-    "radio": "Seçenek"
   },
   "organize": {
     "pages": "Sayfalar",
@@ -250,7 +244,7 @@
     "h": "Y:"
   },
   "theme": {
-    "system": "Sistem",
+    "system": "Sistem (Otomatik)",
     "light": "Açık",
     "dark": "Koyu",
     "blue": "Mavi",

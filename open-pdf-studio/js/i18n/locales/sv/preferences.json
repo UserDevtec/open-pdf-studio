@@ -8,7 +8,8 @@
     "markup": "Markering",
     "behavior": "Beteende",
     "fileAssociation": "Filassociation",
-    "virtualPrinter": "Virtuell skrivare"
+    "virtualPrinter": "Virtuell skrivare",
+    "pageDisplay": "Sidvisning"
   },
   "resetToDefaults": "Återställ till standard",
   "resetConfirm": "Återställ alla inställningar till standardvärden?",
@@ -18,7 +19,7 @@
     "startup": "Start",
     "restoreLastSession": "Återställ senaste sessionen när programmet startar",
     "author": "Författare",
-    "defaultAuthorName": "Standardnamn för författare",
+    "defaultAuthorName": "Namn för författare",
     "language": "Språk",
     "interfaceLanguage": "Gränssnittspråk"
   },
@@ -113,7 +114,7 @@
     "startup": "Start",
     "restoreLastSession": "Återställ senaste sessionen när programmet startar",
     "author": "Författare",
-    "defaultAuthorName": "Standardnamn för författare",
+    "defaultAuthorName": "Namn för författare",
     "snapping": "Snappning",
     "angleSnap": "Vinkelsnappning (grader)",
     "enableAngleSnapping": "Aktivera vinkelsnappning (håll Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Borttagningen misslyckades",
     "failedToInstall": "Kunde inte installera virtuell skrivare:",
     "failedToRemove": "Kunde inte ta bort virtuell skrivare:"
+  },
+  "pageDisplay": {
+    "rendering": "Rendering",
+    "thinLines": "Tunna linjer (visa alla linjer med 1px bredd)"
   }
 }

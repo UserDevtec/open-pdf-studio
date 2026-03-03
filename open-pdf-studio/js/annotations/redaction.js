@@ -2,12 +2,14 @@ import { state } from '../core/state.js';
 import { createAnnotation } from './factory.js';
 import { redrawAnnotations } from './rendering.js';
 import { recordAdd } from '../core/undo-manager.js';
+import i18next from '../i18n/config.js';
+import { showMessage } from '../solid/stores/dialogStore.js';
 
 // Apply all redaction annotations permanently (flatten them)
 export function applyRedactions() {
   const redactions = state.annotations.filter(a => a.page === state.currentPage && a.type === 'redaction');
   if (redactions.length === 0) {
-    alert('No redaction marks on the current page to apply.');
+    showMessage(i18next.t('noRedactionsOnPage'));
     return;
   }
 
@@ -50,7 +52,7 @@ export function applyRedactions() {
 export function applyAllRedactions() {
   const allRedactions = state.annotations.filter(a => a.type === 'redaction');
   if (allRedactions.length === 0) {
-    alert('No redaction marks in the document to apply.');
+    showMessage(i18next.t('noRedactionsInDocument'));
     return;
   }
 

@@ -38,10 +38,51 @@ function isModalDialogOpen() {
   );
 }
 
+// Safety: document-level mouseup to catch releases outside the canvas
+let _documentMouseUpAttached = false;
+function _ensureDocumentMouseUp() {
+  if (_documentMouseUpAttached) return;
+  _documentMouseUpAttached = true;
+  document.addEventListener('mouseup', _documentMouseUpHandler);
+}
+function _removeDocumentMouseUp() {
+  if (!_documentMouseUpAttached) return;
+  _documentMouseUpAttached = false;
+  document.removeEventListener('mouseup', _documentMouseUpHandler);
+}
+function _documentMouseUpHandler(e) {
+  // Only act if drag/resize state is stuck (mouseup missed on canvas)
+  if (state.isDragging || state.isResizing) {
+    console.warn('[drag] mouseup caught on document — cleaning stuck state. isDragging:', state.isDragging, 'isResizing:', state.isResizing);
+    state.isDragging = false;
+    state.isResizing = false;
+    state.activeHandle = null;
+    state.originalAnnotation = null;
+    state.originalAnnotations = [];
+    state._ctrlDragCopy = false;
+    state._ctrlCopiesCreated = false;
+    annotationCanvas.style.cursor = state.currentTool === 'hand' ? 'grab' : 'default';
+  }
+  _removeDocumentMouseUp();
+}
+
 // Mouse down handler for single page mode
 export function handleMouseDown(e) {
   if (!state.pdfDoc) return;
   if (isModalDialogOpen()) return;
+
+  // Safety: reset stuck drag/resize state from a previous missed mouseup
+  if (state.isDragging || state.isResizing) {
+    console.warn('[drag] mousedown with stuck state — resetting. isDragging:', state.isDragging, 'isResizing:', state.isResizing, 'isPanning:', state.isPanning);
+    state.isDragging = false;
+    state.isResizing = false;
+    state.activeHandle = null;
+    state.originalAnnotation = null;
+    state.originalAnnotations = [];
+    state._ctrlDragCopy = false;
+    state._ctrlCopiesCreated = false;
+    _removeDocumentMouseUp();
+  }
 
   // Finish inline text editing when clicking outside
   if (state.isEditingText) {
@@ -70,18 +111,23 @@ export function handleMouseDown(e) {
   // Ignore right-click — handled by context menu
   if (e.button === 2) return;
 
+  console.log('[mousedown] tool:', state.currentTool, 'button:', e.button, 'ctrl:', e.ctrlKey,
+    'selectedAnn:', state.selectedAnnotation?.id, 'selectedAnns:', state.selectedAnnotations.map(a => a.id),
+    'origAnn:', state.originalAnnotation?.id);
+
   // Handle hand tool (panning, allow annotation selection, dragging and resizing)
   if (state.currentTool === 'hand') {
-    // Check for resize handle on already-selected annotation
-    if (state.selectedAnnotation && state.selectedAnnotations.length === 1) {
-      const handleType = findHandleAt(x, y, state.selectedAnnotation, state.scale);
+    // Check for resize handle on already-selected annotation (use array[0] as source of truth)
+    const handSelAnn = state.selectedAnnotations.length === 1 ? state.selectedAnnotations[0] : null;
+    if (handSelAnn) {
+      const handleType = findHandleAt(x, y, handSelAnn, state.scale);
       if (handleType) {
         state.isResizing = true;
         state.activeHandle = handleType;
         state.dragStartX = x;
         state.dragStartY = y;
-        state.originalAnnotation = cloneAnnotation(state.selectedAnnotation);
-        annotationCanvas.style.cursor = getCursorForHandle(handleType, state.selectedAnnotation.rotation, state.selectedAnnotation);
+        state.originalAnnotation = cloneAnnotation(handSelAnn);
+        annotationCanvas.style.cursor = getCursorForHandle(handleType, handSelAnn.rotation, handSelAnn);
         return;
       }
     }
@@ -89,11 +135,27 @@ export function handleMouseDown(e) {
     const clickedAnnotation = findAnnotationAt(x, y);
     if (clickedAnnotation) {
       if (e.ctrlKey || e.metaKey) {
-        // Ctrl+click: toggle multi-selection
         if (isSelected(clickedAnnotation)) {
-          removeFromSelection(clickedAnnotation);
+          // Ctrl+click on already selected: initiate Ctrl+drag copy
+          state.isDragging = true;
+          state._ctrlDragCopy = true;
+          state._ctrlCopiesCreated = false;
+          state.originalAnnotations = state.selectedAnnotations.map(a => cloneAnnotation(a));
+          if (state.selectedAnnotations.length === 1) {
+            state.originalAnnotation = cloneAnnotation(state.selectedAnnotations[0]);
+          }
+          annotationCanvas.style.cursor = 'copy';
         } else {
+          // Ctrl+click on unselected: add to selection and initiate Ctrl+drag copy
           addToSelection(clickedAnnotation);
+          state.isDragging = true;
+          state._ctrlDragCopy = true;
+          state._ctrlCopiesCreated = false;
+          state.originalAnnotations = state.selectedAnnotations.map(a => cloneAnnotation(a));
+          if (state.selectedAnnotations.length === 1) {
+            state.originalAnnotation = cloneAnnotation(state.selectedAnnotations[0]);
+          }
+          annotationCanvas.style.cursor = 'copy';
         }
         if (state.selectedAnnotations.length === 1) {
           showProperties(state.selectedAnnotations[0]);
@@ -141,14 +203,15 @@ export function handleMouseDown(e) {
   if (state.currentTool === 'select' || state.currentTool === 'selectComments') {
     const pdfaLocked = isPdfAReadOnly();
 
-    // First check if clicking on a handle of the selected annotation (only for single selection)
-    if (!pdfaLocked && state.selectedAnnotation && state.selectedAnnotations.length === 1) {
-      const handleType = findHandleAt(x, y, state.selectedAnnotation, state.scale);
+    // First check if clicking on a handle of the selected annotation (use array[0] as source of truth)
+    const selAnn = state.selectedAnnotations.length === 1 ? state.selectedAnnotations[0] : null;
+    if (!pdfaLocked && selAnn) {
+      const handleType = findHandleAt(x, y, selAnn, state.scale);
       if (handleType) {
         state.isResizing = true;
         state.activeHandle = handleType;
-        state.originalAnnotation = cloneAnnotation(state.selectedAnnotation);
-        annotationCanvas.style.cursor = getCursorForHandle(handleType, state.selectedAnnotation.rotation, state.selectedAnnotation);
+        state.originalAnnotation = cloneAnnotation(selAnn);
+        annotationCanvas.style.cursor = getCursorForHandle(handleType, selAnn.rotation, selAnn);
         return;
       }
     }
@@ -164,11 +227,30 @@ export function handleMouseDown(e) {
 
       if (e.ctrlKey || e.metaKey) {
         if (isSelected(clickedAnnotation)) {
-          // Ctrl+click on selected annotation: toggle off (deselect)
-          removeFromSelection(clickedAnnotation);
+          // Ctrl+click on already selected annotation: initiate Ctrl+drag copy
+          if (!pdfaLocked) {
+            state.isDragging = true;
+            state._ctrlDragCopy = true;
+            state._ctrlCopiesCreated = false;
+            state.originalAnnotations = state.selectedAnnotations.map(a => cloneAnnotation(a));
+            if (state.selectedAnnotations.length === 1) {
+              state.originalAnnotation = cloneAnnotation(state.selectedAnnotations[0]);
+            }
+            annotationCanvas.style.cursor = 'copy';
+          }
         } else {
-          // Ctrl+click on unselected: add to multi-selection
+          // Ctrl+click on unselected: add to multi-selection and allow drag
           addToSelection(clickedAnnotation);
+          if (!pdfaLocked) {
+            state.isDragging = true;
+            state._ctrlDragCopy = true;
+            state._ctrlCopiesCreated = false;
+            state.originalAnnotations = state.selectedAnnotations.map(a => cloneAnnotation(a));
+            if (state.selectedAnnotations.length === 1) {
+              state.originalAnnotation = cloneAnnotation(state.selectedAnnotations[0]);
+            }
+            annotationCanvas.style.cursor = 'copy';
+          }
         }
         if (state.selectedAnnotations.length === 1) {
           showProperties(state.selectedAnnotations[0]);
@@ -261,12 +343,6 @@ export function handleMouseDown(e) {
         else ctx.lineTo(point.x, point.y);
       });
       ctx.stroke();
-      state.polylinePoints.forEach(point => {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
-        ctx.fillStyle = polyPrefs.polylineStrokeColor;
-        ctx.fill();
-      });
       ctx.restore();
     }
     return;
@@ -357,17 +433,24 @@ export function handleMouseMove(e) {
   // Skip if panning (handled by document-level listener)
   if (state.isPanning) return;
 
+  // Ensure document-level mouseup is attached when dragging/resizing
+  // (catches mouse releases outside the canvas)
+  if (state.isDragging || state.isResizing) {
+    _ensureDocumentMouseUp();
+  }
+
   const rect = annotationCanvas.getBoundingClientRect();
   const currentX = (e.clientX - rect.left) / state.scale;
   const currentY = (e.clientY - rect.top) / state.scale;
 
   // Hand tool: show resize cursors on handles, annotation hover, or grab for panning
   if (state.currentTool === 'hand' && !state.isDragging && !state.isResizing) {
-    // Check resize handles on selected annotation
-    if (state.selectedAnnotation && state.selectedAnnotations.length === 1) {
-      const handleType = findHandleAt(currentX, currentY, state.selectedAnnotation, state.scale);
+    // Check resize handles on selected annotation (use array[0] as source of truth)
+    const handHoverAnn = state.selectedAnnotations.length === 1 ? state.selectedAnnotations[0] : null;
+    if (handHoverAnn) {
+      const handleType = findHandleAt(currentX, currentY, handHoverAnn, state.scale);
       if (handleType) {
-        annotationCanvas.style.cursor = getCursorForHandle(handleType, state.selectedAnnotation.rotation, state.selectedAnnotation);
+        annotationCanvas.style.cursor = getCursorForHandle(handleType, handHoverAnn.rotation, handHoverAnn);
         return;
       }
     }
@@ -397,13 +480,13 @@ export function handleMouseMove(e) {
     return;
   }
 
-  // Update cursor when hovering over handles
-  if ((state.currentTool === 'select' || state.currentTool === 'selectComments') && state.selectedAnnotation && !state.isDragging && !state.isResizing) {
-    // Only show resize handles cursor for single selection
-    if (state.selectedAnnotations.length === 1) {
-      const handleType = findHandleAt(currentX, currentY, state.selectedAnnotation, state.scale);
+  // Update cursor when hovering over handles (use array[0] as source of truth)
+  if ((state.currentTool === 'select' || state.currentTool === 'selectComments') && !state.isDragging && !state.isResizing) {
+    const hoverAnn = state.selectedAnnotations.length === 1 ? state.selectedAnnotations[0] : null;
+    if (hoverAnn) {
+      const handleType = findHandleAt(currentX, currentY, hoverAnn, state.scale);
       if (handleType) {
-        annotationCanvas.style.cursor = getCursorForHandle(handleType, state.selectedAnnotation.rotation, state.selectedAnnotation);
+        annotationCanvas.style.cursor = getCursorForHandle(handleType, hoverAnn.rotation, hoverAnn);
         return;
       }
     }
@@ -411,26 +494,29 @@ export function handleMouseMove(e) {
     return;
   }
 
-  // Handle resizing or rotation
-  if (state.isResizing && state.selectedAnnotation && state.activeHandle) {
-    // Handle rotation separately
-    if (state.activeHandle === 'rotate') {
-      Object.assign(state.selectedAnnotation, cloneAnnotation(state.originalAnnotation));
-      state.shiftKeyPressed = e.shiftKey;
-      applyRotation(state.selectedAnnotation, currentX, currentY, state.originalAnnotation);
+  // Handle resizing or rotation (use array[0] as source of truth)
+  if (state.isResizing && state.activeHandle) {
+    const resizeAnn = state.selectedAnnotations.length === 1 ? state.selectedAnnotations[0] : null;
+    if (resizeAnn && state.originalAnnotation) {
+      // Handle rotation separately
+      if (state.activeHandle === 'rotate') {
+        Object.assign(resizeAnn, cloneAnnotation(state.originalAnnotation));
+        state.shiftKeyPressed = e.shiftKey;
+        applyRotation(resizeAnn, currentX, currentY, state.originalAnnotation);
+        redrawAnnotations(true);
+        return;
+      }
+
+      const deltaX = currentX - state.dragStartX;
+      const deltaY = currentY - state.dragStartY;
+
+      // Restore original and apply resize
+      Object.assign(resizeAnn, cloneAnnotation(state.originalAnnotation));
+      applyResize(resizeAnn, state.activeHandle, deltaX, deltaY, state.originalAnnotation, e.shiftKey);
+
       redrawAnnotations(true);
       return;
     }
-
-    const deltaX = currentX - state.dragStartX;
-    const deltaY = currentY - state.dragStartY;
-
-    // Restore original and apply resize
-    Object.assign(state.selectedAnnotation, cloneAnnotation(state.originalAnnotation));
-    applyResize(state.selectedAnnotation, state.activeHandle, deltaX, deltaY, state.originalAnnotation, e.shiftKey);
-
-    redrawAnnotations(true);
-    return;
   }
 
   // Handle dragging (moving) - supports multi-selection and Ctrl+drag copy
@@ -440,36 +526,51 @@ export function handleMouseMove(e) {
 
     // Ctrl+drag copy: create clones on first meaningful move
     if (state._ctrlDragCopy && !state._ctrlCopiesCreated && (Math.abs(deltaX) > 2 || Math.abs(deltaY) > 2)) {
-      state._ctrlCopiesCreated = true;
       const newId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-      if (state.selectedAnnotations.length > 1) {
-        // Restore originals to their positions
-        for (let i = 0; i < state.selectedAnnotations.length; i++) {
-          if (state.originalAnnotations[i]) {
-            Object.assign(state.selectedAnnotations[i], cloneAnnotation(state.originalAnnotations[i]));
+      const selected = state.selectedAnnotations;
+      const originals = state.originalAnnotations;
+      console.log('[copy] creating copies. selected:', selected.map(a => a.id), 'total before:', state.annotations.length);
+      try {
+        if (selected.length > 1) {
+          // Restore originals to their positions
+          for (let i = 0; i < selected.length; i++) {
+            if (originals[i]) {
+              Object.assign(selected[i], cloneAnnotation(originals[i]));
+            }
+          }
+          // Create copies and switch selection to them
+          const copies = originals.map(orig => {
+            const copy = cloneAnnotation(orig);
+            copy.id = newId();
+            state.annotations.push(copy);
+            return copy;
+          });
+          state.selectedAnnotations = copies;
+          state.originalAnnotations = copies.map(c => cloneAnnotation(c));
+          state._ctrlCopiesCreated = true;
+        } else if (selected.length === 1) {
+          // Use selectedAnnotations[0] directly (avoid selectedAnnotation getter)
+          const ann = selected[0];
+          const orig = state.originalAnnotation || originals[0];
+          if (ann && orig) {
+            // Restore original
+            Object.assign(ann, cloneAnnotation(orig));
+            // Create copy and switch selection to it
+            const copy = cloneAnnotation(orig);
+            copy.id = newId();
+            state.annotations.push(copy);
+            state.selectedAnnotations = [copy];
+            state.originalAnnotation = cloneAnnotation(copy);
+            state.originalAnnotations = [cloneAnnotation(copy)];
+            state._ctrlCopiesCreated = true;
+            console.log('[copy] single: original id:', ann.id, '→ copy id:', copy.id, 'total after:', state.annotations.length);
+            showProperties(copy);
+          } else {
+            console.warn('[copy] FAILED: ann=', ann?.id, 'orig=', orig?.id, 'selectedAnnotation=', state.selectedAnnotation?.id);
           }
         }
-        // Create copies and switch selection to them
-        const copies = state.originalAnnotations.map(orig => {
-          const copy = cloneAnnotation(orig);
-          copy.id = newId();
-          state.annotations.push(copy);
-          return copy;
-        });
-        state.selectedAnnotations = copies;
-        state.originalAnnotations = copies.map(c => cloneAnnotation(c));
-      } else {
-        // Restore original
-        Object.assign(state.selectedAnnotation, cloneAnnotation(state.originalAnnotation));
-        // Create copy and switch selection to it
-        const copy = cloneAnnotation(state.originalAnnotation);
-        copy.id = newId();
-        state.annotations.push(copy);
-        state.selectedAnnotations = [copy];
-        state.selectedAnnotation = copy;
-        state.originalAnnotation = cloneAnnotation(copy);
-        state.originalAnnotations = [cloneAnnotation(copy)];
-        showProperties(copy);
+      } catch (err) {
+        console.error('[copy] ERROR during copy creation:', err);
       }
     }
 
@@ -481,10 +582,17 @@ export function handleMouseMove(e) {
           applyMove(state.selectedAnnotations[i], deltaX, deltaY);
         }
       }
-    } else if (state.selectedAnnotation && state.originalAnnotation) {
-      // Single selection drag
-      Object.assign(state.selectedAnnotation, cloneAnnotation(state.originalAnnotation));
-      applyMove(state.selectedAnnotation, deltaX, deltaY);
+    } else if (state.selectedAnnotations.length === 1) {
+      // Single selection drag — use selectedAnnotations[0] directly
+      const ann = state.selectedAnnotations[0];
+      const orig = state.originalAnnotation || state.originalAnnotations[0];
+      if (ann && orig) {
+        Object.assign(ann, cloneAnnotation(orig));
+        applyMove(ann, deltaX, deltaY);
+      } else {
+        console.warn('[drag] single drag SKIPPED: ann=', ann?.id, 'orig=', orig?.id,
+          'selectedAnnotation=', state.selectedAnnotation?.id, 'originalAnnotation=', state.originalAnnotation?.id);
+      }
     }
 
     redrawAnnotations(true);
@@ -518,13 +626,6 @@ export function handleMouseMove(e) {
     // Draw line to snapped cursor position
     annotationCtx.lineTo(polySnapX, polySnapY);
     annotationCtx.stroke();
-    // Draw small circles at each point
-    state.polylinePoints.forEach(point => {
-      annotationCtx.beginPath();
-      annotationCtx.arc(point.x, point.y, 4, 0, 2 * Math.PI);
-      annotationCtx.fillStyle = polyPrefs.polylineStrokeColor;
-      annotationCtx.fill();
-    });
     // Draw snap indicator
     if (polyPreviewSnap.snapped) {
       drawSnapIndicator(annotationCtx, polyPreviewSnap, state.scale);
@@ -677,7 +778,21 @@ export function handleMouseMove(e) {
 export function handleMouseUp(e) {
   if (isModalDialogOpen()) return;
   // Hand tool panning is handled by document-level listener (handlePanEnd)
-  if (state.isPanning) return;
+  // But still clean up any stuck drag/resize state before returning
+  if (state.isPanning) {
+    if (state.isDragging || state.isResizing) {
+      console.warn('[drag] mouseup while isPanning — clearing stuck drag state. isDragging:', state.isDragging, 'isResizing:', state.isResizing);
+      state.isDragging = false;
+      state.isResizing = false;
+      state.activeHandle = null;
+      state.originalAnnotation = null;
+      state.originalAnnotations = [];
+      state._ctrlDragCopy = false;
+      state._ctrlCopiesCreated = false;
+      _removeDocumentMouseUp();
+    }
+    return;
+  }
 
   // Handle rubber band selection end
   if (state.isRubberBanding) {
@@ -719,6 +834,9 @@ export function handleMouseUp(e) {
 
   // Handle end of dragging/resizing
   if (state.isDragging || state.isResizing) {
+    console.log('[drag] mouseup cleanup — isDragging:', state.isDragging, 'isResizing:', state.isResizing,
+      'ctrlDragCopy:', state._ctrlDragCopy, 'copiesCreated:', state._ctrlCopiesCreated,
+      'selected:', state.selectedAnnotations.map(a => a.id), 'total:', state.annotations.length);
     if (state._ctrlDragCopy && state._ctrlCopiesCreated) {
       // Ctrl+drag copy: record copies as additions
       for (const ann of state.selectedAnnotations) {
@@ -726,11 +844,12 @@ export function handleMouseUp(e) {
       }
       markDocumentModified();
     } else {
-      // Record undo for the modification
+      // Record undo for the modification (use array[0] as source of truth)
+      const upAnn = state.selectedAnnotations.length === 1 ? state.selectedAnnotations[0] : null;
       if (state.selectedAnnotations.length > 1 && state.originalAnnotations.length > 0) {
         recordBulkModify(state.selectedAnnotations, state.originalAnnotations);
-      } else if (state.originalAnnotation && state.selectedAnnotation) {
-        recordModify(state.selectedAnnotation.id, state.originalAnnotation, state.selectedAnnotation);
+      } else if (state.originalAnnotation && upAnn) {
+        recordModify(upAnn.id, state.originalAnnotation, upAnn);
       }
     }
 
@@ -741,11 +860,12 @@ export function handleMouseUp(e) {
     state.originalAnnotations = [];
     state._ctrlDragCopy = false;
     state._ctrlCopiesCreated = false;
+    _removeDocumentMouseUp();
     annotationCanvas.style.cursor = state.currentTool === 'hand' ? 'grab' : 'default';
 
-    // Update properties panel with new values
-    if (state.selectedAnnotations.length === 1 && state.selectedAnnotation) {
-      showProperties(state.selectedAnnotation);
+    // Update properties panel with new values (use array[0] as source of truth)
+    if (state.selectedAnnotations.length === 1) {
+      showProperties(state.selectedAnnotations[0]);
     } else if (state.selectedAnnotations.length > 1) {
       showMultiSelectionProperties();
     }

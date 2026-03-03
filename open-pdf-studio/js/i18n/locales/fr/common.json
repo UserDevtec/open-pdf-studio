@@ -99,6 +99,8 @@
     "signatureUnknown": "Vérification non disponible",
     "documentLevel": "Niveau du document",
     "goToPage": "Aller à la page {{page}}",
+    "goToPageLink": "Aller à la page",
+    "openExternalFile": "Ouvrir : {{filename}}",
     "destination": "Destination : {{name}}",
     "internalLink": "Lien interne"
   }

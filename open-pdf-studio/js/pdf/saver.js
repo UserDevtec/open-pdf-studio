@@ -8,6 +8,8 @@ import { PDFDocument, PDFString, PDFName, PDFArray, PDFStream, degrees, rgb, Sta
   PDFTextField, PDFCheckBox, PDFDropdown, PDFRadioGroup, PDFOptionList } from 'pdf-lib';
 import { getAnnotationStorage, getAnnotIdToFieldName } from './form-layer.js';
 import { parsePageRange } from './exporter.js';
+import i18next from '../i18n/config.js';
+import { showMessage } from '../solid/stores/dialogStore.js';
 
 // Save PDF with annotations
 export async function savePDF(saveAsPath = null) {
@@ -27,7 +29,7 @@ export async function savePDF(saveAsPath = null) {
   }
 
   if (!isTauri()) {
-    alert('Save functionality requires Tauri environment');
+    showMessage(i18next.t('saveRequiresTauri'));
     return false;
   }
 
@@ -154,7 +156,7 @@ export async function savePDF(saveAsPath = null) {
       for (const ann of pageAnnotations) {
         const colorArr = hexToColorArray(ann.color || '#000000');
         const opacity = ann.opacity !== undefined ? ann.opacity : 1;
-        const borderWidth = ann.lineWidth || 2;
+        const borderWidth = ann.lineWidth ?? 2;
 
         let annotDict;
 
@@ -945,7 +947,7 @@ export async function savePDF(saveAsPath = null) {
     return true;
   } catch (error) {
     console.error('Error saving PDF:', error);
-    alert('Failed to save PDF: ' + error.message);
+    showMessage(i18next.t('failedToSavePdf', { error: error.message }));
     return false;
   } finally {
     hideLoading();
@@ -1370,12 +1372,12 @@ function saveBookmarksToOutline(pdfDocLib) {
 // Save As - prompt for new file path
 export async function savePDFAs() {
   if (!state.pdfDoc) {
-    alert('No PDF loaded');
+    showMessage(i18next.t('noPdfLoaded'));
     return false;
   }
 
   if (!isTauri()) {
-    alert('Save functionality requires Tauri environment');
+    showMessage(i18next.t('saveRequiresTauri'));
     return false;
   }
 
@@ -1417,7 +1419,7 @@ function generateAppearanceStream(context, ann, convertY) {
         const h = ann.height;
         bbox = [0, 0, w, h];
         const [r, g, b] = hexToRgb(ann.strokeColor || ann.color || '#000000');
-        const lw = ann.lineWidth || 2;
+        const lw = ann.lineWidth ?? 2;
         streamContent = `${lw} w\n${r} ${g} ${b} RG\n`;
         if (ann.fillColor) {
           const [fr, fg, fb] = hexToRgb(ann.fillColor);
@@ -1435,7 +1437,7 @@ function generateAppearanceStream(context, ann, convertY) {
         const rx = w / 2, ry = h / 2;
         const k = 0.5522847498; // Bezier approximation of circle
         const [r, g, b] = hexToRgb(ann.strokeColor || ann.color || '#000000');
-        const lw = ann.lineWidth || 2;
+        const lw = ann.lineWidth ?? 2;
         streamContent = `${lw} w\n${r} ${g} ${b} RG\n`;
         if (ann.fillColor) {
           const [fr, fg, fb] = hexToRgb(ann.fillColor);
@@ -1466,7 +1468,7 @@ function generateAppearanceStream(context, ann, convertY) {
         const maxY = Math.max(...ys) + 2;
         bbox = [0, 0, maxX - minX, maxY - minY];
         const [r, g, b] = hexToRgb(ann.strokeColor || ann.color || '#000000');
-        const lw = ann.lineWidth || 2;
+        const lw = ann.lineWidth ?? 2;
         streamContent = `${lw} w\n${r} ${g} ${b} RG\n`;
         streamContent += `${ann.path[0].x - minX} ${maxY - ann.path[0].y} m\n`;
         for (let i = 1; i < ann.path.length; i++) {

@@ -8,7 +8,8 @@
     "markup": "مارک اپ",
     "behavior": "رویہ",
     "fileAssociation": "فائل ایسوسی ایشن",
-    "virtualPrinter": "ورچوئل پرنٹر"
+    "virtualPrinter": "ورچوئل پرنٹر",
+    "pageDisplay": "صفحہ ڈسپلے"
   },
   "resetToDefaults": "پہلے سے طے شدہ اقدار پر واپس لائیں",
   "resetConfirm": "تمام ترجیحات کو پہلے سے طے شدہ اقدار پر واپس لائیں؟",
@@ -18,7 +19,7 @@
     "startup": "آغاز",
     "restoreLastSession": "ایپلیکیشن شروع ہونے پر آخری سیشن بحال کریں",
     "author": "مصنف",
-    "defaultAuthorName": "پہلے سے طے شدہ مصنف کا نام",
+    "defaultAuthorName": "مصنف کا نام",
     "language": "زبان",
     "interfaceLanguage": "انٹرفیس کی زبان"
   },
@@ -113,7 +114,7 @@
     "startup": "آغاز",
     "restoreLastSession": "ایپلیکیشن شروع ہونے پر آخری سیشن بحال کریں",
     "author": "مصنف",
-    "defaultAuthorName": "پہلے سے طے شدہ مصنف کا نام",
+    "defaultAuthorName": "مصنف کا نام",
     "snapping": "سنیپنگ",
     "angleSnap": "زاویہ سنیپ (ڈگری)",
     "enableAngleSnapping": "زاویہ سنیپنگ فعال کریں (Shift دبائیں)",
@@ -158,5 +159,9 @@
     "removalFailed": "ہٹانا ناکام",
     "failedToInstall": "ورچوئل پرنٹر نصب کرنے میں ناکامی:",
     "failedToRemove": "ورچوئل پرنٹر ہٹانے میں ناکامی:"
+  },
+  "pageDisplay": {
+    "rendering": "رینڈرنگ",
+    "thinLines": "پتلی لکیریں (تمام لکیریں 1px چوڑائی میں دکھائیں)"
   }
 }

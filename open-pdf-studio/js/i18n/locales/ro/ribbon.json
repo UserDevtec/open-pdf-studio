@@ -4,7 +4,6 @@
     "home": "Acasa",
     "comment": "Comentariu",
     "view": "Vizualizare",
-    "forms": "Formulare",
     "organize": "Organizare",
     "help": "Ajutor",
     "format": "Format",
@@ -34,6 +33,8 @@
     "edit": "Editare",
     "editText": "Editare text",
     "addText": "Adaugare text",
+    "cropMargins": "Decupare margini",
+    "crop": "Decupare",
     "navigate": "Navigare",
     "firstPage": "Prima pagina",
     "first": "Prima",
@@ -110,13 +111,6 @@
     "annotationsList": "Lista de adnotari (F11)",
     "annotationsLabel": "Adnotari",
     "appearance": "Aspect"
-  },
-  "forms": {
-    "formFields": "Campuri formular",
-    "textField": "Camp de text",
-    "checkbox": "Caseta de bifat",
-    "radioButton": "Buton radio",
-    "radio": "Radio"
   },
   "organize": {
     "pages": "Pagini",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "Sistem",
+    "system": "Sistem (Automat)",
     "light": "Luminos",
     "dark": "Intunecat",
     "blue": "Albastru",

@@ -1,6 +1,6 @@
 import { createSignal, For, Show } from 'solid-js';
 import Dialog from '../Dialog.jsx';
-import { closeDialog } from '../../stores/dialogStore.js';
+import { closeDialog, showMessage } from '../../stores/dialogStore.js';
 import { mergeFiles } from '../../../pdf/page-manager.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
@@ -84,7 +84,7 @@ export default function MergePdfsDialog() {
 
   function handleMerge() {
     if (fileList().length === 0) {
-      alert(t('mergePdfs.addAtLeastOne'));
+      showMessage(t('mergePdfs.addAtLeastOne'));
       return;
     }
     const paths = fileList().map(f => f.path);

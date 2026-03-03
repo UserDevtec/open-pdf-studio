@@ -7,6 +7,7 @@ import { goToPage } from '../../../pdf/renderer.js';
 import { showInsertPageDialog, showExtractPagesDialog, showMergePdfsDialog } from '../../../ui/chrome/dialogs.js';
 import { deletePages } from '../../../pdf/page-manager.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
+import { showMessage } from '../../stores/dialogStore.js';
 
 export default function OrganizeTab() {
   const { t } = useTranslation('ribbon');
@@ -21,7 +22,7 @@ export default function OrganizeTab() {
             disabled={noPdf() || isPdfAReadOnly()}
             onClick={async () => {
               if (!state.pdfDoc) return;
-              if (state.pdfDoc.numPages <= 1) { alert(t('organize.cannotDeleteLast')); return; }
+              if (state.pdfDoc.numPages <= 1) { showMessage(t('organize.cannotDeleteLast')); return; }
               const confirmed = await window.__TAURI__?.dialog?.ask(t('organize.deletePageConfirm', { page: state.currentPage }), { title: t('organize.deletePage'), kind: 'warning' });
               if (confirmed) await deletePages([state.currentPage]);
             }} />

@@ -99,6 +99,8 @@
     "signatureUnknown": "Верификација није доступна",
     "documentLevel": "Ниво документа",
     "goToPage": "Иди на страницу {{page}}",
+    "goToPageLink": "Иди на страницу",
+    "openExternalFile": "Отвори: {{filename}}",
     "destination": "Одредиште: {{name}}",
     "internalLink": "Унутрашњи линк"
   }

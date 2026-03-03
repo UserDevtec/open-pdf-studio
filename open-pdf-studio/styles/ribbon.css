@@ -112,6 +112,7 @@
   gap: 2px;
   align-items: stretch;
   height: 100%;
+  flex-shrink: 0;
 }
 
 .ribbon-group {

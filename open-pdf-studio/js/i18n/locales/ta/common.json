@@ -99,6 +99,8 @@
     "signatureUnknown": "சரிபார்ப்பு கிடைக்கவில்லை",
     "documentLevel": "ஆவண நிலை",
     "goToPage": "பக்கம் {{page}} க்கு செல்",
+    "goToPageLink": "பக்கத்திற்குச் செல்",
+    "openExternalFile": "திற: {{filename}}",
     "destination": "இலக்கு: {{name}}",
     "internalLink": "உள் இணைப்பி"
   }

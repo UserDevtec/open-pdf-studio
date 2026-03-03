@@ -8,7 +8,8 @@
     "markup": "Označenia",
     "behavior": "Správanie",
     "fileAssociation": "Priradenie súborov",
-    "virtualPrinter": "Virtuálna tlačiareň"
+    "virtualPrinter": "Virtuálna tlačiareň",
+    "pageDisplay": "Zobrazenie stránky"
   },
   "resetToDefaults": "Obnoviť predvolené",
   "resetConfirm": "Obnoviť všetky predvoľby na predvolené hodnoty?",
@@ -18,7 +19,7 @@
     "startup": "Spustenie",
     "restoreLastSession": "Obnoviť posledné sedenie pri spustení aplikácie",
     "author": "Autor",
-    "defaultAuthorName": "Predvolené meno autora",
+    "defaultAuthorName": "Meno autora",
     "language": "Jazyk",
     "interfaceLanguage": "Jazyk rozhrania"
   },
@@ -113,7 +114,7 @@
     "startup": "Spustenie",
     "restoreLastSession": "Obnoviť posledné sedenie pri spustení aplikácie",
     "author": "Autor",
-    "defaultAuthorName": "Predvolené meno autora",
+    "defaultAuthorName": "Meno autora",
     "snapping": "Prichytenie",
     "angleSnap": "Prichytenie uhla (stupne)",
     "enableAngleSnapping": "Povoliť prichytenie uhla (podržte Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Odstránenie zlyhalo",
     "failedToInstall": "Nepodarilo sa nainštalovať virtuálnu tlačiareň:",
     "failedToRemove": "Nepodarilo sa odstrániť virtuálnu tlačiareň:"
+  },
+  "pageDisplay": {
+    "rendering": "Vykresľovanie",
+    "thinLines": "Tenké čiary (zobraziť všetky čiary so šírkou 1px)"
   }
 }

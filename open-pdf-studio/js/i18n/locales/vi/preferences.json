@@ -8,7 +8,8 @@
     "markup": "Đánh dấu",
     "behavior": "Hành vi",
     "fileAssociation": "Liên kết Tệp",
-    "virtualPrinter": "Máy in Ảo"
+    "virtualPrinter": "Máy in Ảo",
+    "pageDisplay": "Hiển thị trang"
   },
   "resetToDefaults": "Đặt lại Mặc định",
   "resetConfirm": "Đặt lại tất cả tùy chọn về giá trị mặc định?",
@@ -18,7 +19,7 @@
     "startup": "Khởi động",
     "restoreLastSession": "Khôi phục phiên làm việc cuối khi ứng dụng khởi động",
     "author": "Tác giả",
-    "defaultAuthorName": "Tên Tác giả Mặc định",
+    "defaultAuthorName": "Tên Tác giả",
     "language": "Ngôn ngữ",
     "interfaceLanguage": "Ngôn ngữ Giao diện"
   },
@@ -113,7 +114,7 @@
     "startup": "Khởi động",
     "restoreLastSession": "Khôi phục phiên làm việc cuối khi ứng dụng khởi động",
     "author": "Tác giả",
-    "defaultAuthorName": "Tên Tác giả Mặc định",
+    "defaultAuthorName": "Tên Tác giả",
     "snapping": "Bắt dính",
     "angleSnap": "Bắt Góc (độ)",
     "enableAngleSnapping": "Bật Bắt Góc (giữ Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Gỡ bỏ thất bại",
     "failedToInstall": "Không thể cài đặt máy in ảo:",
     "failedToRemove": "Không thể gỡ bỏ máy in ảo:"
+  },
+  "pageDisplay": {
+    "rendering": "Kết xuất",
+    "thinLines": "Đường mảnh (hiển thị tất cả đường với độ rộng 1px)"
   }
 }

@@ -4,7 +4,6 @@
     "home": "Kezdőlap",
     "comment": "Megjegyzés",
     "view": "Nézet",
-    "forms": "Űrlapok",
     "organize": "Rendezés",
     "help": "Súgó",
     "format": "Formátum",
@@ -34,6 +33,8 @@
     "edit": "Szerkesztés",
     "editText": "Szöveg szerkesztése",
     "addText": "Szöveg hozzáadása",
+    "cropMargins": "Margók levágása",
+    "crop": "Levágás",
     "navigate": "Navigáció",
     "firstPage": "Első oldal",
     "first": "Első",
@@ -110,13 +111,6 @@
     "annotationsList": "Annotációk listája (F11)",
     "annotationsLabel": "Annotációk",
     "appearance": "Megjelenés"
-  },
-  "forms": {
-    "formFields": "Űrlap mezők",
-    "textField": "Szövegmező",
-    "checkbox": "Jelölőnégyzet",
-    "radioButton": "Rádiógomb",
-    "radio": "Rádió"
   },
   "organize": {
     "pages": "Oldalak",
@@ -250,7 +244,7 @@
     "h": "M:"
   },
   "theme": {
-    "system": "Rendszer",
+    "system": "Rendszer (Automatikus)",
     "light": "Világos",
     "dark": "Sötét",
     "blue": "Kék",

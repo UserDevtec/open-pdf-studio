@@ -4,7 +4,6 @@
     "home": "Strona główna",
     "comment": "Komentarz",
     "view": "Widok",
-    "forms": "Formularze",
     "organize": "Organizuj",
     "help": "Pomoc",
     "format": "Format",
@@ -34,6 +33,8 @@
     "edit": "Edycja",
     "editText": "Edytuj tekst",
     "addText": "Dodaj tekst",
+    "cropMargins": "Przytnij marginesy",
+    "crop": "Przytnij",
     "navigate": "Nawigacja",
     "firstPage": "Pierwsza strona",
     "first": "Pierwsza",
@@ -110,13 +111,6 @@
     "annotationsList": "Lista adnotacji (F11)",
     "annotationsLabel": "Adnotacje",
     "appearance": "Wygląd"
-  },
-  "forms": {
-    "formFields": "Pola formularza",
-    "textField": "Pole tekstowe",
-    "checkbox": "Pole wyboru",
-    "radioButton": "Przycisk opcji",
-    "radio": "Opcja"
   },
   "organize": {
     "pages": "Strony",
@@ -250,7 +244,7 @@
     "h": "W:"
   },
   "theme": {
-    "system": "Systemowy",
+    "system": "Systemowy (Automatycznie)",
     "light": "Jasny",
     "dark": "Ciemny",
     "blue": "Niebieski",

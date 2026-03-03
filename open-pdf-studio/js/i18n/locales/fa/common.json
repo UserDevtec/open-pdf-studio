@@ -99,6 +99,8 @@
     "signatureUnknown": "تأیید در دسترس نیست",
     "documentLevel": "سطح سند",
     "goToPage": "رفتن به صفحه {{page}}",
+    "goToPageLink": "رفتن به صفحه",
+    "openExternalFile": "باز کردن: {{filename}}",
     "destination": "مقصد: {{name}}",
     "internalLink": "پیوند داخلی"
   }

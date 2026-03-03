@@ -1,6 +1,6 @@
 import { Show, Switch, Match, onMount, onCleanup } from 'solid-js';
 import { isAppMenuOpen, closeAppMenu, getActivePanel, setActivePanel } from '../../stores/appMenuStore.js';
-import AboutPanel from './AboutPanel.jsx';
+import { openDialog } from '../../stores/dialogStore.js';
 import ImportPanel from './ImportPanel.jsx';
 import ExportPanel from './ExportPanel.jsx';
 import OpenPanel from './OpenPanel.jsx';
@@ -111,7 +111,7 @@ export default function AppMenu() {
             <Divider />
             <MenuItem icon={ICONS.preferences} label={t('preferences')} shortcut="Ctrl+," onClick={() => actionAndClose(showPreferencesDialog)} />
             <Divider />
-            <MenuItem icon={ICONS.about} label={t('about')} active={getActivePanel() === 'about'} onClick={() => setActivePanel('about')} />
+            <MenuItem icon={ICONS.about} label={t('about')} onClick={() => actionAndClose(() => openDialog('about'))} />
             <Divider />
             <MenuItem icon={ICONS.exit} label={t('exit')} shortcut="Alt+F4" onClick={handleExit} />
           </div>
@@ -120,9 +120,6 @@ export default function AppMenu() {
           <Switch>
             <Match when={getActivePanel() === 'open'}>
               <OpenPanel />
-            </Match>
-            <Match when={getActivePanel() === 'about'}>
-              <AboutPanel />
             </Match>
             <Match when={getActivePanel() === 'import'}>
               <ImportPanel />

@@ -8,7 +8,8 @@
     "markup": "İşaretleme",
     "behavior": "Davranış",
     "fileAssociation": "Dosya İlişkilendirme",
-    "virtualPrinter": "Sanal Yazıcı"
+    "virtualPrinter": "Sanal Yazıcı",
+    "pageDisplay": "Sayfa Görünümü"
   },
   "resetToDefaults": "Varsayılanlara Sıfırla",
   "resetConfirm": "Tüm tercihler varsayılan değerlere sıfırlansın mı?",
@@ -18,7 +19,7 @@
     "startup": "Başlangıç",
     "restoreLastSession": "Uygulama başlatıldığında son oturumu geri yükle",
     "author": "Yazar",
-    "defaultAuthorName": "Varsayılan Yazar Adı",
+    "defaultAuthorName": "Yazar Adı",
     "language": "Dil",
     "interfaceLanguage": "Arayüz Dili"
   },
@@ -104,7 +105,7 @@
     "startup": "Başlangıç",
     "restoreLastSession": "Uygulama başlatıldığında son oturumu geri yükle",
     "author": "Yazar",
-    "defaultAuthorName": "Varsayılan Yazar Adı",
+    "defaultAuthorName": "Yazar Adı",
     "snapping": "Yakalama",
     "angleSnap": "Açı Yakalama (derece)",
     "enableAngleSnapping": "Açı Yaklamayı Etkinleştir (Shift basılı tutun)",
@@ -141,5 +142,9 @@
     "removalFailed": "Kaldırma başarısız oldu",
     "failedToInstall": "Sanal yazıcı yüklenemedi:",
     "failedToRemove": "Sanal yazıcı kaldırılamadı:"
+  },
+  "pageDisplay": {
+    "rendering": "İşleme",
+    "thinLines": "İnce çizgiler (tüm çizgileri 1px genişliğinde göster)"
   }
 }

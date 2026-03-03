@@ -8,7 +8,8 @@
     "markup": "العلامات",
     "behavior": "السلوك",
     "fileAssociation": "اقتران الملفات",
-    "virtualPrinter": "الطابعة الافتراضية"
+    "virtualPrinter": "الطابعة الافتراضية",
+    "pageDisplay": "عرض الصفحة"
   },
   "resetToDefaults": "إعادة التعيين إلى الافتراضي",
   "resetConfirm": "هل تريد إعادة تعيين جميع التفضيلات إلى القيم الافتراضية؟",
@@ -18,7 +19,7 @@
     "startup": "بدء التشغيل",
     "restoreLastSession": "استعادة الجلسة الأخيرة عند بدء التطبيق",
     "author": "المؤلف",
-    "defaultAuthorName": "اسم المؤلف الافتراضي",
+    "defaultAuthorName": "اسم المؤلف",
     "language": "اللغة",
     "interfaceLanguage": "لغة الواجهة"
   },
@@ -104,7 +105,7 @@
     "startup": "بدء التشغيل",
     "restoreLastSession": "استعادة الجلسة الأخيرة عند بدء التطبيق",
     "author": "المؤلف",
-    "defaultAuthorName": "اسم المؤلف الافتراضي",
+    "defaultAuthorName": "اسم المؤلف",
     "snapping": "الانطباق",
     "angleSnap": "انطباق الزاوية (بالدرجات)",
     "enableAngleSnapping": "تمكين انطباق الزاوية (اضغط Shift)",
@@ -141,5 +142,9 @@
     "removalFailed": "فشلت الإزالة",
     "failedToInstall": "فشل تثبيت الطابعة الافتراضية:",
     "failedToRemove": "فشل إزالة الطابعة الافتراضية:"
+  },
+  "pageDisplay": {
+    "rendering": "العرض",
+    "thinLines": "خطوط رفيعة (عرض جميع الخطوط بعرض 1 بكسل)"
   }
 }

@@ -8,7 +8,8 @@
     "markup": "Marcação",
     "behavior": "Comportamento",
     "fileAssociation": "Associação de arquivos",
-    "virtualPrinter": "Impressora virtual"
+    "virtualPrinter": "Impressora virtual",
+    "pageDisplay": "Exibição de página"
   },
   "resetToDefaults": "Redefinir para os padrões",
   "resetConfirm": "Redefinir todas as preferências para os valores padrão?",
@@ -18,7 +19,7 @@
     "startup": "Inicialização",
     "restoreLastSession": "Restaurar a última sessão ao iniciar o aplicativo",
     "author": "Autor",
-    "defaultAuthorName": "Nome do autor padrão",
+    "defaultAuthorName": "Nome do autor",
     "language": "Idioma",
     "interfaceLanguage": "Idioma da interface"
   },
@@ -104,7 +105,7 @@
     "startup": "Inicialização",
     "restoreLastSession": "Restaurar a última sessão ao iniciar o aplicativo",
     "author": "Autor",
-    "defaultAuthorName": "Nome do autor padrão",
+    "defaultAuthorName": "Nome do autor",
     "snapping": "Encaixe",
     "angleSnap": "Ângulo de encaixe (graus)",
     "enableAngleSnapping": "Ativar encaixe de ângulo (manter Shift pressionado)",
@@ -141,5 +142,9 @@
     "removalFailed": "A remoção falhou",
     "failedToInstall": "Falha ao instalar a impressora virtual:",
     "failedToRemove": "Falha ao remover a impressora virtual:"
+  },
+  "pageDisplay": {
+    "rendering": "Renderização",
+    "thinLines": "Linhas finas (exibir todas as linhas com largura de 1px)"
   }
 }

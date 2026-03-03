@@ -4,7 +4,6 @@
     "home": "Aloitus",
     "comment": "Kommentti",
     "view": "Näkymä",
-    "forms": "Lomakkeet",
     "organize": "Järjestä",
     "help": "Ohje",
     "format": "Muotoilu",
@@ -34,6 +33,8 @@
     "edit": "Muokkaa",
     "editText": "Muokkaa tekstiä",
     "addText": "Lisää tekstiä",
+    "cropMargins": "Rajaa marginaalit",
+    "crop": "Rajaa",
     "navigate": "Siirry",
     "firstPage": "Ensimmäinen sivu",
     "first": "Ensimmäinen",
@@ -110,13 +111,6 @@
     "annotationsList": "Merkintäluettelo (F11)",
     "annotationsLabel": "Merkinnät",
     "appearance": "Ulkoasu"
-  },
-  "forms": {
-    "formFields": "Lomakekentät",
-    "textField": "Tekstikenttä",
-    "checkbox": "Valintaruutu",
-    "radioButton": "Valintapainike",
-    "radio": "Valinta"
   },
   "organize": {
     "pages": "Sivut",
@@ -250,7 +244,7 @@
     "h": "K:"
   },
   "theme": {
-    "system": "Järjestelmä",
+    "system": "Järjestelmä (Automaattinen)",
     "light": "Vaalea",
     "dark": "Tumma",
     "blue": "Sininen",

@@ -99,6 +99,8 @@
     "signatureUnknown": "Verificatie niet beschikbaar",
     "documentLevel": "Documentniveau",
     "goToPage": "Ga naar pagina {{page}}",
+    "goToPageLink": "Ga naar pagina",
+    "openExternalFile": "Openen: {{filename}}",
     "destination": "Bestemming: {{name}}",
     "internalLink": "Interne koppeling"
   }

@@ -4,7 +4,6 @@
     "home": "Trang chủ",
     "comment": "Chú thích",
     "view": "Xem",
-    "forms": "Biểu mẫu",
     "organize": "Sắp xếp",
     "help": "Trợ giúp",
     "format": "Định dạng",
@@ -34,6 +33,8 @@
     "edit": "Chỉnh sửa",
     "editText": "Sửa Văn bản",
     "addText": "Thêm Văn bản",
+    "cropMargins": "Lề cắt",
+    "crop": "Cắt",
     "navigate": "Điều hướng",
     "firstPage": "Trang đầu",
     "first": "Đầu",
@@ -110,13 +111,6 @@
     "annotationsList": "Danh sách Chú thích (F11)",
     "annotationsLabel": "Chú thích",
     "appearance": "Giao diện"
-  },
-  "forms": {
-    "formFields": "Trường Biểu mẫu",
-    "textField": "Trường Văn bản",
-    "checkbox": "Hộp kiểm",
-    "radioButton": "Nút chọn",
-    "radio": "Chọn"
   },
   "organize": {
     "pages": "Trang",
@@ -250,7 +244,7 @@
     "h": "C:"
   },
   "theme": {
-    "system": "Hệ thống",
+    "system": "Hệ thống (Tự động)",
     "light": "Sáng",
     "dark": "Tối",
     "blue": "Xanh dương",

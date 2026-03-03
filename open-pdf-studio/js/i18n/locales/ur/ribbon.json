@@ -4,7 +4,6 @@
     "home": "ہوم",
     "comment": "تبصرہ",
     "view": "منظر",
-    "forms": "فارمز",
     "organize": "ترتیب دیں",
     "help": "مدد",
     "format": "فارمیٹ",
@@ -34,6 +33,8 @@
     "edit": "ترمیم",
     "editText": "متن میں ترمیم کریں",
     "addText": "متن شامل کریں",
+    "cropMargins": "کٹائی کے حاشیے",
+    "crop": "کاٹیں",
     "navigate": "نیویگیشن",
     "firstPage": "پہلا صفحہ",
     "first": "پہلا",
@@ -110,13 +111,6 @@
     "annotationsList": "تشریحات کی فہرست (F11)",
     "annotationsLabel": "تشریحات",
     "appearance": "ظاہری شکل"
-  },
-  "forms": {
-    "formFields": "فارم فیلڈز",
-    "textField": "ٹیکسٹ فیلڈ",
-    "checkbox": "چیک باکس",
-    "radioButton": "ریڈیو بٹن",
-    "radio": "ریڈیو"
   },
   "organize": {
     "pages": "صفحات",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "سسٹم",
+    "system": "سسٹم (خودکار)",
     "light": "ہلکا",
     "dark": "گہرا",
     "blue": "نیلا",

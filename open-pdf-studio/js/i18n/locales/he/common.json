@@ -99,6 +99,8 @@
     "signatureUnknown": "אימות אינו זמין",
     "documentLevel": "רמת מסמך",
     "goToPage": "עבור לעמוד {{page}}",
+    "goToPageLink": "עבור לעמוד",
+    "openExternalFile": "פתיחה: {{filename}}",
     "destination": "יעד: {{name}}",
     "internalLink": "קישור פנימי"
   }

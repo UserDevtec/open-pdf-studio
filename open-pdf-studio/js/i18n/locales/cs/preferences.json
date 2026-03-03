@@ -8,7 +8,8 @@
     "markup": "Značky",
     "behavior": "Chování",
     "fileAssociation": "Přiřazení souborů",
-    "virtualPrinter": "Virtuální tiskárna"
+    "virtualPrinter": "Virtuální tiskárna",
+    "pageDisplay": "Zobrazení stránky"
   },
   "resetToDefaults": "Obnovit výchozí",
   "resetConfirm": "Obnovit všechny předvolby na výchozí hodnoty?",
@@ -18,7 +19,7 @@
     "startup": "Spuštění",
     "restoreLastSession": "Obnovit poslední relaci při spuštění aplikace",
     "author": "Autor",
-    "defaultAuthorName": "Výchozí jméno autora",
+    "defaultAuthorName": "Jméno autora",
     "language": "Jazyk",
     "interfaceLanguage": "Jazyk rozhraní"
   },
@@ -113,7 +114,7 @@
     "startup": "Spuštění",
     "restoreLastSession": "Obnovit poslední relaci při spuštění aplikace",
     "author": "Autor",
-    "defaultAuthorName": "Výchozí jméno autora",
+    "defaultAuthorName": "Jméno autora",
     "snapping": "Přichycení",
     "angleSnap": "Přichycení úhlu (stupně)",
     "enableAngleSnapping": "Povolit přichycení úhlu (podržte Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Odebrání se nezdařilo",
     "failedToInstall": "Nepodařilo se nainstalovat virtuální tiskárnu:",
     "failedToRemove": "Nepodařilo se odebrat virtuální tiskárnu:"
+  },
+  "pageDisplay": {
+    "rendering": "Vykreslování",
+    "thinLines": "Tenké čáry (zobrazit všechny čáry o šířce 1px)"
   }
 }

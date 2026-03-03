@@ -99,6 +99,8 @@
     "signatureUnknown": "Pengesahan tidak tersedia",
     "documentLevel": "Peringkat Dokumen",
     "goToPage": "Pergi ke Halaman {{page}}",
+    "goToPageLink": "Pergi ke halaman",
+    "openExternalFile": "Buka: {{filename}}",
     "destination": "Destinasi: {{name}}",
     "internalLink": "Pautan Dalaman"
   }

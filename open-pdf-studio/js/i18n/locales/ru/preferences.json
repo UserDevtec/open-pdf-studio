@@ -8,7 +8,8 @@
     "markup": "Разметка",
     "behavior": "Поведение",
     "fileAssociation": "Ассоциация файлов",
-    "virtualPrinter": "Виртуальный принтер"
+    "virtualPrinter": "Виртуальный принтер",
+    "pageDisplay": "Отображение страницы"
   },
   "resetToDefaults": "Сбросить по умолчанию",
   "resetConfirm": "Сбросить все настройки до значений по умолчанию?",
@@ -18,7 +19,7 @@
     "startup": "Запуск",
     "restoreLastSession": "Восстанавливать последний сеанс при запуске приложения",
     "author": "Автор",
-    "defaultAuthorName": "Имя автора по умолчанию",
+    "defaultAuthorName": "Имя автора",
     "language": "Язык",
     "interfaceLanguage": "Язык интерфейса"
   },
@@ -113,7 +114,7 @@
     "startup": "Запуск",
     "restoreLastSession": "Восстанавливать последний сеанс при запуске приложения",
     "author": "Автор",
-    "defaultAuthorName": "Имя автора по умолчанию",
+    "defaultAuthorName": "Имя автора",
     "snapping": "Привязка",
     "angleSnap": "Привязка угла (градусы)",
     "enableAngleSnapping": "Включить привязку угла (удерживайте Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Ошибка удаления",
     "failedToInstall": "Не удалось установить виртуальный принтер:",
     "failedToRemove": "Не удалось удалить виртуальный принтер:"
+  },
+  "pageDisplay": {
+    "rendering": "Отрисовка",
+    "thinLines": "Тонкие линии (отображать все линии шириной 1px)"
   }
 }

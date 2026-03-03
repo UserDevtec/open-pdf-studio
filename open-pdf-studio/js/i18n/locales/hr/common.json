@@ -99,6 +99,8 @@
     "signatureUnknown": "Provjera nije dostupna",
     "documentLevel": "Razina dokumenta",
     "goToPage": "Idi na stranicu {{page}}",
+    "goToPageLink": "Idi na stranicu",
+    "openExternalFile": "Otvori: {{filename}}",
     "destination": "Odredište: {{name}}",
     "internalLink": "Unutarnja poveznica"
   }

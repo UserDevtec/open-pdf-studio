@@ -1,6 +1,6 @@
 import { createSignal, Show } from 'solid-js';
 import Dialog from '../Dialog.jsx';
-import { closeDialog } from '../../stores/dialogStore.js';
+import { closeDialog, showMessage } from '../../stores/dialogStore.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 export default function CropMarginsDialog(props) {
@@ -29,9 +29,9 @@ export default function CropMarginsDialog(props) {
     const result = await cropMargins(applyToVal, rangeVal, paddingMm, thresholdVal);
 
     if (result.cropped === 0 && result.skipped > 0) {
-      alert(t('cropMargins.noContent'));
+      showMessage(t('cropMargins.noContent'));
     } else if (result.skipped > 0) {
-      alert(t('cropMargins.resultWithSkipped', { cropped: result.cropped, skipped: result.skipped }));
+      showMessage(t('cropMargins.resultWithSkipped', { cropped: result.cropped, skipped: result.skipped }));
     }
   };
 

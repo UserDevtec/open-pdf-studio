@@ -4,7 +4,6 @@
     "home": "홈",
     "comment": "주석",
     "view": "보기",
-    "forms": "양식",
     "organize": "구성",
     "help": "도움말",
     "format": "서식",
@@ -34,6 +33,8 @@
     "edit": "편집",
     "editText": "텍스트 편집",
     "addText": "텍스트 추가",
+    "cropMargins": "여백 자르기",
+    "crop": "자르기",
     "navigate": "탐색",
     "firstPage": "첫 페이지",
     "first": "첫 페이지",
@@ -110,13 +111,6 @@
     "annotationsList": "주석 목록 (F11)",
     "annotationsLabel": "주석",
     "appearance": "모양"
-  },
-  "forms": {
-    "formFields": "양식 필드",
-    "textField": "텍스트 필드",
-    "checkbox": "확인란",
-    "radioButton": "라디오 버튼",
-    "radio": "라디오"
   },
   "organize": {
     "pages": "페이지",
@@ -250,7 +244,7 @@
     "h": "높이:"
   },
   "theme": {
-    "system": "시스템",
+    "system": "시스템 (자동 감지)",
     "light": "밝게",
     "dark": "어둡게",
     "blue": "파랑",

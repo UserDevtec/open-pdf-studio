@@ -49,7 +49,7 @@ export function startTextEditing(annotation) {
     color: annotation.textColor || annotation.color || '#000000',
     'background-color': annotation.fillColor && annotation.fillColor !== 'transparent'
       ? annotation.fillColor : '#ffffff',
-    border: `${(annotation.lineWidth || 1) * state.scale}px solid ${annotation.strokeColor || '#000000'}`,
+    border: `${(annotation.lineWidth ?? 1) * state.scale}px solid ${annotation.strokeColor || '#000000'}`,
     padding: `${2 * state.scale}px`,
     'box-sizing': 'border-box',
     resize: 'none',

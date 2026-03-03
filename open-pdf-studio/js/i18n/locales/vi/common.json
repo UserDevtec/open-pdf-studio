@@ -99,6 +99,8 @@
     "signatureUnknown": "Không thể xác minh",
     "documentLevel": "Cấp tài liệu",
     "goToPage": "Đi đến trang {{page}}",
+    "goToPageLink": "Đi đến trang",
+    "openExternalFile": "Mở: {{filename}}",
     "destination": "Đích đến: {{name}}",
     "internalLink": "Liên kết nội bộ"
   }

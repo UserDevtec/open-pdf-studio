@@ -4,7 +4,6 @@
     "home": "होम",
     "comment": "टिप्पणी",
     "view": "दृश्य",
-    "forms": "फॉर्म",
     "organize": "व्यवस्थित करें",
     "help": "सहायता",
     "format": "प्रारूप",
@@ -34,6 +33,8 @@
     "edit": "संपादन",
     "editText": "टेक्स्ट संपादित करें",
     "addText": "टेक्स्ट जोड़ें",
+    "cropMargins": "मार्जिन काटें",
+    "crop": "काटें",
     "navigate": "नेविगेट करें",
     "firstPage": "पहला पृष्ठ",
     "first": "पहला",
@@ -110,13 +111,6 @@
     "annotationsList": "एनोटेशन सूची (F11)",
     "annotationsLabel": "एनोटेशन",
     "appearance": "दिखावट"
-  },
-  "forms": {
-    "formFields": "फॉर्म फ़ील्ड",
-    "textField": "टेक्स्ट फ़ील्ड",
-    "checkbox": "चेकबॉक्स",
-    "radioButton": "रेडियो बटन",
-    "radio": "रेडियो"
   },
   "organize": {
     "pages": "पृष्ठ",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "सिस्टम",
+    "system": "सिस्टम (स्वतः पहचान)",
     "light": "हल्का",
     "dark": "गहरा",
     "blue": "नीला",

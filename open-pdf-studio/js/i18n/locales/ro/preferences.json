@@ -8,7 +8,8 @@
     "markup": "Marcaj",
     "behavior": "Comportament",
     "fileAssociation": "Asociere fisiere",
-    "virtualPrinter": "Imprimanta virtuala"
+    "virtualPrinter": "Imprimanta virtuala",
+    "pageDisplay": "Afișare pagină"
   },
   "resetToDefaults": "Resetare la valori implicite",
   "resetConfirm": "Resetati toate preferintele la valorile implicite?",
@@ -18,7 +19,7 @@
     "startup": "Pornire",
     "restoreLastSession": "Restaurare ultima sesiune la pornirea aplicatiei",
     "author": "Autor",
-    "defaultAuthorName": "Nume autor implicit",
+    "defaultAuthorName": "Nume autor",
     "language": "Limba",
     "interfaceLanguage": "Limba interfetei"
   },
@@ -113,7 +114,7 @@
     "startup": "Pornire",
     "restoreLastSession": "Restaurare ultima sesiune la pornirea aplicatiei",
     "author": "Autor",
-    "defaultAuthorName": "Nume autor implicit",
+    "defaultAuthorName": "Nume autor",
     "snapping": "Fixare",
     "angleSnap": "Fixare unghi (grade)",
     "enableAngleSnapping": "Activare fixare unghi (mentineti Shift)",
@@ -158,5 +159,9 @@
     "removalFailed": "Eliminarea a esuat",
     "failedToInstall": "Nu s-a putut instala imprimanta virtuala:",
     "failedToRemove": "Nu s-a putut elimina imprimanta virtuala:"
+  },
+  "pageDisplay": {
+    "rendering": "Randare",
+    "thinLines": "Linii subțiri (afișează toate liniile cu lățime de 1px)"
   }
 }

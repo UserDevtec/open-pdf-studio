@@ -99,8 +99,9 @@ function setupPanelResize() {
       document.body.style.userSelect = 'none';
 
       const onMouseMove = (e) => {
+        const isRtl = document.documentElement.dir === 'rtl';
         const delta = e.clientX - startX;
-        const newWidth = Math.max(120, Math.min(500, startWidth + delta));
+        const newWidth = Math.max(120, Math.min(500, startWidth + (isRtl ? -delta : delta)));
         leftPanel.style.width = newWidth + 'px';
       };
 

@@ -99,6 +99,8 @@
     "signatureUnknown": "تصدیق دستیاب نہیں ہے",
     "documentLevel": "دستاویز کی سطح",
     "goToPage": "صفحہ {{page}} پر جائیں",
+    "goToPageLink": "صفحے پر جائیں",
+    "openExternalFile": "کھولیں: {{filename}}",
     "destination": "منزل: {{name}}",
     "internalLink": "اندرونی لنک"
   }

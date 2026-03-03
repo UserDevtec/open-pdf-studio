@@ -73,6 +73,10 @@ export async function renderPage(pageNum) {
     annotationMode: 0 // DISABLE - annotations are rendered by the app's overlay canvas
   };
 
+  if (state.preferences.thinLines) {
+    renderContext.enhanceThinLines = true;
+  }
+
   currentRenderTask = page.render(renderContext);
 
   try {
@@ -187,12 +191,16 @@ async function renderContinuousPage(pageNum) {
 
   // Render PDF page
   const pdfCtxEl = pdfCanvasEl.getContext('2d');
+  const contRenderContext = {
+    canvasContext: pdfCtxEl,
+    viewport: viewport,
+    annotationMode: 0
+  };
+  if (state.preferences.thinLines) {
+    contRenderContext.enhanceThinLines = true;
+  }
   try {
-    await page.render({
-      canvasContext: pdfCtxEl,
-      viewport: viewport,
-      annotationMode: 0
-    }).promise;
+    await page.render(contRenderContext).promise;
   } catch (error) {
     console.error(`Error rendering page ${pageNum}:`, error);
   }

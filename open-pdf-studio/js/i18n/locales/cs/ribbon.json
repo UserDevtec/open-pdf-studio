@@ -4,7 +4,6 @@
     "home": "Domů",
     "comment": "Komentář",
     "view": "Zobrazení",
-    "forms": "Formuláře",
     "organize": "Uspořádat",
     "help": "Nápověda",
     "format": "Formát",
@@ -34,6 +33,8 @@
     "edit": "Úpravy",
     "editText": "Upravit text",
     "addText": "Přidat text",
+    "cropMargins": "Oříznout okraje",
+    "crop": "Oříznout",
     "navigate": "Navigace",
     "firstPage": "První stránka",
     "first": "První",
@@ -110,13 +111,6 @@
     "annotationsList": "Seznam anotací (F11)",
     "annotationsLabel": "Anotace",
     "appearance": "Vzhled"
-  },
-  "forms": {
-    "formFields": "Pole formuláře",
-    "textField": "Textové pole",
-    "checkbox": "Zaškrtávací pole",
-    "radioButton": "Přepínač",
-    "radio": "Přepínač"
   },
   "organize": {
     "pages": "Stránky",
@@ -250,7 +244,7 @@
     "h": "V:"
   },
   "theme": {
-    "system": "Systémový",
+    "system": "Systémový (Automaticky)",
     "light": "Světlý",
     "dark": "Tmavý",
     "blue": "Modrý",

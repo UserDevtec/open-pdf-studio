@@ -1,6 +1,6 @@
 import { createSignal } from 'solid-js';
 import Dialog from '../Dialog.jsx';
-import { closeDialog } from '../../stores/dialogStore.js';
+import { closeDialog, showMessage } from '../../stores/dialogStore.js';
 import { parsePageRange } from '../../../pdf/exporter.js';
 import { extractPages } from '../../../pdf/page-manager.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
@@ -20,7 +20,7 @@ export default function ExtractPagesDialog(props) {
   const handleExtract = () => {
     const pages = parsePageRange(pageRange(), totalPages);
     if (pages.length === 0) {
-      alert(tCommon('invalidPageRange'));
+      showMessage(tCommon('invalidPageRange'));
       return;
     }
     close();

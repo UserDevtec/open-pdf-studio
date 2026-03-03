@@ -99,6 +99,8 @@
     "signatureUnknown": "Vahvistus ei saatavilla",
     "documentLevel": "Asiakirjataso",
     "goToPage": "Siirry sivulle {{page}}",
+    "goToPageLink": "Siirry sivulle",
+    "openExternalFile": "Avaa: {{filename}}",
     "destination": "Kohde: {{name}}",
     "internalLink": "Sisäinen linkki"
   }

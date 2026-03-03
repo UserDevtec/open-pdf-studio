@@ -99,6 +99,8 @@
     "signatureUnknown": "Ověření není k dispozici",
     "documentLevel": "Úroveň dokumentu",
     "goToPage": "Přejít na stránku {{page}}",
+    "goToPageLink": "Přejít na stránku",
+    "openExternalFile": "Otevřít: {{filename}}",
     "destination": "Cíl: {{name}}",
     "internalLink": "Interní odkaz"
   }

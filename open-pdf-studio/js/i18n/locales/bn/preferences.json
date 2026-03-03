@@ -8,7 +8,8 @@
     "markup": "মার্কআপ",
     "behavior": "আচরণ",
     "fileAssociation": "ফাইল সংযুক্তি",
-    "virtualPrinter": "ভার্চুয়াল প্রিন্টার"
+    "virtualPrinter": "ভার্চুয়াল প্রিন্টার",
+    "pageDisplay": "পৃষ্ঠা প্রদর্শন"
   },
   "resetToDefaults": "ডিফল্টে পুনরায় সেট করুন",
   "resetConfirm": "সমস্ত পছন্দ ডিফল্ট মানে পুনরায় সেট করবেন?",
@@ -18,7 +19,7 @@
     "startup": "স্টার্টআপ",
     "restoreLastSession": "অ্যাপ্লিকেশন শুরু হলে শেষ সেশন পুনরুদ্ধার করুন",
     "author": "লেখক",
-    "defaultAuthorName": "ডিফল্ট লেখকের নাম",
+    "defaultAuthorName": "লেখকের নাম",
     "language": "ভাষা",
     "interfaceLanguage": "ইন্টারফেস ভাষা"
   },
@@ -113,7 +114,7 @@
     "startup": "স্টার্টআপ",
     "restoreLastSession": "অ্যাপ্লিকেশন শুরু হলে শেষ সেশন পুনরুদ্ধার করুন",
     "author": "লেখক",
-    "defaultAuthorName": "ডিফল্ট লেখকের নাম",
+    "defaultAuthorName": "লেখকের নাম",
     "snapping": "স্ন্যাপিং",
     "angleSnap": "কোণ স্ন্যাপ (ডিগ্রি)",
     "enableAngleSnapping": "কোণ স্ন্যাপিং সক্রিয় করুন (Shift ধরে রাখুন)",
@@ -158,5 +159,9 @@
     "removalFailed": "সরানো ব্যর্থ হয়েছে",
     "failedToInstall": "ভার্চুয়াল প্রিন্টার ইনস্টল করতে ব্যর্থ:",
     "failedToRemove": "ভার্চুয়াল প্রিন্টার সরাতে ব্যর্থ:"
+  },
+  "pageDisplay": {
+    "rendering": "রেন্ডারিং",
+    "thinLines": "পাতলা রেখা (সমস্ত রেখা 1px প্রস্থে প্রদর্শন)"
   }
 }

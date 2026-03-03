@@ -99,6 +99,8 @@
     "signatureUnknown": "যাচাইকরণ উপলব্ধ নয়",
     "documentLevel": "নথি স্তর",
     "goToPage": "পৃষ্ঠা {{page}} এ যান",
+    "goToPageLink": "পৃষ্ঠায় যান",
+    "openExternalFile": "খুলুন: {{filename}}",
     "destination": "গন্তব্য: {{name}}",
     "internalLink": "অভ্যন্তরীণ লিঙ্ক"
   }

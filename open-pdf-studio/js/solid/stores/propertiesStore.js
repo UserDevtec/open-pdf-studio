@@ -548,7 +548,7 @@ function applyPropToAnnotation(ann, key, value) {
       }
       break;
     }
-    case 'rotation': ann.rotation = parseInt(value) || 0; break;
+    case 'rotation': ann.rotation = Math.max(-360, Math.min(360, parseInt(value) || 0)); break;
   }
 }
 
@@ -633,7 +633,7 @@ export function updateAnnotProp(key, value) {
       }
       break;
     }
-    case 'rotation': currentAnnotation.rotation = parseInt(value) || 0; break;
+    case 'rotation': currentAnnotation.rotation = Math.max(-360, Math.min(360, parseInt(value) || 0)); break;
     case 'imageWidth': {
       const newW = parseInt(value) || 20;
       currentAnnotation.width = newW;

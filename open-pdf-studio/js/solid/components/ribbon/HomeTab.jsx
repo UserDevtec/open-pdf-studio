@@ -103,7 +103,7 @@ export default function HomeTab() {
             disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'editText'} onClick={() => setTool('editText')} />
           <RibbonButton id="add-text" title={t('home.addText')} icon={addTextIcon} label={t('home.addText')}
             disabled={noPdf() || isPdfAReadOnly()} onClick={() => setTool('text')} />
-          <RibbonButton id="crop-margins" title="Crop Margins" icon={cropMarginsIcon} label="Crop"
+          <RibbonButton id="crop-margins" title={t('home.cropMargins')} icon={cropMarginsIcon} label={t('home.crop')}
             disabled={noPdf() || isPdfAReadOnly()} onClick={() => openDialog('crop-margins', { totalPages: state.pdfDoc?.numPages, currentPage: state.currentPage })} />
         </RibbonGroup>
 

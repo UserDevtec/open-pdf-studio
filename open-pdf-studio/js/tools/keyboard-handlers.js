@@ -18,6 +18,7 @@ import { switchToTab } from '../solid/stores/ribbonStore.js';
 import { openFindBar, closeFindBar, onFindNext } from '../search/find-bar.js';
 import { closeActiveTab } from '../ui/chrome/tabs.js';
 import { hideProperties, showProperties, showMultiSelectionProperties, togglePropertiesPanel } from '../ui/panels/properties-panel.js';
+import { showMessage } from '../solid/stores/dialogStore.js';
 
 // Handle keydown events
 export function handleKeydown(e) {
@@ -291,6 +292,16 @@ export function handleKeydown(e) {
   } else if (ctrl && e.key === '2') {
     e.preventDefault();
     fitPage();
+  } else if (ctrl && e.key === '5') {
+    e.preventDefault();
+    state.preferences.thinLines = !state.preferences.thinLines;
+    if (state.pdfDoc) {
+      if (state.viewMode === 'continuous') {
+        import('../pdf/renderer.js').then(m => m.renderContinuous());
+      } else {
+        import('../pdf/renderer.js').then(m => m.renderPage(state.currentPage));
+      }
+    }
   }
 
   // Tool shortcuts (only if PDF is loaded)
@@ -329,8 +340,8 @@ export function handleKeydown(e) {
   // Help shortcuts
   if (e.key === 'F1') {
     e.preventDefault();
-    const shortcuts = `Keyboard Shortcuts:\n\nFILE:\nCtrl+N - New Document\nCtrl+O - Open PDF\nCtrl+S - Save\nCtrl+P - Print\nCtrl+W - Close\n\nEDIT:\nCtrl+Z - Undo\nCtrl+Y / Ctrl+Shift+Z - Redo\nDelete - Delete selected annotation\nCtrl+Shift+C - Clear page annotations\n\nVIEW:\nCtrl++ - Zoom In\nCtrl+- - Zoom Out\nCtrl+0 - Actual Size\nCtrl+1 - Fit Width\nCtrl+2 - Fit Page\n\nTOOLS:\nV - Select Tool\n1 - Highlight\n2 - Freehand\n3 - Line\n4 - Rectangle\n5 - Ellipse\nT - Text Box\nN - Note`;
-    alert(shortcuts);
+    const shortcuts = `Keyboard Shortcuts:\n\nFILE:\nCtrl+N - New Document\nCtrl+O - Open PDF\nCtrl+S - Save\nCtrl+P - Print\nCtrl+W - Close\n\nEDIT:\nCtrl+Z - Undo\nCtrl+Y / Ctrl+Shift+Z - Redo\nDelete - Delete selected annotation\nCtrl+Shift+C - Clear page annotations\n\nVIEW:\nCtrl++ - Zoom In\nCtrl+- - Zoom Out\nCtrl+0 - Actual Size\nCtrl+1 - Fit Width\nCtrl+2 - Fit Page\nCtrl+5 - Thin Lines\n\nTOOLS:\nV - Select Tool\n1 - Highlight\n2 - Freehand\n3 - Line\n4 - Rectangle\n5 - Ellipse\nT - Text Box\nN - Note`;
+    showMessage(shortcuts);
   } else if (e.key === 'F9') {
     e.preventDefault();
     toggleLeftPanel();

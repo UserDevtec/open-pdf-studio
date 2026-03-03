@@ -4,7 +4,6 @@
     "home": "Nyumbani",
     "comment": "Maoni",
     "view": "Mwonekano",
-    "forms": "Fomu",
     "organize": "Panga",
     "help": "Msaada",
     "format": "Muundo",
@@ -34,6 +33,8 @@
     "edit": "Hariri",
     "editText": "Hariri Maandishi",
     "addText": "Ongeza Maandishi",
+    "cropMargins": "Pambizo za Kukata",
+    "crop": "Kata",
     "navigate": "Abiri",
     "firstPage": "Ukurasa wa Kwanza",
     "first": "Kwanza",
@@ -110,13 +111,6 @@
     "annotationsList": "Orodha ya Maoni (F11)",
     "annotationsLabel": "Maoni",
     "appearance": "Muonekano"
-  },
-  "forms": {
-    "formFields": "Sehemu za Fomu",
-    "textField": "Sehemu ya Maandishi",
-    "checkbox": "Kisanduku cha Kuteua",
-    "radioButton": "Kitufe cha Kuchagua",
-    "radio": "Chaguo"
   },
   "organize": {
     "pages": "Kurasa",
@@ -250,7 +244,7 @@
     "h": "R:"
   },
   "theme": {
-    "system": "Mfumo",
+    "system": "Mfumo (Otomatiki)",
     "light": "Angavu",
     "dark": "Giza",
     "blue": "Bluu",

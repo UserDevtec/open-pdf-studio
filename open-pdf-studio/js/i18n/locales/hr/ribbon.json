@@ -4,7 +4,6 @@
     "home": "Početna",
     "comment": "Komentar",
     "view": "Prikaz",
-    "forms": "Obrasci",
     "organize": "Organiziraj",
     "help": "Pomoć",
     "format": "Oblikovanje",
@@ -34,6 +33,8 @@
     "edit": "Uredi",
     "editText": "Uredi tekst",
     "addText": "Dodaj tekst",
+    "cropMargins": "Obreži margine",
+    "crop": "Obreži",
     "navigate": "Navigacija",
     "firstPage": "Prva stranica",
     "first": "Prva",
@@ -110,13 +111,6 @@
     "annotationsList": "Popis oznaka (F11)",
     "annotationsLabel": "Oznake",
     "appearance": "Izgled"
-  },
-  "forms": {
-    "formFields": "Polja obrasca",
-    "textField": "Tekstualno polje",
-    "checkbox": "Potvrdni okvir",
-    "radioButton": "Radio gumb",
-    "radio": "Radio"
   },
   "organize": {
     "pages": "Stranice",
@@ -250,7 +244,7 @@
     "h": "V:"
   },
   "theme": {
-    "system": "Sustav",
+    "system": "Sustav (Automatski)",
     "light": "Svijetla",
     "dark": "Tamna",
     "blue": "Plava",

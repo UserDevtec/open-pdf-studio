@@ -99,6 +99,8 @@
     "signatureUnknown": "Verifiering ej tillgänglig",
     "documentLevel": "Dokumentnivå",
     "goToPage": "Gå till sida {{page}}",
+    "goToPageLink": "Gå till sida",
+    "openExternalFile": "Öppna: {{filename}}",
     "destination": "Destination: {{name}}",
     "internalLink": "Intern länk"
   }

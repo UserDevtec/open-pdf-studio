@@ -4,7 +4,6 @@
     "home": "Hjem",
     "comment": "Kommentar",
     "view": "Visning",
-    "forms": "Formularer",
     "organize": "Organiser",
     "help": "Hjælp",
     "format": "Formater",
@@ -34,6 +33,8 @@
     "edit": "Rediger",
     "editText": "Rediger tekst",
     "addText": "Tilføj tekst",
+    "cropMargins": "Beskær margener",
+    "crop": "Beskær",
     "navigate": "Naviger",
     "firstPage": "Første side",
     "first": "Første",
@@ -110,13 +111,6 @@
     "annotationsList": "Annotationsliste (F11)",
     "annotationsLabel": "Annotationer",
     "appearance": "Udseende"
-  },
-  "forms": {
-    "formFields": "Formularfelter",
-    "textField": "Tekstfelt",
-    "checkbox": "Afkrydsningsfelt",
-    "radioButton": "Alternativknap",
-    "radio": "Alternativ"
   },
   "organize": {
     "pages": "Sider",
@@ -250,7 +244,7 @@
     "h": "H:"
   },
   "theme": {
-    "system": "System",
+    "system": "System (Automatisk)",
     "light": "Lys",
     "dark": "Mørk",
     "blue": "Blå",

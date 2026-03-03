@@ -8,7 +8,8 @@
     "markup": "Marquage",
     "behavior": "Comportement",
     "fileAssociation": "Association de fichiers",
-    "virtualPrinter": "Imprimante virtuelle"
+    "virtualPrinter": "Imprimante virtuelle",
+    "pageDisplay": "Affichage de page"
   },
   "resetToDefaults": "Rétablir les valeurs par défaut",
   "resetConfirm": "Réinitialiser toutes les préférences aux valeurs par défaut ?",
@@ -18,7 +19,7 @@
     "startup": "Démarrage",
     "restoreLastSession": "Restaurer la dernière session au démarrage de l'application",
     "author": "Auteur",
-    "defaultAuthorName": "Nom d'auteur par défaut",
+    "defaultAuthorName": "Nom d'auteur",
     "language": "Langue",
     "interfaceLanguage": "Langue de l'interface"
   },
@@ -104,7 +105,7 @@
     "startup": "Démarrage",
     "restoreLastSession": "Restaurer la dernière session au démarrage de l'application",
     "author": "Auteur",
-    "defaultAuthorName": "Nom d'auteur par défaut",
+    "defaultAuthorName": "Nom d'auteur",
     "snapping": "Magnétisme",
     "angleSnap": "Magnétisme d'angle (degrés)",
     "enableAngleSnapping": "Activer le magnétisme d'angle (maintenez Shift)",
@@ -141,5 +142,9 @@
     "removalFailed": "La suppression a échoué",
     "failedToInstall": "Impossible d'installer l'imprimante virtuelle :",
     "failedToRemove": "Impossible de supprimer l'imprimante virtuelle :"
+  },
+  "pageDisplay": {
+    "rendering": "Rendu",
+    "thinLines": "Lignes fines (afficher toutes les lignes avec une largeur de 1px)"
   }
 }

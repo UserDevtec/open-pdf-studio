@@ -1,8 +1,10 @@
 import { Show } from 'solid-js';
 import { visible, hideDefaultAppBar } from '../stores/defaultAppBarStore.js';
 import { state } from '../../core/state.js';
+import { useTranslation } from '../../i18n/useTranslation.js';
 
 export default function NotificationBar() {
+  const { t } = useTranslation('dialogs');
   const handleSetDefault = () => {
     import('../../core/platform.js').then(m => m.openDefaultAppsSettings());
     hideDefaultAppBar();
@@ -25,10 +27,10 @@ export default function NotificationBar() {
           <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" fill="none"/>
           <path d="M7.5 5V4h1v1h-1zm0 7V6.5h1V12h-1z" fill="currentColor"/>
         </svg>
-        <span>Open PDF Studio is not set as the default app for opening PDF files.</span>
-        <button class="notification-bar-action" onClick={handleSetDefault}>Set as Default</button>
-        <button class="notification-bar-action" onClick={handleDontAsk}>Don't Ask Again</button>
-        <button class="notification-bar-close" onClick={handleDismiss} title="Close">&times;</button>
+        <span>{t('defaultPdfApp.message')}</span>
+        <button class="notification-bar-action" onClick={handleSetDefault}>{t('defaultPdfApp.setAsDefault')}</button>
+        <button class="notification-bar-action" onClick={handleDontAsk}>{t('defaultPdfApp.dontAskAgain')}</button>
+        <button class="notification-bar-close" onClick={handleDismiss} title={t('defaultPdfApp.notNow')}>&times;</button>
       </div>
     </Show>
   );

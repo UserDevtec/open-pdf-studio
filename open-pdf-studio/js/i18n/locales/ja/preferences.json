@@ -8,7 +8,8 @@
     "markup": "マークアップ",
     "behavior": "動作",
     "fileAssociation": "ファイルの関連付け",
-    "virtualPrinter": "仮想プリンター"
+    "virtualPrinter": "仮想プリンター",
+    "pageDisplay": "ページ表示"
   },
   "resetToDefaults": "既定値に戻す",
   "resetConfirm": "すべての環境設定を既定値に戻しますか？",
@@ -18,7 +19,7 @@
     "startup": "起動",
     "restoreLastSession": "アプリケーション起動時に前回のセッションを復元する",
     "author": "著者",
-    "defaultAuthorName": "既定の著者名",
+    "defaultAuthorName": "著者名",
     "language": "言語",
     "interfaceLanguage": "インターフェース言語"
   },
@@ -104,7 +105,7 @@
     "startup": "起動",
     "restoreLastSession": "アプリケーション起動時に前回のセッションを復元する",
     "author": "著者",
-    "defaultAuthorName": "既定の著者名",
+    "defaultAuthorName": "著者名",
     "snapping": "スナップ",
     "angleSnap": "角度スナップ（度）",
     "enableAngleSnapping": "角度スナップを有効にする（Shift キーを押しながら）",
@@ -141,5 +142,9 @@
     "removalFailed": "削除に失敗しました",
     "failedToInstall": "仮想プリンターのインストールに失敗しました：",
     "failedToRemove": "仮想プリンターの削除に失敗しました："
+  },
+  "pageDisplay": {
+    "rendering": "レンダリング",
+    "thinLines": "細い線（すべての線を1pxの幅で表示）"
   }
 }

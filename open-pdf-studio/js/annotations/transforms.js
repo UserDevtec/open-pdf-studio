@@ -354,45 +354,24 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
       break;
 
     case 'polyline':
-      // Scale the points based on bounding box resize
-      if (originalAnn.points && originalAnn.points.length > 0) {
-        const plMinX = Math.min(...originalAnn.points.map(p => p.x));
-        const plMinY = Math.min(...originalAnn.points.map(p => p.y));
-        const plMaxX = Math.max(...originalAnn.points.map(p => p.x));
-        const plMaxY = Math.max(...originalAnn.points.map(p => p.y));
-        const plOrigWidth = plMaxX - plMinX || 1;
-        const plOrigHeight = plMaxY - plMinY || 1;
-
-        let plNewMinX = plMinX, plNewMinY = plMinY, plNewMaxX = plMaxX, plNewMaxY = plMaxY;
-
-        switch (handleType) {
-          case HANDLE_TYPES.TOP_LEFT:
-            plNewMinX = plMinX + deltaX;
-            plNewMinY = plMinY + deltaY;
-            break;
-          case HANDLE_TYPES.TOP_RIGHT:
-            plNewMaxX = plMaxX + deltaX;
-            plNewMinY = plMinY + deltaY;
-            break;
-          case HANDLE_TYPES.BOTTOM_LEFT:
-            plNewMinX = plMinX + deltaX;
-            plNewMaxY = plMaxY + deltaY;
-            break;
-          case HANDLE_TYPES.BOTTOM_RIGHT:
-            plNewMaxX = plMaxX + deltaX;
-            plNewMaxY = plMaxY + deltaY;
-            break;
+      // Drag individual node
+      if (typeof handleType === 'string' && handleType.startsWith(HANDLE_TYPES.POLYLINE_NODE + '_')) {
+        const nodeIdx = parseInt(handleType.split('_').pop(), 10);
+        if (originalAnn.points && !isNaN(nodeIdx) && nodeIdx < originalAnn.points.length) {
+          annotation.points = originalAnn.points.map((p, i) => {
+            if (i === nodeIdx) {
+              return { x: p.x + deltaX, y: p.y + deltaY };
+            }
+            return { x: p.x, y: p.y };
+          });
+          // Recalculate bounding box
+          const xs = annotation.points.map(p => p.x);
+          const ys = annotation.points.map(p => p.y);
+          annotation.x = Math.min(...xs);
+          annotation.y = Math.min(...ys);
+          annotation.width = Math.max(...xs) - annotation.x;
+          annotation.height = Math.max(...ys) - annotation.y;
         }
-
-        const plNewWidth = plNewMaxX - plNewMinX || 1;
-        const plNewHeight = plNewMaxY - plNewMinY || 1;
-        const plScaleX = plNewWidth / plOrigWidth;
-        const plScaleY = plNewHeight / plOrigHeight;
-
-        annotation.points = originalAnn.points.map(p => ({
-          x: plNewMinX + (p.x - plMinX) * plScaleX,
-          y: plNewMinY + (p.y - plMinY) * plScaleY
-        }));
       }
       break;
 
