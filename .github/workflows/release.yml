@@ -108,7 +108,6 @@ jobs:
         run: |
           $conf = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
           $conf.bundle.windows.nsis.installMode = "currentUser"
-          $conf.productName = "Open PDF Studio (User)"
           $conf | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json
 
       - name: Build Tauri app (with release upload)
