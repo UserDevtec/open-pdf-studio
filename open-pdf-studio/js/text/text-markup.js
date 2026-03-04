@@ -2,6 +2,7 @@ import { state } from '../core/state.js';
 import { createAnnotation } from '../annotations/factory.js';
 import { redrawAnnotations, redrawContinuous } from '../annotations/rendering.js';
 import { getSelectionRectsForAnnotation, getSelectionQuadPoints } from './text-selection.js';
+import { recordAdd } from '../core/undo-manager.js';
 
 /**
  * Text Markup Annotations Module
@@ -49,6 +50,12 @@ export function createTextMarkupAnnotation(type, color, opacity) {
   });
 
   state.annotations.push(annotation);
+  recordAdd(annotation);
+
+  // Select the newly created annotation so Delete key works immediately
+  state.selectedAnnotations = [annotation];
+  const doc = state.documents[state.activeDocumentIndex];
+  if (doc) doc.selectedAnnotation = annotation;
 
   // Redraw
   if (state.viewMode === 'continuous') {

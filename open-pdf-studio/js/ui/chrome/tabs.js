@@ -8,6 +8,7 @@ import { cancelAnnotationLoading, hidePdfABar } from '../../pdf/loader.js';
 import { savePDF } from '../../pdf/saver.js';
 import { unlockFile } from '../../core/platform.js';
 import { cancelPendingZoom } from '../setup/navigation-events.js';
+import { closeAllPopups } from '../../solid/stores/stickyNotePopupStore.js';
 
 /**
  * Create a new tab for a document
@@ -165,6 +166,9 @@ export async function closeTab(index, force = false) {
     }
     // action === 'dontsave' → proceed to close without saving
   }
+
+  // Close all open sticky note popups
+  closeAllPopups();
 
   // Clear selection and hide contextual ribbon tabs
   clearSelection();

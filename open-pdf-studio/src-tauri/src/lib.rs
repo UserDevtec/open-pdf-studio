@@ -43,6 +43,31 @@ fn load_session() -> Option<String> {
     fs::read_to_string(&path).ok()
 }
 
+fn get_preferences_file_path() -> String {
+    if let Some(data_dir) = dirs::data_local_dir() {
+        let app_dir = data_dir.join("OpenPDFStudio");
+        if !app_dir.exists() {
+            let _ = fs::create_dir_all(&app_dir);
+        }
+        app_dir.join("preferences.json").to_string_lossy().to_string()
+    } else {
+        "preferences.json".to_string()
+    }
+}
+
+#[tauri::command]
+fn save_preferences(data: String) -> Result<bool, String> {
+    let path = get_preferences_file_path();
+    fs::write(&path, data).map_err(|e| e.to_string())?;
+    Ok(true)
+}
+
+#[tauri::command]
+fn load_preferences() -> Option<String> {
+    let path = get_preferences_file_path();
+    fs::read_to_string(&path).ok()
+}
+
 #[tauri::command]
 fn get_username() -> String {
     whoami::username()
@@ -604,7 +629,9 @@ pub fn run() {
             remove_virtual_printer,
             is_virtual_printer_installed,
             download_pdf_from_url,
-            list_pdf_files
+            list_pdf_files,
+            save_preferences,
+            load_preferences
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

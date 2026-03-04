@@ -52,11 +52,27 @@ import App from './solid/App.jsx';
 import { addRecentFile } from './mobile/recent-files.js';
 
 // Tauri API
-import { isTauri, isMobile, getOpenedFiles, loadSession, saveSession, fileExists, isDefaultPdfApp, openDefaultAppsSettings, extractFileName } from './core/platform.js';
+import { isTauri, isMobile, isDevMode, getOpenedFiles, loadSession, saveSession, fileExists, isDefaultPdfApp, openDefaultAppsSettings, extractFileName } from './core/platform.js';
 
 // Global promise queue — serializes all file loads across multiple openFiles() calls
 // (Windows single-instance plugin sends separate open-files events per file)
 let fileOpenQueue = Promise.resolve();
+
+// Register open-files listener immediately (before init) so events from the
+// single-instance plugin are never lost. Queue files until the app is ready.
+let appReady = false;
+let pendingOpenFiles = [];
+if (window.__TAURI__?.event) {
+  window.__TAURI__.event.listen('open-files', (event) => {
+    const files = event.payload;
+    if (!Array.isArray(files)) return;
+    if (appReady) {
+      openFiles(files);
+    } else {
+      pendingOpenFiles.push(...files);
+    }
+  });
+}
 
 // Open PDF files: tabs created instantly, loads serialized through global queue
 function openFiles(filePaths) {
@@ -107,8 +123,8 @@ function disableBrowserShortcuts() {
     if (e.shiftKey && ['I', 'J', 'C'].includes(e.key)) {
       e.preventDefault();
     }
-    // F5 refresh, Ctrl+R refresh
-    if (e.key === 'r' || e.key === 'R') {
+    // F5 refresh, Ctrl+R refresh (allow in dev mode)
+    if ((e.key === 'r' || e.key === 'R') && !window.__devMode) {
       e.preventDefault();
     }
   }, true);
@@ -130,6 +146,11 @@ async function init() {
     disableDefaultContextMenu();
   }
 
+  // Set dev mode flag before blocking shortcuts (allows Ctrl+R refresh in dev)
+  if (isTauri()) {
+    window.__devMode = await isDevMode();
+  }
+
   // Block browser shortcuts (Ctrl+I, Ctrl+U, F5, etc.)
   if (isTauri() && !mobile) {
     disableBrowserShortcuts();
@@ -141,6 +162,21 @@ async function init() {
   // Single render call — mounts the entire UI tree
   // render() is synchronous, so DOM elements exist immediately after
   render(() => App(), document.getElementById('app-root'));
+
+  // Show the window after the browser has painted the first frame.
+  // Double requestAnimationFrame ensures layout + paint have completed.
+  if (isTauri() && window.__TAURI__?.window) {
+    await new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+    try {
+      const appWindow = window.__TAURI__.window.getCurrentWindow();
+      await appWindow.show();
+      await appWindow.setFocus();
+    } catch (e) {
+      console.warn('Failed to show window:', e);
+    }
+  }
 
   // Now that Solid has rendered, grab canvas and container refs
   initDomElements();
@@ -203,17 +239,15 @@ async function init() {
     }
   }
 
-  // Listen for files opened from a second instance (single-instance plugin)
-  if (isTauri() && window.__TAURI__?.event) {
-    window.__TAURI__.event.listen('open-files', (event) => {
-      const files = event.payload;
-      if (!Array.isArray(files)) return;
-      openFiles(files);
-    });
-  }
-
   // Check for file passed as command line argument
   const hasCommandLineFile = await checkCommandLineArgs();
+
+  // Drain any files queued by the single-instance plugin before the app was ready
+  if (pendingOpenFiles.length > 0 && !hasCommandLineFile) {
+    openFiles(pendingOpenFiles);
+  }
+  pendingOpenFiles = [];
+  appReady = true;
 
   // Restore last session if enabled and no command line file
   if (!hasCommandLineFile) {

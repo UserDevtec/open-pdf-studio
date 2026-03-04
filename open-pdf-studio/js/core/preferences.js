@@ -4,16 +4,34 @@ import { setColorPickerValue, setLineWidthValue, setCurrentTheme } from '../soli
 import { updateStatusMessage } from '../ui/chrome/status-bar.js';
 import { openDialog } from '../solid/stores/dialogStore.js';
 import { changeLanguage } from '../i18n/useTranslation.js';
-import { isTauri, getUsername } from './platform.js';
+import { isTauri, getUsername, savePreferencesFile, loadPreferencesFile } from './platform.js';
 
-// Load preferences from localStorage
+// Load preferences from Rust file storage, with localStorage migration fallback
 export async function loadPreferences() {
   try {
-    const saved = localStorage.getItem('pdfEditorPreferences');
-    if (saved) {
-      const parsed = JSON.parse(saved);
+    // Try Rust-backed file storage first (survives WebView2 data clears)
+    let loaded = isTauri() ? await loadPreferencesFile() : null;
+
+    if (!loaded) {
+      // Fallback: migrate from localStorage (first launch after update, or non-Tauri)
+      const saved = localStorage.getItem('pdfEditorPreferences');
+      if (saved) {
+        loaded = JSON.parse(saved);
+      }
+    }
+
+    if (loaded) {
       // Merge with defaults to ensure all keys exist
-      state.preferences = { ...DEFAULT_PREFERENCES, ...parsed };
+      state.preferences = { ...DEFAULT_PREFERENCES, ...loaded };
+    }
+
+    // Persist to both storages so they stay in sync
+    const json = JSON.stringify(state.preferences);
+    localStorage.setItem('pdfEditorPreferences', json);
+    if (isTauri()) {
+      savePreferencesFile(state.preferences).catch(e =>
+        console.error('Failed to save preferences file:', e)
+      );
     }
   } catch (e) {
     console.error('Failed to load preferences:', e);
@@ -33,14 +51,31 @@ export async function loadPreferences() {
   applyPreferences();
 }
 
-// Save preferences to localStorage
+// Save preferences to Rust file storage + localStorage mirror
 export function savePreferences() {
   try {
-    localStorage.setItem('pdfEditorPreferences', JSON.stringify(state.preferences));
+    const json = JSON.stringify(state.preferences);
+    // localStorage mirror for synchronous theme script in index.html
+    localStorage.setItem('pdfEditorPreferences', json);
+    // Rust-backed persistent storage
+    if (isTauri()) {
+      savePreferencesFile(state.preferences).catch(e =>
+        console.error('Failed to save preferences file:', e)
+      );
+    }
     applyPreferences();
   } catch (e) {
     console.error('Failed to save preferences:', e);
   }
+}
+
+// Cached system theme from Tauri API (updated by onThemeChanged listener)
+let cachedSystemTheme = null;
+
+// Detect OS theme using Tauri Window API (reliable), with matchMedia fallback
+function getSystemTheme() {
+  if (cachedSystemTheme) return cachedSystemTheme;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
 // Resolve the effective theme (handles "system" by detecting OS preference)
@@ -51,11 +86,6 @@ function resolveTheme(themeName) {
   return themeName;
 }
 
-// Detect OS theme via CSS media query (Tauri's webview respects the OS setting)
-function getSystemTheme() {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 // Apply theme to the document
 export function applyTheme(themeName) {
   const effectiveTheme = resolveTheme(themeName);
@@ -63,12 +93,32 @@ export function applyTheme(themeName) {
   setCurrentTheme(themeName);
 }
 
-// Listen for OS theme changes (applies when user has "System" selected)
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if (state.preferences.theme === 'system') {
-    applyTheme('system');
+// Initialize theme change listener using Tauri API (more reliable than matchMedia)
+async function initThemeListener() {
+  if (isTauri() && window.__TAURI__?.window) {
+    try {
+      const appWindow = window.__TAURI__.window.getCurrentWindow();
+      cachedSystemTheme = await appWindow.theme();
+      appWindow.onThemeChanged(({ payload: theme }) => {
+        cachedSystemTheme = theme;
+        if (state.preferences.theme === 'system') {
+          applyTheme('system');
+        }
+      });
+    } catch (e) {
+      console.warn('Tauri theme API unavailable, using matchMedia fallback');
+    }
   }
-});
+
+  // Fallback listener for non-Tauri or if Tauri API fails
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!cachedSystemTheme && state.preferences.theme === 'system') {
+      applyTheme('system');
+    }
+  });
+}
+
+initThemeListener();
 
 // Apply preferences to the application
 export function applyPreferences() {

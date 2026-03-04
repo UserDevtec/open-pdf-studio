@@ -189,24 +189,7 @@ let systemFonts = null;
 async function getSystemFonts() {
   if (systemFonts) return systemFonts;
 
-  try {
-    if ('queryLocalFonts' in window) {
-      const fonts = await window.queryLocalFonts();
-      const familySet = new Set();
-      for (const font of fonts) {
-        familySet.add(font.family);
-      }
-      // Sort alphabetically
-      systemFonts = [...familySet].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-      if (systemFonts.length > 0) {
-        return systemFonts;
-      }
-    }
-  } catch (err) {
-    console.warn('[Fonts] Local Font Access API not available:', err.message);
-  }
-
-  // Fallback: filter to fonts that actually render (canvas detection)
+  // Use canvas-based font detection (avoids browser permission prompt from queryLocalFonts)
   systemFonts = detectAvailableFonts(FALLBACK_FONTS);
   return systemFonts;
 }

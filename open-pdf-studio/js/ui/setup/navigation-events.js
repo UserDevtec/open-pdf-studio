@@ -2,6 +2,7 @@ import { state } from '../../core/state.js';
 import { annotationCanvas } from '../dom-elements.js';
 import { renderPage, renderContinuous, goToPage } from '../../pdf/renderer.js';
 import { showLoading, hideLoading } from '../chrome/dialogs.js';
+import { clearHighlights } from '../../search/find-bar.js';
 
 // Setup wheel zoom
 let _zoomRenderTimer = null;
@@ -51,6 +52,11 @@ export function setupWheelZoom() {
       const mouseOnCanvasY = e.clientY - canvasRect.top;
       const docX = mouseOnCanvasX / oldScale;
       const docY = mouseOnCanvasY / oldScale;
+
+      // Clear search highlights immediately so they don't appear at wrong
+      // positions while the canvas is CSS-scaled. They are recreated after
+      // the full render via onPageRendered().
+      clearHighlights();
 
       // Scale canvases via CSS width/height for instant flicker-free feedback.
       // Unlike CSS transform, this updates layout (centering, scroll area)

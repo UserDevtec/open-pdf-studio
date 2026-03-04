@@ -7,6 +7,7 @@ import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { injectSyntheticTextSpans } from '../text/text-layer.js';
 import { annotationCanvas } from '../ui/dom-elements.js';
 import { showTextEditOverlay, hideTextEditOverlay, getTextValue, getHeightGrowth } from '../solid/stores/textEditOverlayStore.js';
+import { openStickyPopup } from '../solid/stores/stickyNotePopupStore.js';
 
 // Start inline text editing for textbox/callout
 export function startTextEditing(annotation) {
@@ -280,36 +281,37 @@ export async function addTextAnnotation(x, y, pageNum, canvasEl) {
   }
 }
 
-// Add comment/sticky note at position
+// Add comment/sticky note at position and open popup for editing
 export function addComment(x, y) {
-  const text = prompt('Enter comment:');
-  if (text !== null) { // Allow empty comments
-    const annotation = {
-      id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
-      type: 'comment',
-      page: state.currentPage,
-      x: x,
-      y: y,
-      width: 24,
-      height: 24,
-      text: text,
-      color: state.preferences.commentColor || '#FFFF00',
-      fillColor: state.preferences.commentColor || '#FFFF00',
-      icon: state.preferences.commentIcon || 'comment',
-      author: state.defaultAuthor,
-      createdAt: new Date().toISOString(),
-      modifiedAt: new Date().toISOString(),
-      locked: false,
-      printable: true
-    };
+  const annotation = {
+    id: Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
+    type: 'comment',
+    page: state.currentPage,
+    x: x,
+    y: y,
+    width: 24,
+    height: 24,
+    text: '',
+    color: state.preferences.commentColor || '#FFFF00',
+    fillColor: state.preferences.commentColor || '#FFFF00',
+    icon: state.preferences.commentIcon || 'comment',
+    author: state.defaultAuthor,
+    createdAt: new Date().toISOString(),
+    modifiedAt: new Date().toISOString(),
+    locked: false,
+    printable: true,
+    popupOpen: true
+  };
 
-    state.annotations.push(annotation);
-    recordAdd(annotation);
+  state.annotations.push(annotation);
+  recordAdd(annotation);
 
-    if (state.viewMode === 'continuous') {
-      redrawContinuous();
-    } else {
-      redrawAnnotations();
-    }
+  if (state.viewMode === 'continuous') {
+    redrawContinuous();
+  } else {
+    redrawAnnotations();
   }
+
+  // Open popup immediately for text entry
+  openStickyPopup(annotation);
 }

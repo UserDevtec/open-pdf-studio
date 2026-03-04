@@ -9,6 +9,7 @@ import { drawPolygonShape, drawCloudShape, drawTextboxContent } from './renderin
 import { drawArrowheadOnCanvas, applyBorderStyle } from './rendering/decorations.js';
 import { drawSelectionHandles } from './rendering/selection.js';
 import { updateQuickAccessButtons, updateContextualTabs, drawGrid, snapToGrid } from './rendering/ui-state.js';
+import { drawCommentIcon } from './rendering/comment-icons.js';
 
 // Re-export everything that external code needs
 export { drawPolygonShape, drawCloudShape } from './rendering/shapes.js';
@@ -246,51 +247,88 @@ export function drawAnnotation(ctx, annotation) {
       ctx.restore();
       break;
 
-    case 'comment':
-      // Draw comment icon with rotation support
-      const cWidth = annotation.width || 24;
-      const cHeight = annotation.height || 24;
+    case 'comment': {
+      // Draw comment icon using proper vector icon rendering
+      const cSize = annotation.width || 24;
+      const iconCX = annotation.x + cSize / 2;
+      const iconCY = annotation.y + cSize / 2;
+
+      // Draw leader triangle from icon to popup
+      if (annotation.popupOpen && annotation._popupFocused) {
+        const popX = annotation.popupX !== undefined ? annotation.popupX : annotation.x + 30;
+        const popY = annotation.popupY !== undefined ? annotation.popupY : annotation.y;
+
+        const doc = state.documents[state.activeDocumentIndex];
+        const scl = (doc ? doc.scale : 1) || 1;
+        const popW = 230 / scl;
+        const popH = 150 / scl;
+
+        // Popup center
+        const cx = popX + popW / 2;
+        const cy = popY + popH / 2;
+
+        // Direction from popup center to icon
+        const dx = iconCX - cx;
+        const dy = iconCY - cy;
+
+        // Line-rect intersection: find where line from center to icon hits popup edge
+        const sx = dx !== 0 ? (popW / 2) / Math.abs(dx) : Infinity;
+        const sy = dy !== 0 ? (popH / 2) / Math.abs(dy) : Infinity;
+        const s = Math.min(sx, sy);
+        if (s >= 1) break; // icon is inside popup, skip leader
+
+        const edgeX = cx + dx * s;
+        const edgeY = cy + dy * s;
+
+        // Distance from icon to edge
+        const eDx = edgeX - iconCX;
+        const eDy = edgeY - iconCY;
+        const edgeDist = Math.sqrt(eDx * eDx + eDy * eDy);
+        if (edgeDist < cSize * 0.5) break; // too close
+
+        // Unit direction from icon toward popup center
+        const udx = eDx / edgeDist;
+        const udy = eDy / edgeDist;
+
+        // Target point: 15px past the edge into the popup interior
+        const inset = 15 / scl;
+        const tgtX = edgeX + udx * inset;
+        const tgtY = edgeY + udy * inset;
+
+        // Perpendicular spread (always same visual width)
+        const perpX = -udy;
+        const perpY = udx;
+        const spread = 7 / scl;
+
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.moveTo(iconCX, iconCY);
+        ctx.lineTo(tgtX + perpX * spread, tgtY + perpY * spread);
+        ctx.lineTo(tgtX - perpX * spread, tgtY - perpY * spread);
+        ctx.closePath();
+        ctx.fillStyle = fillColor || '#FFFF00';
+        ctx.fill();
+        ctx.restore();
+      }
+
       ctx.save();
       ctx.globalAlpha = baseOpacity;
 
       if (annotation.rotation || annotation.flipX || annotation.flipY) {
-        const cCenterX = annotation.x + cWidth / 2;
-        const cCenterY = annotation.y + cHeight / 2;
+        const cCenterX = iconCX;
+        const cCenterY = iconCY;
         ctx.translate(cCenterX, cCenterY);
         if (annotation.rotation) ctx.rotate(annotation.rotation * Math.PI / 180);
         if (annotation.flipX || annotation.flipY) ctx.scale(annotation.flipX ? -1 : 1, annotation.flipY ? -1 : 1);
         ctx.translate(-cCenterX, -cCenterY);
       }
 
-      ctx.fillStyle = annotation.fillColor || '#FFD700';
-      ctx.fillRect(annotation.x, annotation.y, cWidth, cHeight);
-      ctx.strokeStyle = '#FFA500';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(annotation.x, annotation.y, cWidth, cHeight);
-
-      // Draw note icon inside
-      ctx.fillStyle = '#FFA500';
-      ctx.font = `${Math.min(cWidth, cHeight) * 0.6}px Arial`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('\u{1F4DD}', annotation.x + cWidth/2, annotation.y + cHeight/2);
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'alphabetic';
+      drawCommentIcon(ctx, annotation.icon, annotation.x, annotation.y, cSize, fillColor || '#FFFF00');
 
       ctx.restore();
-
-      // Draw text preview (outside rotation)
-      if (annotation.text && !annotation.rotation) {
-        ctx.globalAlpha = baseOpacity;
-        ctx.fillStyle = '#000';
-        ctx.font = '12px Arial';
-        ctx.fillText(
-          annotation.text.substring(0, 20) + (annotation.text.length > 20 ? '...' : ''),
-          annotation.x + cWidth + 6,
-          annotation.y + cHeight/2 + 4
-        );
-      }
       break;
+    }
 
     case 'text': {
       const txtFontFamily = annotation.fontFamily || 'Arial';

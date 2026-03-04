@@ -422,10 +422,15 @@ export function clearHighlights() {
 }
 
 /**
- * Re-highlight after page render
+ * Re-highlight after page render.
+ * Uses requestAnimationFrame to ensure the text layer is fully laid out
+ * before measuring positions, preventing highlights from flashing at
+ * wrong positions during zoom.
  */
 export function onPageRendered() {
   if (state.search.isOpen && state.search.results.length > 0) {
-    highlightResults();
+    requestAnimationFrame(() => {
+      highlightResults();
+    });
   }
 }

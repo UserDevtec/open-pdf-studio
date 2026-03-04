@@ -13,12 +13,17 @@ import { createSinglePageLinkLayer, clearSinglePageLinkLayer, createLinkLayer, c
 import { createSinglePageFormLayer, clearSinglePageFormLayer, createFormLayer, clearFormLayers, hideFormFieldsBar } from './form-layer.js';
 import { clearPdfVectorCache } from '../tools/pdf-snap-extractor.js';
 import { clearDetectionCache } from '../tools/pdf-element-detector.js';
+import { onPageRendered, clearHighlights } from '../search/find-bar.js';
 
 // Track current render task to cancel if needed
 let currentRenderTask = null;
 
 // Render PDF page (single page mode)
 export async function renderPage(pageNum) {
+  // Clear search highlights immediately to prevent stale highlights
+  // from appearing at wrong positions during canvas resize
+  clearHighlights();
+
   // Read directly from document object — state.scale getter is unreliable
   // because Solid's createMutable caches values written via the setter
   const doc = state.documents[state.activeDocumentIndex];
@@ -129,6 +134,9 @@ export async function renderPage(pageNum) {
   // Redraw annotations
   redrawAnnotations();
 
+  // Re-apply search highlights after re-render
+  onPageRendered();
+
   // Update status bar
   updateAllStatus();
 }
@@ -237,12 +245,18 @@ async function renderContinuousPage(pageNum) {
   const annotationCtxEl = annotationCanvasEl.getContext('2d');
   renderAnnotationsForPage(annotationCtxEl, pageNum, viewport.width, viewport.height);
 
+  // Re-apply search highlights after re-render
+  onPageRendered();
+
   // Setup mouse events
   setupContinuousPageEvents(annotationCanvasEl, pageNum);
 }
 
 // Render all pages (continuous mode) — creates placeholders, lazily renders visible pages
 export async function renderContinuous() {
+  // Clear search highlights immediately to prevent stale positions during re-render
+  clearHighlights();
+
   const doc = state.documents[state.activeDocumentIndex];
   if (!doc || !doc.pdfDoc) return;
   const pdfDoc = doc.pdfDoc;

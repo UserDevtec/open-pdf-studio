@@ -13,10 +13,13 @@ const textCache = new Map();
  * @returns {Promise<Array>} Array of page text data
  */
 async function extractAllText(pdfDoc) {
-  const docId = getActiveDocument()?.id;
+  const doc = getActiveDocument();
+  const docId = doc?.id;
+  const hasTextEdits = doc?.textEdits?.length > 0;
 
-  // Check cache first
-  if (docId && textCache.has(docId)) {
+  // Skip cache when the document has in-memory text edits (they can change
+  // between searches). Otherwise use cached extraction.
+  if (docId && !hasTextEdits && textCache.has(docId)) {
     return textCache.get(docId);
   }
 
@@ -50,6 +53,35 @@ async function extractAllText(pdfDoc) {
       }
     });
 
+    // Include text from in-memory "Add Text" edits so search can find them
+    // before saving. These correspond to the synthetic spans injected into
+    // the text layer by injectSyntheticTextSpans().
+    if (doc?.textEdits) {
+      const pageEdits = doc.textEdits.filter(e => e.page === pageNum && e.originalText === '');
+      for (const edit of pageEdits) {
+        if (!edit.newText) continue;
+        // Add each line as a separate item (matches synthetic span structure)
+        const lines = edit.newText.split('\n');
+        for (const line of lines) {
+          if (!line) continue;
+          // Separate from preceding text to prevent accidental concatenation
+          if (pageText.length > 0 && !pageText.endsWith(' ') && !pageText.endsWith('\n')) {
+            pageText += ' ';
+          }
+          items.push({
+            str: line,
+            startPos: pageText.length,
+            endPos: pageText.length + line.length,
+            transform: null,
+            width: 0,
+            height: 0,
+            itemIndex: spanIndex++
+          });
+          pageText += line;
+        }
+      }
+    }
+
     pagesText.push({
       pageNum,
       text: pageText,
@@ -57,8 +89,8 @@ async function extractAllText(pdfDoc) {
     });
   }
 
-  // Cache the result
-  if (docId) {
+  // Only cache when there are no text edits (edits can change between searches)
+  if (docId && !hasTextEdits) {
     textCache.set(docId, pagesText);
   }
 

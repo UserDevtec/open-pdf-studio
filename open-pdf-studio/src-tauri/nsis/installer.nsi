@@ -364,8 +364,14 @@ FunctionEnd
 !define MUI_PAGE_CUSTOMFUNCTION_PRE SkipIfPassive
 !insertmacro MUI_PAGE_DIRECTORY
 
-; 5.5 Virtual Printer options page (defined in installer hooks)
+; 5.5 File Association page (defined in installer hooks)
+Page custom FileAssocPageCreate FileAssocPageLeave
+
+; 5.6 Virtual Printer page (defined in installer hooks)
 Page custom VPrinterPageCreate VPrinterPageLeave
+
+; 5.7 Desktop Shortcut page (defined in installer hooks)
+Page custom DesktopShortcutPageCreate DesktopShortcutPageLeave
 
 ; 6. Start menu shortcut page
 Var AppStartMenuFolder

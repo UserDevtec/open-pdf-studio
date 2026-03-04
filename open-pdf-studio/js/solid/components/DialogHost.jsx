@@ -24,6 +24,7 @@ import MessageDialog from './dialogs/MessageDialog.jsx';
 import AboutDialog from './dialogs/AboutDialog.jsx';
 import TextEditOverlay from './TextEditOverlay.jsx';
 import PdfTextEditOverlay from './PdfTextEditOverlay.jsx';
+import StickyNotePopupHost from './StickyNotePopup.jsx';
 
 const DIALOG_MAP = {
   'doc-properties': DocPropertiesDialog,
@@ -62,6 +63,7 @@ export default function DialogHost() {
       </For>
       <TextEditOverlay />
       <PdfTextEditOverlay />
+      <StickyNotePopupHost />
     </>
   );
 }

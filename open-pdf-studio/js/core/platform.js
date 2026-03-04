@@ -271,6 +271,19 @@ export async function loadSession() {
   return null;
 }
 
+// Preferences file storage (Rust-backed, survives WebView2 data clears)
+export async function savePreferencesFile(data) {
+  return await invoke('save_preferences', { data: JSON.stringify(data) });
+}
+
+export async function loadPreferencesFile() {
+  const result = await invoke('load_preferences');
+  if (result) {
+    try { return JSON.parse(result); } catch { return null; }
+  }
+  return null;
+}
+
 // Get system username
 export async function getUsername() {
   const result = await invoke('get_username');

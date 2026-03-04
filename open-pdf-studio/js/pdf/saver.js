@@ -3,7 +3,7 @@ import { showLoading, hideLoading } from '../ui/chrome/dialogs.js';
 import { hexToColorArray } from '../utils/colors.js';
 import { markDocumentSaved, updateWindowTitle } from '../ui/chrome/tabs.js';
 import { isTauri, readBinaryFile, writeBinaryFile, saveFileDialog, unlockFile, lockFile } from '../core/platform.js';
-import { getCachedPdfBytes, setCachedPdfBytes, isPdfAReadOnly } from './loader.js';
+import { getCachedPdfBytes, setCachedPdfBytes, hidePdfABar } from './loader.js';
 import { PDFDocument, PDFString, PDFName, PDFArray, PDFStream, degrees, rgb, StandardFonts,
   PDFTextField, PDFCheckBox, PDFDropdown, PDFRadioGroup, PDFOptionList } from 'pdf-lib';
 import { getAnnotationStorage, getAnnotIdToFieldName } from './form-layer.js';
@@ -13,16 +13,6 @@ import { showMessage } from '../solid/stores/dialogStore.js';
 
 // Save PDF with annotations
 export async function savePDF(saveAsPath = null) {
-  if (isPdfAReadOnly()) {
-    if (window.__TAURI__?.dialog?.message) {
-      await window.__TAURI__.dialog.message(
-        'This document is PDF/A compliant and opened read-only. Click "Enable Editing" in the info bar to allow modifications.',
-        { title: 'Read-Only Document', kind: 'info' }
-      );
-    }
-    return false;
-  }
-
   if (!state.currentPdfPath && !saveAsPath) {
     // Untitled document — redirect to Save As
     return await savePDFAs();
@@ -49,6 +39,14 @@ export async function savePDF(saveAsPath = null) {
     }
 
     const pdfDocLib = await PDFDocument.load(existingPdfBytes);
+
+    // Strip PDF/A metadata — saved file no longer conforms to PDF/A
+    const activeDoc = getActiveDocument();
+    if (activeDoc && activeDoc.pdfaCompliance) {
+      stripPdfAMetadata(pdfDocLib);
+      activeDoc.pdfaCompliance = null;
+      hidePdfABar();
+    }
 
     // Get the PDF pages
     const pages = pdfDocLib.getPages();
@@ -121,7 +119,6 @@ export async function savePDF(saveAsPath = null) {
         page.setRotation(degrees(existingDeg + appRotation));
       }
 
-      const pageHeight = page.getHeight();
       const pageAnnotations = annotationsByPage[pageNum] || [];
 
       // Build annotations array: keep existing annotations we don't handle (widgets, links, etc.)
@@ -149,8 +146,12 @@ export async function savePDF(saveAsPath = null) {
       // Skip pages with no changes: no annotations from us and no existing handled annotations removed
       if (pageAnnotations.length === 0 && !annotsRef) continue;
 
-      // Helper to convert Y coordinate (flip for PDF)
-      const convertY = (y) => pageHeight - y;
+      // Helpers to convert viewport coordinates back to PDF coordinates (handles CropBox offsets)
+      const cropBox = page.getCropBox();
+      const viewLeft = cropBox.x;
+      const viewTop = cropBox.y + cropBox.height;
+      const convertX = (canvasX) => canvasX + viewLeft;
+      const convertY = (canvasY) => viewTop - canvasY;
 
       // Add our annotations
       for (const ann of pageAnnotations) {
@@ -167,9 +168,9 @@ export async function savePDF(saveAsPath = null) {
           case 'textUnderline':
           case 'textSquiggly': {
             // Text markup annotations
-            const x1 = ann.x;
+            const x1 = convertX(ann.x);
             const y1 = convertY(ann.y + ann.height);
-            const x2 = ann.x + ann.width;
+            const x2 = convertX(ann.x + ann.width);
             const y2 = convertY(ann.y);
 
             // Build QuadPoints from rects if available, otherwise from bounding box
@@ -177,9 +178,11 @@ export async function savePDF(saveAsPath = null) {
             if (ann.rects && ann.rects.length > 0) {
               quadPoints = [];
               for (const r of ann.rects) {
+                const qx1 = convertX(r.x);
+                const qx2 = convertX(r.x + r.width);
                 const qy1 = convertY(r.y + r.height);
                 const qy2 = convertY(r.y);
-                quadPoints.push(r.x, qy2, r.x + r.width, qy2, r.x, qy1, r.x + r.width, qy1);
+                quadPoints.push(qx1, qy2, qx2, qy2, qx1, qy1, qx2, qy1);
               }
             } else {
               quadPoints = [x1, y2, x2, y2, x1, y1, x2, y1];
@@ -208,9 +211,9 @@ export async function savePDF(saveAsPath = null) {
 
           case 'box': {
             // Square annotation
-            const x1 = ann.x;
+            const x1 = convertX(ann.x);
             const y1 = convertY(ann.y + ann.height);
-            const x2 = ann.x + ann.width;
+            const x2 = convertX(ann.x + ann.width);
             const y2 = convertY(ann.y);
 
             // Stroke color
@@ -246,9 +249,9 @@ export async function savePDF(saveAsPath = null) {
 
           case 'circle': {
             // Circle annotation (ellipse)
-            const cx = ann.x;
+            const cx = convertX(ann.x);
             const cy = convertY(ann.y + ann.height);
-            const cx2 = ann.x + ann.width;
+            const cx2 = convertX(ann.x + ann.width);
             const cy2 = convertY(ann.y);
 
             const strokeColorArr = ann.strokeColor ? hexToColorArray(ann.strokeColor) : colorArr;
@@ -283,9 +286,9 @@ export async function savePDF(saveAsPath = null) {
           case 'line':
           case 'arrow': {
             // Line annotation (arrows use LE entries)
-            const x1 = ann.startX;
+            const x1 = convertX(ann.startX);
             const y1 = convertY(ann.startY);
-            const x2 = ann.endX;
+            const x2 = convertX(ann.endX);
             const y2 = convertY(ann.endY);
 
             const headSize = ann.headSize || 12;
@@ -350,7 +353,7 @@ export async function savePDF(saveAsPath = null) {
 
             const inkList = [];
             for (const pt of ann.path) {
-              inkList.push(pt.x);
+              inkList.push(convertX(pt.x));
               inkList.push(convertY(pt.y));
             }
 
@@ -396,7 +399,7 @@ export async function savePDF(saveAsPath = null) {
             const vertices = [];
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             for (const pt of ann.points) {
-              const px = pt.x;
+              const px = convertX(pt.x);
               const py = convertY(pt.y);
               vertices.push(px, py);
               minX = Math.min(minX, px); maxX = Math.max(maxX, px);
@@ -438,7 +441,7 @@ export async function savePDF(saveAsPath = null) {
             if (ann.points && ann.points.length >= 3) {
               // Use stored points (from loaded PDF annotations)
               for (const pt of ann.points) {
-                const px = pt.x;
+                const px = convertX(pt.x);
                 const py = convertY(pt.y);
                 polyVertices.push(px, py);
                 polyMinX = Math.min(polyMinX, px); polyMaxX = Math.max(polyMaxX, px);
@@ -454,7 +457,7 @@ export async function savePDF(saveAsPath = null) {
 
               for (let i = 0; i < sides; i++) {
                 const angle = (i * 2 * Math.PI / sides) - Math.PI / 2;
-                const px = cx + rx * Math.cos(angle);
+                const px = convertX(cx + rx * Math.cos(angle));
                 const py = convertY(cy + ry * Math.sin(angle));
                 polyVertices.push(px, py);
                 polyMinX = Math.min(polyMinX, px); polyMaxX = Math.max(polyMaxX, px);
@@ -506,7 +509,7 @@ export async function savePDF(saveAsPath = null) {
             const isStdRot = ftRotation !== 0 && ftRotation % 90 === 0;
             let x1, y1, x2, y2;
             if (ftRotation !== 0 && !isStdRot) {
-              const cxDoc = ann.x + ftW / 2;
+              const cxDoc = convertX(ann.x + ftW / 2);
               const cyDoc = ann.y + ftH / 2;
               const rad = ftRotation * Math.PI / 180;
               const cosA = Math.abs(Math.cos(rad));
@@ -518,9 +521,9 @@ export async function savePDF(saveAsPath = null) {
               x2 = cxDoc + rotHalfW;
               y2 = convertY(cyDoc - rotHalfH);
             } else {
-              x1 = ann.x;
+              x1 = convertX(ann.x);
               y1 = convertY(ann.y + ftH);
-              x2 = ann.x + ftW;
+              x2 = convertX(ann.x + ftW);
               y2 = convertY(ann.y);
             }
 
@@ -574,11 +577,11 @@ export async function savePDF(saveAsPath = null) {
             // Callout-specific data (set after context.obj for reliable PDF serialization)
             let calloutData = null;
             if (ann.type === 'callout' && ann.arrowX !== undefined) {
-              const clArrowX = ann.arrowX;
+              const clArrowX = convertX(ann.arrowX);
               const clArrowY = convertY(ann.arrowY);
-              const clKneeX = ann.kneeX !== undefined ? ann.kneeX : clArrowX;
+              const clKneeX = ann.kneeX !== undefined ? convertX(ann.kneeX) : clArrowX;
               const clKneeY = ann.kneeY !== undefined ? convertY(ann.kneeY) : clArrowY;
-              const textConnectionX = ann.armOriginX !== undefined ? ann.armOriginX : (ann.arrowX < (ann.x + ftW / 2) ? x1 : x2);
+              const textConnectionX = ann.armOriginX !== undefined ? convertX(ann.armOriginX) : (ann.arrowX < (ann.x + ftW / 2) ? x1 : x2);
               const textConnectionY = ann.armOriginY !== undefined ? convertY(ann.armOriginY) : (y1 + y2) / 2;
 
               // Save original text box Rect before expanding
@@ -621,7 +624,7 @@ export async function savePDF(saveAsPath = null) {
             {
               const isCallout = ann.type === 'callout' && ann.arrowX !== undefined;
               // Text box in absolute PDF coords
-              const tbX1 = ann.x;
+              const tbX1 = convertX(ann.x);
               const tbY1 = convertY(ann.y + ftH);
               const tbX2 = tbX1 + ftW;
               const tbY2 = tbY1 + ftH;
@@ -632,11 +635,11 @@ export async function savePDF(saveAsPath = null) {
 
               // Draw callout leader line and arrowhead first (using absolute page coords)
               if (isCallout) {
-                const clAX = ann.arrowX;
+                const clAX = convertX(ann.arrowX);
                 const clAY = convertY(ann.arrowY);
-                const clKX = ann.kneeX !== undefined ? ann.kneeX : ann.arrowX;
+                const clKX = ann.kneeX !== undefined ? convertX(ann.kneeX) : convertX(ann.arrowX);
                 const clKY = ann.kneeY !== undefined ? convertY(ann.kneeY) : convertY(ann.arrowY);
-                const clOX = ann.armOriginX !== undefined ? ann.armOriginX : tbX1;
+                const clOX = ann.armOriginX !== undefined ? convertX(ann.armOriginX) : tbX1;
                 const clOY = ann.armOriginY !== undefined ? convertY(ann.armOriginY) : (tbY1 + ftH / 2);
 
                 const dashOp = ann.borderStyle === 'dashed' ? '[8 4] 0 d\n' : ann.borderStyle === 'dotted' ? '[2 2] 0 d\n' : '';
@@ -757,8 +760,17 @@ export async function savePDF(saveAsPath = null) {
 
           case 'comment': {
             // Text annotation (sticky note)
-            const x = ann.x;
+            const x = convertX(ann.x);
             const y = convertY(ann.y);
+
+            // Map internal icon name to PDF /Name value
+            const iconNameMap = {
+              comment: 'Comment', note: 'Note', help: 'Help',
+              insert: 'Insert', key: 'Key', newparagraph: 'NewParagraph',
+              paragraph: 'Paragraph', check: 'Check', circle: 'Circle',
+              cross: 'Cross', star: 'Star'
+            };
+            const pdfIconName = iconNameMap[(ann.icon || 'comment').toLowerCase()] || 'Comment';
 
             annotDict = context.obj({
               Type: 'Annot',
@@ -769,8 +781,8 @@ export async function savePDF(saveAsPath = null) {
               CA: opacity,
               T: PDFString.of(ann.author || 'User'),
               M: PDFString.of(new Date().toISOString()),
-              Name: 'Comment',
-              Open: false,
+              Name: pdfIconName,
+              Open: ann.popupOpen || false,
               F: computeAnnotFlags(ann)
             });
             break;
@@ -778,9 +790,9 @@ export async function savePDF(saveAsPath = null) {
 
           case 'stamp': {
             // Stamp annotation (text stamps without image data)
-            const x1 = ann.x;
+            const x1 = convertX(ann.x);
             const y1 = convertY(ann.y + ann.height);
-            const x2 = ann.x + ann.width;
+            const x2 = convertX(ann.x + ann.width);
             const y2 = convertY(ann.y);
 
             annotDict = context.obj({
@@ -801,9 +813,9 @@ export async function savePDF(saveAsPath = null) {
           case 'image':
           case 'signature': {
             // Save image/signature as Stamp annotation with embedded image AP stream
-            const x1 = ann.x;
+            const x1 = convertX(ann.x);
             const y1 = convertY(ann.y + ann.height);
-            const x2 = ann.x + ann.width;
+            const x2 = convertX(ann.x + ann.width);
             const y2 = convertY(ann.y);
             const w = ann.width;
             const h = ann.height;
@@ -875,9 +887,9 @@ export async function savePDF(saveAsPath = null) {
 
           case 'measureDistance': {
             // Save as Line annotation with Measure dictionary
-            const x1 = ann.startX;
+            const x1 = convertX(ann.startX);
             const y1 = convertY(ann.startY);
-            const x2 = ann.endX;
+            const x2 = convertX(ann.endX);
             const y2 = convertY(ann.endY);
 
             annotDict = context.obj({
@@ -935,7 +947,17 @@ export async function savePDF(saveAsPath = null) {
 
     // Temporarily release lock so we can write, then re-lock
     await unlockFile(outputPath);
-    await writeBinaryFile(outputPath, savedBytes);
+    try {
+      await writeBinaryFile(outputPath, savedBytes);
+    } catch (writeErr) {
+      // Re-lock before reporting error
+      await lockFile(outputPath);
+      const msg = writeErr?.message || String(writeErr);
+      if (msg.includes('denied') || msg.includes('locked') || msg.includes('sharing') || msg.includes('used by another')) {
+        throw new Error(i18next.t('fileLocked', { defaultValue: 'The file is being used by another application. Please close it and try again.' }));
+      }
+      throw writeErr;
+    }
     await lockFile(outputPath);
 
     // Update cache so subsequent saves use the latest PDF as base
@@ -947,10 +969,38 @@ export async function savePDF(saveAsPath = null) {
     return true;
   } catch (error) {
     console.error('Error saving PDF:', error);
-    showMessage(i18next.t('failedToSavePdf', { error: error.message }));
+    showMessage(i18next.t('failedToSavePdf', { error: error?.message || String(error) }));
     return false;
   } finally {
     hideLoading();
+  }
+}
+
+// Strip PDF/A conformance from XMP metadata so the saved file
+// is not falsely reported as PDF/A after modifications.
+function stripPdfAMetadata(pdfDocLib) {
+  try {
+    const catalog = pdfDocLib.catalog;
+    const metadataRef = catalog.get(PDFName.of('Metadata'));
+    if (!metadataRef) return;
+
+    const metadataObj = pdfDocLib.context.lookup(metadataRef);
+    if (!metadataObj || typeof metadataObj.getContents !== 'function') return;
+
+    const xmlBytes = metadataObj.getContents();
+    let xml = new TextDecoder().decode(xmlBytes);
+
+    // Remove pdfaid:part and pdfaid:conformance elements
+    xml = xml.replace(/<pdfaid:part>[^<]*<\/pdfaid:part>/g, '');
+    xml = xml.replace(/<pdfaid:conformance>[^<]*<\/pdfaid:conformance>/g, '');
+
+    // Remove empty pdfaid Description blocks left behind
+    xml = xml.replace(/<rdf:Description[^>]*xmlns:pdfaid[^>]*>\s*<\/rdf:Description>/g, '');
+
+    const newBytes = new TextEncoder().encode(xml);
+    metadataObj.setContents(newBytes);
+  } catch (e) {
+    console.warn('Failed to strip PDF/A metadata:', e);
   }
 }
 

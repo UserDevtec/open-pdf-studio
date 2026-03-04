@@ -24,6 +24,7 @@ import { cloneAnnotation } from '../../annotations/factory.js';
 import { recordDelete, recordBulkDelete, recordModify } from '../../core/undo-manager.js';
 import { bringToFront, sendToBack, bringForward, sendBackward, rotateAnnotation, flipHorizontal, flipVertical } from '../../annotations/z-order.js';
 import { startTextEditing } from '../../tools/text-editing.js';
+import { openStickyPopup, closeStickyPopup } from '../stores/stickyNotePopupStore.js';
 import { createTextMarkupAnnotation } from '../../text/text-markup.js';
 import { setAsDefaultStyle } from '../../core/preferences.js';
 import { setTool } from '../../tools/manager.js';
@@ -119,15 +120,21 @@ function AnnotationMenuContent() {
     <>
       <MenuItem icon={openPopupIcon} label={t('annotation.openPopUpNote')} onClick={() => {
         const a = ann();
-        if (a) { a.popupOpen = true; redraw(); }
+        if (a) openStickyPopup(a);
       }} />
       <MenuItem icon={hidePopupIcon} label={t('annotation.hidePopUpNote')} onClick={() => {
         const a = ann();
-        if (a) { a.popupOpen = false; redraw(); }
+        if (a) closeStickyPopup(a.id);
       }} />
       <MenuItem icon={resetPopupIcon} label={t('annotation.resetPopUpLocation')} onClick={() => {
         const a = ann();
-        if (a) { a.popupX = undefined; a.popupY = undefined; redraw(); }
+        if (a) {
+          a.popupX = undefined;
+          a.popupY = undefined;
+          // Re-open if currently open
+          closeStickyPopup(a.id);
+          openStickyPopup(a);
+        }
       }} />
 
       <Separator />

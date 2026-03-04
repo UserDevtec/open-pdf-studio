@@ -22,5 +22,5 @@ export default defineConfig({
       port: 3041,
     },
   },
-  build: { outDir: 'dist', emptyOutDir: true, chunkSizeWarningLimit: 2000 },
+  build: { outDir: 'dist', emptyOutDir: true, chunkSizeWarningLimit: 6000 },
 });

@@ -8,6 +8,7 @@ import { applyResize, applyMove, applyRotation } from '../annotations/transforms
 import { redrawAnnotations, redrawContinuous, renderAnnotationsForPage, snapToGrid } from '../annotations/rendering.js';
 import { showProperties, hideProperties, showMultiSelectionProperties } from '../ui/panels/properties-panel.js';
 import { startTextEditing, finishTextEditing, addTextAnnotation, addComment } from './text-editing.js';
+import { openStickyPopup } from '../solid/stores/stickyNotePopupStore.js';
 import { findTextEditAtPosition, startTextEditEditing } from './text-edit-tool.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { recordAdd, recordModify, recordBulkModify } from '../core/undo-manager.js';
@@ -111,9 +112,7 @@ export function handleMouseDown(e) {
   // Ignore right-click — handled by context menu
   if (e.button === 2) return;
 
-  console.log('[mousedown] tool:', state.currentTool, 'button:', e.button, 'ctrl:', e.ctrlKey,
-    'selectedAnn:', state.selectedAnnotation?.id, 'selectedAnns:', state.selectedAnnotations.map(a => a.id),
-    'origAnn:', state.originalAnnotation?.id);
+
 
   // Handle hand tool (panning, allow annotation selection, dragging and resizing)
   if (state.currentTool === 'hand') {
@@ -167,12 +166,16 @@ export function handleMouseDown(e) {
       } else {
         state.selectedAnnotations = [clickedAnnotation];
         showProperties(clickedAnnotation);
-        state.isDragging = true;
-        state.dragStartX = x;
-        state.dragStartY = y;
-        state.originalAnnotation = cloneAnnotation(clickedAnnotation);
-        state.originalAnnotations = [cloneAnnotation(clickedAnnotation)];
-        annotationCanvas.style.cursor = 'move';
+        // Text markup annotations (highlight/strikethrough/underline) are anchored to text — not movable
+        const isTextMarkup = ['textHighlight', 'textStrikethrough', 'textUnderline'].includes(clickedAnnotation.type);
+        if (!isTextMarkup) {
+          state.isDragging = true;
+          state.dragStartX = x;
+          state.dragStartY = y;
+          state.originalAnnotation = cloneAnnotation(clickedAnnotation);
+          state.originalAnnotations = [cloneAnnotation(clickedAnnotation)];
+          annotationCanvas.style.cursor = 'move';
+        }
       }
       redrawAnnotations();
     } else {
@@ -225,6 +228,14 @@ export function handleMouseDown(e) {
         return;
       }
 
+      // Double-click or single-click on comment: open popup
+      if (clickedAnnotation.type === 'comment') {
+        state.selectedAnnotations = [clickedAnnotation];
+        showProperties(clickedAnnotation);
+        openStickyPopup(clickedAnnotation);
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
         if (isSelected(clickedAnnotation)) {
           // Ctrl+click on already selected annotation: initiate Ctrl+drag copy
@@ -262,8 +273,9 @@ export function handleMouseDown(e) {
         redrawAnnotations();
       } else {
         // Normal click - select and show properties, but don't allow drag in PDF/A mode
+        const isTextMarkup = ['textHighlight', 'textStrikethrough', 'textUnderline'].includes(clickedAnnotation.type);
         if (isSelected(clickedAnnotation) && state.selectedAnnotations.length > 1) {
-          if (!pdfaLocked) {
+          if (!pdfaLocked && !isTextMarkup) {
             state.isDragging = true;
             state.originalAnnotations = state.selectedAnnotations.map(a => cloneAnnotation(a));
             annotationCanvas.style.cursor = 'move';
@@ -272,7 +284,7 @@ export function handleMouseDown(e) {
           // Single select
           state.selectedAnnotations = [clickedAnnotation];
           showProperties(clickedAnnotation);
-          if (!pdfaLocked) {
+          if (!pdfaLocked && !isTextMarkup) {
             state.isDragging = true;
             state.originalAnnotation = cloneAnnotation(clickedAnnotation);
             state.originalAnnotations = [cloneAnnotation(clickedAnnotation)];
@@ -456,6 +468,7 @@ export function handleMouseMove(e) {
     }
     const hoverAnnotation = findAnnotationAt(currentX, currentY);
     annotationCanvas.style.cursor = hoverAnnotation ? 'default' : 'grab';
+    annotationCanvas.title = (hoverAnnotation?.type === 'comment' && !hoverAnnotation.popupOpen && hoverAnnotation.text) ? hoverAnnotation.text.split('\n').slice(0, 5).join('\n') : '';
     return;
   }
 
@@ -490,6 +503,8 @@ export function handleMouseMove(e) {
         return;
       }
     }
+    const hoverAnnForTooltip = findAnnotationAt(currentX, currentY);
+    annotationCanvas.title = (hoverAnnForTooltip?.type === 'comment' && !hoverAnnForTooltip.popupOpen && hoverAnnForTooltip.text) ? hoverAnnForTooltip.text.split('\n').slice(0, 5).join('\n') : '';
     annotationCanvas.style.cursor = 'default';
     return;
   }
@@ -529,7 +544,7 @@ export function handleMouseMove(e) {
       const newId = () => Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
       const selected = state.selectedAnnotations;
       const originals = state.originalAnnotations;
-      console.log('[copy] creating copies. selected:', selected.map(a => a.id), 'total before:', state.annotations.length);
+
       try {
         if (selected.length > 1) {
           // Restore originals to their positions
@@ -563,7 +578,7 @@ export function handleMouseMove(e) {
             state.originalAnnotation = cloneAnnotation(copy);
             state.originalAnnotations = [cloneAnnotation(copy)];
             state._ctrlCopiesCreated = true;
-            console.log('[copy] single: original id:', ann.id, '→ copy id:', copy.id, 'total after:', state.annotations.length);
+
             showProperties(copy);
           } else {
             console.warn('[copy] FAILED: ann=', ann?.id, 'orig=', orig?.id, 'selectedAnnotation=', state.selectedAnnotation?.id);
@@ -834,9 +849,6 @@ export function handleMouseUp(e) {
 
   // Handle end of dragging/resizing
   if (state.isDragging || state.isResizing) {
-    console.log('[drag] mouseup cleanup — isDragging:', state.isDragging, 'isResizing:', state.isResizing,
-      'ctrlDragCopy:', state._ctrlDragCopy, 'copiesCreated:', state._ctrlCopiesCreated,
-      'selected:', state.selectedAnnotations.map(a => a.id), 'total:', state.annotations.length);
     if (state._ctrlDragCopy && state._ctrlCopiesCreated) {
       // Ctrl+drag copy: record copies as additions
       for (const ann of state.selectedAnnotations) {
@@ -981,6 +993,14 @@ export function handleContinuousMouseDown(e, pageNum) {
   if (state.currentTool === 'select' || state.currentTool === 'selectComments') {
     const clickedAnnotation = findAnnotationAt(state.startX, state.startY);
     if (clickedAnnotation) {
+      // Click on comment: open popup
+      if (clickedAnnotation.type === 'comment') {
+        state.selectedAnnotations = [clickedAnnotation];
+        showProperties(clickedAnnotation);
+        openStickyPopup(clickedAnnotation);
+        redrawContinuous();
+        return;
+      }
       if (e.ctrlKey || e.metaKey) {
         if (isSelected(clickedAnnotation)) {
           removeFromSelection(clickedAnnotation);
@@ -1211,12 +1231,19 @@ export function handleDblClick(e) {
   const y = (e.clientY - rect.top) / state.scale;
 
   const clickedAnnotation = findAnnotationAt(x, y);
-  if (clickedAnnotation && ['textbox', 'callout'].includes(clickedAnnotation.type)) {
-    // Cancel any in-progress drawing that was started by the mousedown events
-    state.isDrawing = false;
-    state.selectedAnnotations = [clickedAnnotation];
-    showProperties(clickedAnnotation);
-    startTextEditing(clickedAnnotation);
+  if (clickedAnnotation) {
+    if (['textbox', 'callout'].includes(clickedAnnotation.type)) {
+      // Cancel any in-progress drawing that was started by the mousedown events
+      state.isDrawing = false;
+      state.selectedAnnotations = [clickedAnnotation];
+      showProperties(clickedAnnotation);
+      startTextEditing(clickedAnnotation);
+    } else if (clickedAnnotation.type === 'comment') {
+      state.isDrawing = false;
+      state.selectedAnnotations = [clickedAnnotation];
+      showProperties(clickedAnnotation);
+      openStickyPopup(clickedAnnotation);
+    }
   }
 }
 
@@ -1232,10 +1259,17 @@ export function handleContinuousDblClick(e, pageNum) {
 
   state.currentPage = pageNum;
   const clickedAnnotation = findAnnotationAt(x, y);
-  if (clickedAnnotation && ['textbox', 'callout'].includes(clickedAnnotation.type)) {
-    state.isDrawing = false;
-    state.selectedAnnotations = [clickedAnnotation];
-    showProperties(clickedAnnotation);
-    startTextEditing(clickedAnnotation);
+  if (clickedAnnotation) {
+    if (['textbox', 'callout'].includes(clickedAnnotation.type)) {
+      state.isDrawing = false;
+      state.selectedAnnotations = [clickedAnnotation];
+      showProperties(clickedAnnotation);
+      startTextEditing(clickedAnnotation);
+    } else if (clickedAnnotation.type === 'comment') {
+      state.isDrawing = false;
+      state.selectedAnnotations = [clickedAnnotation];
+      showProperties(clickedAnnotation);
+      openStickyPopup(clickedAnnotation);
+    }
   }
 }

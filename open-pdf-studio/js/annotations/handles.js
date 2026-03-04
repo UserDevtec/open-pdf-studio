@@ -142,20 +142,7 @@ export function getAnnotationHandles(annotation, scale = 1) {
       break;
 
     case 'comment':
-      // Comment box handles with resize and rotation support
-      const cw = annotation.width || 24;
-      const ch = annotation.height || 24;
-      handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: annotation.x - hs/2, y: annotation.y - hs/2 });
-      handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: annotation.x + cw - hs/2, y: annotation.y - hs/2 });
-      handles.push({ type: HANDLE_TYPES.BOTTOM_LEFT, x: annotation.x - hs/2, y: annotation.y + ch - hs/2 });
-      handles.push({ type: HANDLE_TYPES.BOTTOM_RIGHT, x: annotation.x + cw - hs/2, y: annotation.y + ch - hs/2 });
-      // Edge handles
-      handles.push({ type: HANDLE_TYPES.TOP, x: annotation.x + cw/2 - hs/2, y: annotation.y - hs/2 });
-      handles.push({ type: HANDLE_TYPES.BOTTOM, x: annotation.x + cw/2 - hs/2, y: annotation.y + ch - hs/2 });
-      handles.push({ type: HANDLE_TYPES.LEFT, x: annotation.x - hs/2, y: annotation.y + ch/2 - hs/2 });
-      handles.push({ type: HANDLE_TYPES.RIGHT, x: annotation.x + cw - hs/2, y: annotation.y + ch/2 - hs/2 });
-      // Rotation handle
-      handles.push({ type: HANDLE_TYPES.ROTATE, x: annotation.x + cw/2 - hs/2, y: annotation.y - 25 / scale - hs/2 });
+      // No resize/rotation handles — sticky note icon is fixed size, move only
       break;
 
     case 'text':
@@ -226,12 +213,8 @@ export function getAnnotationHandles(annotation, scale = 1) {
     case 'textHighlight':
     case 'textStrikethrough':
     case 'textUnderline':
-      // Text markup annotations only have corner handles for selection feedback (no resize/rotation)
-      // They can only be moved or deleted
-      handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: annotation.x - hs/2, y: annotation.y - hs/2 });
-      handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y - hs/2 });
-      handles.push({ type: HANDLE_TYPES.BOTTOM_LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height - hs/2 });
-      handles.push({ type: HANDLE_TYPES.BOTTOM_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y + annotation.height - hs/2 });
+      // Text markup annotations use per-rect selection outlines (drawn in selection.js)
+      // No bounding-box handles — they can only be moved or deleted
       break;
   }
 

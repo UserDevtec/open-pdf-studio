@@ -13,6 +13,23 @@ export function drawSelectionHandles(ctx, annotation) {
   ctx.lineWidth = 1 / sc;
 
   switch (annotation.type) {
+    case 'textHighlight':
+    case 'textStrikethrough':
+    case 'textUnderline': {
+      // Draw per-rect outlines instead of bounding-box indicator
+      ctx.strokeStyle = '#0066cc';
+      ctx.lineWidth = 1 / sc;
+      ctx.setLineDash([3 / sc, 3 / sc]);
+      if (annotation.rects && annotation.rects.length > 0) {
+        for (const rect of annotation.rects) {
+          ctx.strokeRect(rect.x, rect.y, rect.width, rect.height);
+        }
+      } else {
+        ctx.strokeRect(annotation.x, annotation.y, annotation.width, annotation.height);
+      }
+      ctx.setLineDash([]);
+      return; // Skip handle drawing — text markups have no handles
+    }
     case 'circle': {
       const selCircW = annotation.width || annotation.radius * 2;
       const selCircH = annotation.height || annotation.radius * 2;
@@ -52,15 +69,9 @@ export function drawSelectionHandles(ctx, annotation) {
       ctx.stroke();
       ctx.restore();
       break;
-    case 'comment': {
-      const selCW = annotation.width || 24;
-      const selCH = annotation.height || 24;
-      ctx.beginPath();
-      ctx.moveTo(annotation.x + selCW/2, annotation.y - 2);
-      ctx.lineTo(annotation.x + selCW/2, annotation.y - 25 / sc);
-      ctx.stroke();
+    case 'comment':
+      // No selection indicators — fixed-size icon, move only
       break;
-    }
     case 'textbox': {
       const selTbWidth = annotation.width || 150;
       const selTbHeight = annotation.height || 50;

@@ -1,11 +1,11 @@
 import { state, selectAllOnPage, clearSelection } from '../core/state.js';
 import { undo, redo, recordAdd, recordBulkDelete, recordDelete, recordModify, recordBulkModify, recordClearPage } from '../core/undo-manager.js';
-// Properties panel now managed by Solid.js
 import { setTool } from './manager.js';
 import { showPreferencesDialog } from '../core/preferences.js';
 import { showDocPropertiesDialog, showNewDocDialog } from '../ui/chrome/dialogs.js';
 import { copyAnnotation, copyAnnotations } from '../annotations/clipboard.js';
 import { redrawAnnotations, redrawContinuous } from '../annotations/rendering.js';
+// Properties panel managed by Solid.js — imports below are bridge functions
 import { applyMove } from '../annotations/transforms.js';
 import { calculateArea, calculatePerimeter, formatMeasurement } from '../annotations/measurement.js';
 import { createAnnotation } from '../annotations/factory.js';
@@ -19,6 +19,11 @@ import { openFindBar, closeFindBar, onFindNext } from '../search/find-bar.js';
 import { closeActiveTab } from '../ui/chrome/tabs.js';
 import { hideProperties, showProperties, showMultiSelectionProperties, togglePropertiesPanel } from '../ui/panels/properties-panel.js';
 import { showMessage } from '../solid/stores/dialogStore.js';
+
+function redraw() {
+  if (state.viewMode === 'continuous') redrawContinuous();
+  else redrawAnnotations();
+}
 
 // Handle keydown events
 export function handleKeydown(e) {
@@ -96,11 +101,7 @@ export function handleKeydown(e) {
       recordAdd(ann);
     }
     state.measurePoints = null;
-    if (state.viewMode === 'continuous') {
-      redrawContinuous();
-    } else {
-      redrawAnnotations();
-    }
+    redraw();
     return;
   }
 
@@ -145,46 +146,39 @@ export function handleKeydown(e) {
       } else if (state.selectedAnnotations.length > 1) {
         showMultiSelectionProperties();
       }
-      if (state.viewMode === 'continuous') {
-        redrawContinuous();
-      } else {
-        redrawAnnotations();
-      }
+      redraw();
     }
   } else if (e.key === 'Delete') {
     e.preventDefault();
     if (isPdfAReadOnly()) { /* block */ }
-    else if (state.selectedAnnotations.length > 1) {
-      // Multi-selection delete
-      if (confirm(`Delete ${state.selectedAnnotations.length} annotations?`)) {
-        recordBulkDelete(state.selectedAnnotations);
-        const toDelete = new Set(state.selectedAnnotations);
-        state.annotations = state.annotations.filter(a => !toDelete.has(a));
-        clearSelection();
-        hideProperties();
-        if (state.viewMode === 'continuous') {
-          redrawContinuous();
-        } else {
-          redrawAnnotations();
-        }
-      }
-    } else if (state.selectedAnnotation) {
-      if (state.selectedAnnotation.locked) return;
-      const idx = state.annotations.indexOf(state.selectedAnnotation);
-      recordDelete(state.selectedAnnotation, idx);
-      state.annotations = state.annotations.filter(a => a !== state.selectedAnnotation);
-      hideProperties();
-      if (state.viewMode === 'continuous') {
-        redrawContinuous();
+    else if (state.selectedAnnotations.length > 0) {
+      const selected = state.selectedAnnotations;
+      // Multi-delete confirmation
+      if (selected.length > 1 && !confirm(`Delete ${selected.length} annotations?`)) return;
+      // Single locked check
+      if (selected.length === 1 && selected[0].locked) return;
+
+      if (selected.length > 1) {
+        recordBulkDelete(selected);
       } else {
-        redrawAnnotations();
+        recordDelete(selected[0], state.annotations.indexOf(selected[0]));
       }
+      const toDelete = new Set(selected);
+      state.annotations = state.annotations.filter(a => !toDelete.has(a));
+      clearSelection();
+      hideProperties();
+      redraw();
     }
   }
   // Arrow keys: nudge selected annotations (skip when Ctrl held)
   else if (!ctrl && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
     if (isPdfAReadOnly()) { /* block nudge */ }
-    else if ((state.selectedAnnotations.length > 0 || state.selectedAnnotation) && state.pdfDoc) {
+    else if (state.selectedAnnotations.length > 0 && state.pdfDoc) {
+      // Text markup annotations are anchored to text — skip nudge
+      const movable = state.selectedAnnotations.filter(a =>
+        !['textHighlight', 'textStrikethrough', 'textUnderline'].includes(a.type));
+      if (movable.length === 0) return;
+
       e.preventDefault();
       const step = (shift ? 10 : 1) / (state.scale || 1);
       let dx = 0, dy = 0;
@@ -193,21 +187,16 @@ export function handleKeydown(e) {
       else if (e.key === 'ArrowUp') dy = -step;
       else if (e.key === 'ArrowDown') dy = step;
 
-      if (state.selectedAnnotations.length > 1) {
-        const originals = state.selectedAnnotations.map(a => ({ ...a }));
-        for (const ann of state.selectedAnnotations) applyMove(ann, dx, dy);
-        recordBulkModify(state.selectedAnnotations, originals);
-      } else if (state.selectedAnnotation) {
-        const original = { ...state.selectedAnnotation };
-        applyMove(state.selectedAnnotation, dx, dy);
-        recordModify(state.selectedAnnotation.id, original, state.selectedAnnotation);
-      }
-
-      if (state.viewMode === 'continuous') {
-        redrawContinuous();
+      if (movable.length > 1) {
+        const originals = movable.map(a => ({ ...a }));
+        for (const ann of movable) applyMove(ann, dx, dy);
+        recordBulkModify(movable, originals);
       } else {
-        redrawAnnotations();
+        const original = { ...movable[0] };
+        applyMove(movable[0], dx, dy);
+        recordModify(movable[0].id, original, movable[0]);
       }
+      redraw();
     }
   }
 
@@ -217,18 +206,16 @@ export function handleKeydown(e) {
       recordClearPage(state.currentPage, state.annotations);
       state.annotations = state.annotations.filter(a => a.page !== state.currentPage);
       hideProperties();
-      if (state.viewMode === 'continuous') { redrawContinuous(); } else { redrawAnnotations(); }
+      redraw();
     }
   } else if (ctrl && !shift && e.key === 'c') {
-    // Copy selected annotations
-    if (state.selectedAnnotations.length > 1) {
+    // Copy selected annotations (if none selected, let native copy handle text selection)
+    const selected = state.selectedAnnotations;
+    if (selected.length > 0) {
       e.preventDefault();
-      copyAnnotations(state.selectedAnnotations);
-    } else if (state.selectedAnnotation) {
-      e.preventDefault();
-      copyAnnotation(state.selectedAnnotation);
+      if (selected.length > 1) copyAnnotations(selected);
+      else copyAnnotation(selected[0]);
     }
-    // If no annotation selected, let native copy handle text selection
   } else if (ctrl && !shift && e.key === 'v') {
     // Don't preventDefault — let native paste event fire so handlePaste can
     // read clipboardData.items (required on Linux/WebKitGTK where the async
@@ -252,22 +239,14 @@ export function handleKeydown(e) {
     // Cancel in-progress measurement
     if (state.measurePoints) {
       state.measurePoints = null;
-      if (state.viewMode === 'continuous') {
-        redrawContinuous();
-      } else {
-        redrawAnnotations();
-      }
+      redraw();
       return;
     }
     // If annotations are selected, deselect them first
-    if (state.selectedAnnotation || state.selectedAnnotations.length > 0) {
+    if (state.selectedAnnotations.length > 0) {
       clearSelection();
       hideProperties();
-      if (state.viewMode === 'continuous') {
-        redrawContinuous();
-      } else {
-        redrawAnnotations();
-      }
+      redraw();
       return;
     }
     // Otherwise switch to hand tool (default)
@@ -382,9 +361,10 @@ function handlePaste(e) {
 
   // No image found — paste from internal annotation clipboard
   import('../annotations/clipboard.js').then(({ pasteAnnotation, pasteAnnotations }) => {
-    if (state.clipboardAnnotations && state.clipboardAnnotations.length > 1) {
+    const clips = state.clipboardAnnotations;
+    if (clips && clips.length > 1) {
       pasteAnnotations();
-    } else if (state.clipboardAnnotation) {
+    } else if ((clips && clips.length === 1) || state.clipboardAnnotation) {
       pasteAnnotation();
     }
   });

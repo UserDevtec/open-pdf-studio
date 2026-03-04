@@ -43,7 +43,7 @@ jobs:
               repo: context.repo.repo,
               tag_name: version,
               name: `Open PDF Studio ${version}`,
-              body: `## What's New in ${version}\n\nFree, open-source PDF annotation editor built with Tauri.\n\n### Downloads\n- **Windows**: Download the \`.msi\` installer or \`.exe\` setup file\n- **macOS**: Download the \`.dmg\` file (universal - supports Intel and Apple Silicon)\n- **Linux**: Download the \`.deb\` package, \`.AppImage\`, or \`.snap\` (also available on the [Snap Store](https://snapcraft.io/open-pdf-studio))\n\n### Features\n- PDF viewing and navigation\n- Text selection and search\n- Annotations: highlight, underline, strikethrough\n- Drawing tools: freehand, shapes, text\n- Multi-tab document support\n- Thumbnail navigation\n- Session restore`,
+              body: `## What's New in ${version}\n\nFree, open-source PDF annotation editor built with Tauri.\n\n### Downloads\n- **Windows (System)**: Download the \`*_x64-setup.exe\` installer for system-wide installation (requires admin)\n- **Windows (User)**: Download the \`*_x64_user-setup.exe\` installer for current user only (no admin required)\n- **macOS**: Download the \`.dmg\` file (universal - supports Intel and Apple Silicon)\n- **Linux**: Download the \`.deb\` package, \`.AppImage\`, or \`.snap\` (also available on the [Snap Store](https://snapcraft.io/open-pdf-studio))\n\n### Features\n- PDF viewing and navigation\n- Text selection and search\n- Annotations: highlight, underline, strikethrough\n- Drawing tools: freehand, shapes, text\n- Multi-tab document support\n- Thumbnail navigation\n- Session restore`,
               draft: true,
               prerelease: false
             });
@@ -59,10 +59,16 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: ''
+            target: 'linux'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
+            target: 'macos'
           - platform: 'windows-latest'
             args: ''
+            target: 'windows-system'
+          - platform: 'windows-latest'
+            args: ''
+            target: 'windows-user'
 
     runs-on: ${{ matrix.platform }}
     env:
@@ -84,11 +90,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install Rust targets (macOS universal)
-        if: matrix.platform == 'macos-latest'
+        if: matrix.target == 'macos'
         run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
 
       - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.target == 'linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
@@ -96,7 +102,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm install
 
-      - name: Build Tauri app
+      - name: Set user install mode
+        if: matrix.target == 'windows-user'
+        shell: pwsh
+        run: |
+          $conf = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $conf.bundle.windows.nsis.installMode = "currentUser"
+          $conf | ConvertTo-Json -Depth 10 | Set-Content src-tauri/tauri.conf.json
+
+      - name: Build Tauri app (with release upload)
+        if: matrix.target != 'windows-user'
         uses: tauri-apps/tauri-action@action-v0.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -106,8 +121,17 @@ jobs:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           includeUpdaterJson: true
 
+      - name: Build Tauri app (user installer)
+        if: matrix.target == 'windows-user'
+        uses: tauri-apps/tauri-action@action-v0.6.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: open-pdf-studio
+          args: ${{ matrix.args }}
+
       - name: Authenticode sign Windows installer
-        if: matrix.platform == 'windows-latest'
+        if: contains(matrix.target, 'windows')
         uses: azure/trusted-signing-action@v0.5.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -124,7 +148,7 @@ jobs:
           timestamp-digest: SHA256
 
       - name: Re-sign updater artifacts after Authenticode signing
-        if: matrix.platform == 'windows-latest'
+        if: matrix.target == 'windows-system'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -182,6 +206,22 @@ jobs:
           gh release upload $VERSION latest.json --clobber --repo "${{ github.repository }}"
 
           Write-Host "All Windows artifacts re-uploaded with correct signatures"
+
+      - name: Upload user installer to release
+        if: matrix.target == 'windows-user'
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $VERSION = "${{ needs.create-release.outputs.version }}"
+          $NSIS_DIR = "src-tauri/target/release/bundle/nsis"
+          $EXE = Get-ChildItem "$NSIS_DIR/*-setup.exe" | Select-Object -First 1
+          # Rename: "Open PDF Studio_x.y.z_x64-setup.exe" -> "Open PDF Studio_x.y.z_x64_user-setup.exe"
+          $NEW_NAME = $EXE.Name -replace '_x64-setup\.exe$', '_x64_user-setup.exe'
+          $NEW_PATH = Join-Path $EXE.DirectoryName $NEW_NAME
+          Rename-Item $EXE.FullName $NEW_PATH
+          gh release upload $VERSION "$NEW_PATH" --clobber --repo "${{ github.repository }}"
+          Write-Host "Uploaded user installer: $NEW_NAME"
 
   build-android:
     needs: create-release

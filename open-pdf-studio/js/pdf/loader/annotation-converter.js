@@ -6,10 +6,17 @@ import { mapPdfFontName, mapBorderStyle } from './pdf-helpers.js';
 
 // Convert PDF annotation to our format
 export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageMap, annotColorMap) {
-  const pageHeight = viewport.height;
-
-  // Helper to convert Y coordinate
-  const convertY = (pdfY) => pageHeight - pdfY;
+  // Helpers to convert PDF coordinates to viewport coordinates (handles CropBox/MediaBox offsets)
+  const convertPoint = (pdfX, pdfY) => viewport.convertToViewportPoint(pdfX, pdfY);
+  const convertRect = (pdfRect) => {
+    const vr = viewport.convertToViewportRectangle(pdfRect);
+    return {
+      x: Math.min(vr[0], vr[2]),
+      y: Math.min(vr[1], vr[3]),
+      width: Math.abs(vr[2] - vr[0]),
+      height: Math.abs(vr[3] - vr[1])
+    };
+  };
 
   // Helper to parse PDF dates (format: D:YYYYMMDDHHmmSS or similar)
   const parsePdfDate = (pdfDate) => {
@@ -80,7 +87,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           const qMaxX = Math.max(...xs);
           const qMinY = Math.min(...ys);
           const qMaxY = Math.max(...ys);
-          rects.push({ x: qMinX, y: convertY(qMaxY), width: qMaxX - qMinX, height: qMaxY - qMinY });
+          rects.push(convertRect([qMinX, qMinY, qMaxX, qMaxY]));
         }
       }
 
@@ -92,10 +99,11 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         minY = Math.min(...rects.map(r => r.y));
         maxY = Math.max(...rects.map(r => r.y + r.height));
       } else {
-        minX = rect[0];
-        maxX = rect[2];
-        minY = convertY(rect[3]);
-        maxY = convertY(rect[1]);
+        const fallback = convertRect(rect);
+        minX = fallback.x;
+        maxX = fallback.x + fallback.width;
+        minY = fallback.y;
+        maxY = fallback.y + fallback.height;
       }
 
       return createAnnotation({
@@ -111,35 +119,39 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
       });
     }
 
-    case 'Square':
+    case 'Square': {
+      const sqRect = convertRect(annot.rect);
       return createAnnotation({
         ...baseProps,
         type: 'box',
-        x: rect[0],
-        y: convertY(rect[3]),
-        width: rect[2] - rect[0],
-        height: rect[3] - rect[1],
+        x: sqRect.x,
+        y: sqRect.y,
+        width: sqRect.width,
+        height: sqRect.height,
         color: colorArrayToHex(annot.color, '#000000'),
         strokeColor: colorArrayToHex(annot.color, '#000000'),
         fillColor: extraColors.ic || null,
         lineWidth: annot.borderStyle?.width || 2,
         borderStyle: mapBorderStyle(annot)
       });
+    }
 
-    case 'Circle':
+    case 'Circle': {
+      const crRect = convertRect(annot.rect);
       return createAnnotation({
         ...baseProps,
         type: 'circle',
-        x: rect[0],
-        y: convertY(rect[3]),
-        width: rect[2] - rect[0],
-        height: rect[3] - rect[1],
+        x: crRect.x,
+        y: crRect.y,
+        width: crRect.width,
+        height: crRect.height,
         color: colorArrayToHex(annot.color, '#000000'),
         strokeColor: colorArrayToHex(annot.color, '#000000'),
         fillColor: extraColors.ic || null,
         lineWidth: annot.borderStyle?.width || 2,
         borderStyle: mapBorderStyle(annot)
       });
+    }
 
     case 'Line':
       if (annot.lineCoordinates && annot.lineCoordinates.length >= 4) {
@@ -163,14 +175,16 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
 
         // Use original /L coords from pdf-lib (PDF.js normalizeRect destroys direction)
         const lc = extraColors.lineCoords || annot.lineCoordinates;
+        const [lsx, lsy] = convertPoint(lc[0], lc[1]);
+        const [lex, ley] = convertPoint(lc[2], lc[3]);
 
         return createAnnotation({
           ...baseProps,
           type: isArrow ? 'arrow' : 'line',
-          startX: lc[0],
-          startY: convertY(lc[1]),
-          endX: lc[2],
-          endY: convertY(lc[3]),
+          startX: lsx,
+          startY: lsy,
+          endX: lex,
+          endY: ley,
           color: colorArrayToHex(annot.color, '#000000'),
           strokeColor: colorArrayToHex(annot.color, '#000000'),
           fillColor: extraColors.ic || undefined,
@@ -189,10 +203,8 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         const path = [];
         const inkList = annot.inkLists[0];
         for (let i = 0; i < inkList.length; i += 2) {
-          path.push({
-            x: inkList[i],
-            y: convertY(inkList[i + 1])
-          });
+          const [ipx, ipy] = convertPoint(inkList[i], inkList[i + 1]);
+          path.push({ x: ipx, y: ipy });
         }
         return createAnnotation({
           ...baseProps,
@@ -210,10 +222,8 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
       if (annot.vertices && annot.vertices.length >= 4) {
         const points = [];
         for (let i = 0; i < annot.vertices.length; i += 2) {
-          points.push({
-            x: annot.vertices[i],
-            y: convertY(annot.vertices[i + 1])
-          });
+          const [plx, ply] = convertPoint(annot.vertices[i], annot.vertices[i + 1]);
+          points.push({ x: plx, y: ply });
         }
         return createAnnotation({
           ...baseProps,
@@ -229,19 +239,20 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
 
     case 'Polygon':
       if (annot.vertices && annot.vertices.length >= 6) {
-        // Calculate bounding box
+        // Calculate bounding box in viewport coordinates
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
         for (let i = 0; i < annot.vertices.length; i += 2) {
-          minX = Math.min(minX, annot.vertices[i]);
-          maxX = Math.max(maxX, annot.vertices[i]);
-          minY = Math.min(minY, annot.vertices[i + 1]);
-          maxY = Math.max(maxY, annot.vertices[i + 1]);
+          const [pvx, pvy] = convertPoint(annot.vertices[i], annot.vertices[i + 1]);
+          minX = Math.min(minX, pvx);
+          maxX = Math.max(maxX, pvx);
+          minY = Math.min(minY, pvy);
+          maxY = Math.max(maxY, pvy);
         }
         return createAnnotation({
           ...baseProps,
           type: 'polygon',
           x: minX,
-          y: convertY(maxY),
+          y: minY,
           width: maxX - minX,
           height: maxY - minY,
           sides: Math.floor(annot.vertices.length / 2),
@@ -254,20 +265,34 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
       }
       break;
 
-    case 'Text':
+    case 'Text': {
       // Sticky note annotation
+      const [txtVx, txtVy] = convertPoint(rect[0], rect[3]);
+
+      // Normalize PDF /Name to lowercase internal icon name
+      const pdfNameToIcon = {
+        'Comment': 'comment', 'Note': 'note', 'Help': 'help',
+        'Insert': 'insert', 'Key': 'key', 'NewParagraph': 'newparagraph',
+        'Paragraph': 'paragraph', 'Check': 'check', 'Circle': 'circle',
+        'Cross': 'cross', 'Star': 'star'
+      };
+      const rawName = annot.name || 'Comment';
+      const iconName = pdfNameToIcon[rawName] || rawName.toLowerCase();
+
       return createAnnotation({
         ...baseProps,
         type: 'comment',
-        x: rect[0],
-        y: convertY(rect[3]),
+        x: txtVx,
+        y: txtVy,
         width: 24,
         height: 24,
-        text: annot.contents || '',
+        text: (annot.contentsObj && annot.contentsObj.str) || annot.contents || '',
         color: colorArrayToHex(annot.color, '#FFFF00'),
         fillColor: colorArrayToHex(annot.color, '#FFFF00'),
-        icon: annot.name || 'comment'
+        icon: iconName,
+        popupOpen: annot.open || false
       });
+    }
 
     case 'FreeText': {
       // Extract font size, font family, bold/italic, and text color
@@ -390,8 +415,9 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         ftHeight = rectH;
       }
       // Position: center of the Rect (bounding box center = rotated textbox center)
-      const cx = rect[0] + rectW / 2;
-      const cy = convertY(rect[3]) + rectH / 2;
+      const ftRectVp = convertRect(annot.rect);
+      const cx = ftRectVp.x + ftRectVp.width / 2;
+      const cy = ftRectVp.y + ftRectVp.height / 2;
       const ftX = cx - ftWidth / 2;
       const ftY = cy - ftHeight / 2;
 
@@ -405,16 +431,26 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         let coX = ftX, coY = ftY, coW = ftWidth, coH = ftHeight;
         const rd = extraColors.rectDiff;
         if (rd && rd[0] !== null) {
-          coX = rect[0] + rd[0];
-          const coY1 = convertY(rect[3] - rd[3]); // top inset from top of Rect (PDF top = rect[3])
-          coW = rectW - rd[0] - rd[2];
-          coH = rectH - rd[1] - rd[3];
-          coY = coY1;
+          const rdVp = convertRect([rect[0] + rd[0], rect[1] + rd[1], rect[2] - rd[2], rect[3] - rd[3]]);
+          coX = rdVp.x;
+          coY = rdVp.y;
+          coW = rdVp.width;
+          coH = rdVp.height;
         }
         // Callout stroke color: IC > AP stroke > borderColor fallback
         const coStrokeColor = extraColors.ic || extraColors.apStrokeColor || borderColor;
         // Fill color: C entry is the background for FreeText
         const coFillColor = bgColor || extraColors.cColor || '#FFFFD0';
+        // Convert callout line points to viewport coordinates
+        const [clArrowVx, clArrowVy] = convertPoint(calloutLine[0], calloutLine[1]);
+        let clKneeVx, clKneeVy, clArmVx, clArmVy;
+        if (calloutLine.length >= 6) {
+          [clKneeVx, clKneeVy] = convertPoint(calloutLine[2], calloutLine[3]);
+          [clArmVx, clArmVy] = convertPoint(calloutLine[4], calloutLine[5]);
+        } else {
+          clKneeVx = clArrowVx; clKneeVy = clArrowVy;
+          [clArmVx, clArmVy] = convertPoint(calloutLine[2], calloutLine[3]);
+        }
         return createAnnotation({
           ...baseProps,
           type: 'callout',
@@ -437,12 +473,12 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           lineSpacing: extraColors.lineSpacing || undefined,
           fontUnderline: fontUnderline,
           fontStrikethrough: fontStrikethrough,
-          arrowX: calloutLine[0],
-          arrowY: convertY(calloutLine[1]),
-          kneeX: calloutLine.length >= 6 ? calloutLine[2] : calloutLine[0],
-          kneeY: calloutLine.length >= 6 ? convertY(calloutLine[3]) : convertY(calloutLine[1]),
-          armOriginX: calloutLine.length >= 6 ? calloutLine[4] : calloutLine[2],
-          armOriginY: calloutLine.length >= 6 ? convertY(calloutLine[5]) : convertY(calloutLine[3])
+          arrowX: clArrowVx,
+          arrowY: clArrowVy,
+          kneeX: clKneeVx,
+          kneeY: clKneeVy,
+          armOriginX: clArmVx,
+          armOriginY: clArmVy
         });
       }
 
@@ -473,10 +509,11 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
 
     case 'Stamp': {
       // Image stamp - extracted from PDF structure via pdf-lib
-      const x = rect[0];
-      const y = convertY(rect[3]);
-      const w = rect[2] - rect[0];
-      const h = rect[3] - rect[1];
+      const stRect = convertRect(annot.rect);
+      const x = stRect.x;
+      const y = stRect.y;
+      const w = stRect.width;
+      const h = stRect.height;
 
       // Find matching stamp image by rect
       let dataUrl = null;
