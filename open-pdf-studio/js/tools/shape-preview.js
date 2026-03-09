@@ -1,6 +1,6 @@
 import { state } from '../core/state.js';
 import { annotationCtx } from '../ui/dom-elements.js';
-import { getColorPickerValue, getLineWidthValue } from '../solid/stores/ribbonStore.js';
+import { getColorPickerValue, getLineWidthValue } from '../bridge.js';
 import { redrawAnnotations, drawCloudShape } from '../annotations/rendering.js';
 import { snapAngle } from '../utils/helpers.js';
 import { calculateDistance, formatMeasurement } from '../annotations/measurement.js';

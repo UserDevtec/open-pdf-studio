@@ -145,6 +145,8 @@
   },
   "pageDisplay": {
     "rendering": "レンダリング",
-    "thinLines": "細い線（すべての線を1pxの幅で表示）"
+    "thinLines": "細い線（すべての線を1pxの幅で表示）",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

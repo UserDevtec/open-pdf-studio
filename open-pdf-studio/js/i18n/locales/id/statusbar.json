@@ -51,5 +51,8 @@
   "highlightAll": "Sorot semua",
   "formFieldsMessage": "Dokumen ini berisi bidang formulir interaktif. Anda dapat mengisi formulir dan menyimpan data Anda.",
   "enableEditing": "Aktifkan Pengeditan",
-  "pdfAConformance": "Dokumen ini mengklaim kesesuaian PDF/A."
+  "pdfAConformance": "Dokumen ini mengklaim kesesuaian PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

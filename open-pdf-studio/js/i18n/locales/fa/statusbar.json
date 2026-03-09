@@ -50,5 +50,8 @@
   "highlightAll": "برجسته‌سازی همه",
   "formFieldsMessage": "این سند حاوی فیلدهای فرم تعاملی است. می‌توانید فرم را پر کنید و داده‌های خود را ذخیره کنید.",
   "enableEditing": "فعال‌سازی ویرایش",
-  "pdfAConformance": "این سند ادعای انطباق با PDF/A را دارد."
+  "pdfAConformance": "این سند ادعای انطباق با PDF/A را دارد.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

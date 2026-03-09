@@ -1,6 +1,6 @@
 import { state, addToSelection, removeFromSelection, isSelected, clearSelection, getAnnotationBounds, getSelectionBounds } from '../core/state.js';
 import { annotationCanvas, annotationCtx, pdfContainer } from '../ui/dom-elements.js';
-import { getColorPickerValue, getLineWidthValue } from '../solid/stores/ribbonStore.js';
+import { getColorPickerValue, getLineWidthValue } from '../bridge.js';
 import { createAnnotation, cloneAnnotation } from '../annotations/factory.js';
 import { findAnnotationAt } from '../annotations/geometry.js';
 import { findHandleAt, getCursorForHandle } from '../annotations/handles.js';
@@ -8,7 +8,7 @@ import { applyResize, applyMove, applyRotation } from '../annotations/transforms
 import { redrawAnnotations, redrawContinuous, renderAnnotationsForPage, snapToGrid } from '../annotations/rendering.js';
 import { showProperties, hideProperties, showMultiSelectionProperties } from '../ui/panels/properties-panel.js';
 import { startTextEditing, finishTextEditing, addTextAnnotation, addComment } from './text-editing.js';
-import { openStickyPopup } from '../solid/stores/stickyNotePopupStore.js';
+import { openStickyPopup } from '../bridge.js';
 import { findTextEditAtPosition, startTextEditEditing } from './text-edit-tool.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { recordAdd, recordModify, recordBulkModify } from '../core/undo-manager.js';

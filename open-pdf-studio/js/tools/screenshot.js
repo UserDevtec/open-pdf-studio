@@ -3,7 +3,7 @@ import { updateStatusMessage } from '../ui/chrome/status-bar.js';
 import { isTauri, saveFileDialog, writeBinaryFile } from '../core/platform.js';
 import { render } from 'solid-js/web';
 import ScreenshotOverlay from '../solid/components/ScreenshotOverlay.jsx';
-import { startScreenshot, endScreenshot } from '../solid/stores/screenshotStore.js';
+import { startScreenshot, endScreenshot } from '../bridge.js';
 
 function mergeCanvases(pdfCanvasEl, annotationCanvasEl) {
   const merged = document.createElement('canvas');

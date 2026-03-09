@@ -50,5 +50,8 @@
   "highlightAll": "Alle hervorheben",
   "formFieldsMessage": "Dieses Dokument enthält interaktive Formularfelder. Sie können das Formular ausfüllen und Ihre Daten speichern.",
   "enableEditing": "Bearbeitung aktivieren",
-  "pdfAConformance": "Dieses Dokument entspricht der PDF/A-Norm."
+  "pdfAConformance": "Dieses Dokument entspricht der PDF/A-Norm.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

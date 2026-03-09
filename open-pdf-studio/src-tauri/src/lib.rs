@@ -264,23 +264,59 @@ fn get_printers() -> Result<String, String> {
     }
 }
 
-/// Print a PDF file to a specific printer using the system's default PDF handler.
+/// Print a PDF file to a specific printer using ShellExecuteW.
+/// Uses separate arguments to avoid PowerShell command injection.
 #[tauri::command]
 fn print_pdf(path: String, printer: String) -> Result<bool, String> {
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("powershell")
-            .args(&[
-                "-NoProfile", "-NonInteractive", "-Command",
-                &format!(
-                    "Start-Process -FilePath '{}' -Verb PrintTo -ArgumentList '\"{}\"' -WindowStyle Hidden",
-                    path.replace('\'', "''"),
-                    printer.replace('\'', "''")
-                )
-            ])
-            .spawn()
-            .map_err(|e| format!("Failed to print: {}", e))?;
-        Ok(true)
+        // Validate path exists and is a file
+        let p = std::path::Path::new(&path);
+        if !p.is_file() {
+            return Err("File does not exist".to_string());
+        }
+
+        // Use ShellExecuteW directly with the "printto" verb — no shell interpolation
+        use std::os::windows::ffi::OsStrExt;
+        use std::ffi::OsStr;
+
+        fn to_wide(s: &str) -> Vec<u16> {
+            OsStr::new(s).encode_wide().chain(std::iter::once(0)).collect()
+        }
+
+        #[link(name = "shell32")]
+        extern "system" {
+            fn ShellExecuteW(
+                hwnd: *mut std::ffi::c_void,
+                operation: *const u16,
+                file: *const u16,
+                parameters: *const u16,
+                directory: *const u16,
+                show_cmd: i32,
+            ) -> isize;
+        }
+
+        let verb = to_wide("printto");
+        let file = to_wide(&path);
+        let params = to_wide(&format!("\"{}\"", printer));
+        const SW_HIDE: i32 = 0;
+
+        let result = unsafe {
+            ShellExecuteW(
+                std::ptr::null_mut(),
+                verb.as_ptr(),
+                file.as_ptr(),
+                params.as_ptr(),
+                std::ptr::null(),
+                SW_HIDE,
+            )
+        };
+
+        if result as usize > 32 {
+            Ok(true)
+        } else {
+            Err(format!("ShellExecute failed with code {}", result))
+        }
     }
 
     #[cfg(not(target_os = "windows"))]
@@ -289,21 +325,58 @@ fn print_pdf(path: String, printer: String) -> Result<bool, String> {
     }
 }
 
-/// Open the printer properties dialog for a given printer name.
+/// Open the document properties (printing preferences) dialog for a given printer name.
 #[tauri::command]
-fn open_printer_properties(printer: String) -> Result<bool, String> {
+fn open_printer_properties(window: tauri::WebviewWindow, printer: String) -> Result<bool, String> {
     #[cfg(target_os = "windows")]
     {
-        // rundll32 printui.dll,PrintUIEntry /e /n "PrinterName"
-        std::process::Command::new("rundll32")
-            .args(&["printui.dll,PrintUIEntry", "/e", "/n", &printer])
-            .spawn()
-            .map_err(|e| format!("Failed to open printer properties: {}", e))?;
+        use windows_sys::Win32::Graphics::Printing::{
+            OpenPrinterW, ClosePrinter, DocumentPropertiesW,
+        };
+
+        // Get the HWND from the Tauri window so the dialog is modal
+        let hwnd = window.hwnd().map_err(|e| format!("Failed to get window handle: {}", e))?;
+        let hwnd_raw = hwnd.0 as windows_sys::Win32::Foundation::HWND;
+
+        // Convert printer name to wide string
+        let wide_name: Vec<u16> = printer.encode_utf16().chain(std::iter::once(0)).collect();
+
+        let mut h_printer: windows_sys::Win32::Foundation::HANDLE = std::ptr::null_mut();
+        let opened = unsafe {
+            OpenPrinterW(wide_name.as_ptr(), &mut h_printer, std::ptr::null_mut())
+        };
+
+        if opened == 0 || h_printer.is_null() {
+            return Err(format!("Failed to open printer '{}'", printer));
+        }
+
+        // DocumentPropertiesW is blocking — run on a thread to avoid freezing the event loop.
+        // DM_IN_PROMPT (0x4) tells it to show the dialog to the user.
+        let hwnd_usize = hwnd_raw as usize;
+        let printer_usize = h_printer as usize;
+        let device_name = wide_name;
+
+        std::thread::spawn(move || {
+            unsafe {
+                const DM_IN_PROMPT: u32 = 0x4;
+                DocumentPropertiesW(
+                    hwnd_usize as _,
+                    printer_usize as _,
+                    device_name.as_ptr() as _,
+                    std::ptr::null_mut(),   // pDevModeOutput — not capturing changes
+                    std::ptr::null_mut(),   // pDevModeInput
+                    DM_IN_PROMPT,
+                );
+                ClosePrinter(printer_usize as _);
+            }
+        });
+
         Ok(true)
     }
 
     #[cfg(not(target_os = "windows"))]
     {
+        let _ = window;
         Err("Printer properties dialog is only supported on Windows".to_string())
     }
 }
@@ -332,6 +405,13 @@ fn write_temp_pdf(data: Vec<u8>) -> Result<String, String> {
 #[tauri::command]
 fn delete_file(path: String) -> Result<bool, String> {
     fs::remove_file(&path).map_err(|e| format!("Failed to delete file: {}", e))?;
+    Ok(true)
+}
+
+/// Rename (move) a file from old_path to new_path.
+#[tauri::command]
+fn rename_file(old_path: String, new_path: String) -> Result<bool, String> {
+    fs::rename(&old_path, &new_path).map_err(|e| format!("Failed to rename file: {}", e))?;
     Ok(true)
 }
 
@@ -366,16 +446,23 @@ exit 1
         .map_err(|e| format!("Failed to write temp script: {}", e))?;
 
     // Launch elevated: Start-Process -Verb RunAs -Wait on the .ps1 file
+    // Build the -ArgumentList as a single quoted string with each param separated by commas.
+    // The script path is passed as a properly escaped argument, not interpolated into a command string.
     use std::os::windows::process::CommandExt;
     const CREATE_NO_WINDOW: u32 = 0x08000000;
+    let script_path_str = script_path.to_string_lossy().to_string();
+    let arg_list = format!(
+        "'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File','{}'",
+        script_path_str.replace('\'', "''")
+    );
     let output = std::process::Command::new("powershell")
-        .args(&[
-            "-NoProfile", "-NonInteractive", "-Command",
-            &format!(
-                "Start-Process powershell -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList '-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File','{}'",
-                script_path.to_string_lossy()
-            )
-        ])
+        .arg("-NoProfile")
+        .arg("-NonInteractive")
+        .arg("-Command")
+        .arg(format!(
+            "Start-Process powershell -Verb RunAs -Wait -WindowStyle Hidden -ArgumentList {}",
+            arg_list
+        ))
         .creation_flags(CREATE_NO_WINDOW)
         .output()
         .map_err(|e| format!("Failed to launch elevated process: {}", e))?;
@@ -544,6 +631,33 @@ fn list_pdf_files(dir: String) -> Result<Vec<String>, String> {
     Ok(pdf_files)
 }
 
+#[tauri::command]
+fn play_alert_sound() {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::raw::c_uint;
+        #[link(name = "user32")]
+        extern "system" {
+            fn MessageBeep(uType: c_uint) -> i32;
+        }
+        unsafe { MessageBeep(0x00000030); } // MB_ICONEXCLAMATION
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("afplay")
+            .arg("/System/Library/Sounds/Funk.aiff")
+            .spawn()
+            .ok();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("paplay")
+            .arg("/usr/share/sounds/freedesktop/stereo/dialog-warning.oga")
+            .spawn()
+            .ok();
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Check for PDF files in command line arguments
@@ -625,13 +739,15 @@ pub fn run() {
             get_temp_dir,
             write_temp_pdf,
             delete_file,
+            rename_file,
             install_virtual_printer,
             remove_virtual_printer,
             is_virtual_printer_installed,
             download_pdf_from_url,
             list_pdf_files,
             save_preferences,
-            load_preferences
+            load_preferences,
+            play_alert_sound
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

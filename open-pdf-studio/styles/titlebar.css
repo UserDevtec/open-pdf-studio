@@ -15,6 +15,25 @@
   z-index: 1001;
 }
 
+.title-bar.dialogs-open {
+  -webkit-app-region: no-drag;
+}
+
+.title-bar.dialogs-open .quick-access-btn,
+.title-bar.dialogs-open .send-feedback-btn {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.title-bar.dialogs-open .window-btn {
+  pointer-events: none;
+}
+
+.title-bar.dialogs-open .window-btn:disabled {
+  color: var(--theme-window-btn-color);
+  opacity: 0.5;
+}
+
 .title-bar-left {
   display: flex;
   align-items: center;

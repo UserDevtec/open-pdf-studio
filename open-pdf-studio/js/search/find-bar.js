@@ -5,7 +5,11 @@
 import { state } from '../core/state.js';
 import { executeSearch, findNext, findPrevious, getCurrentResult, clearSearch, getResultsForPage } from './find-controller.js';
 import { renderPage, renderContinuous } from '../pdf/renderer.js';
-import { setVisible, setResultsText, setMessageText, setNotFound, setNavDisabled } from '../solid/stores/findBarStore.js';
+import {
+  setFindBarVisible as setVisible, setFindBarResultsText as setResultsText,
+  setFindBarMessageText as setMessageText, setFindBarNotFound as setNotFound,
+  setFindBarNavDisabled as setNavDisabled,
+} from '../bridge.js';
 
 // Debounce timer for search input
 let searchDebounceTimer = null;

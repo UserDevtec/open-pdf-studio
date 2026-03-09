@@ -51,5 +51,8 @@
   "highlightAll": "Истакни све",
   "formFieldsMessage": "Овај документ садржи интерактивна поља обрасца. Можете попунити образац и сачувати податке.",
   "enableEditing": "Омогући уређивање",
-  "pdfAConformance": "Овај документ тврди да је у складу са PDF/A стандардом."
+  "pdfAConformance": "Овај документ тврди да је у складу са PDF/A стандардом.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

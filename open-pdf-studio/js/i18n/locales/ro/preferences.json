@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Randare",
-    "thinLines": "Linii subțiri (afișează toate liniile cu lățime de 1px)"
+    "thinLines": "Linii subțiri (afișează toate liniile cu lățime de 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

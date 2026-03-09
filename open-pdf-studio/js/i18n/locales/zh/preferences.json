@@ -145,6 +145,8 @@
   },
   "pageDisplay": {
     "rendering": "渲染",
-    "thinLines": "细线（以1像素宽度显示所有线条）"
+    "thinLines": "细线（以1像素宽度显示所有线条）",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

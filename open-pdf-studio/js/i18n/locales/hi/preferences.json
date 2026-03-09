@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "रेंडरिंग",
-    "thinLines": "पतली रेखाएँ (सभी रेखाओं को 1px चौड़ाई में प्रदर्शित करें)"
+    "thinLines": "पतली रेखाएँ (सभी रेखाओं को 1px चौड़ाई में प्रदर्शित करें)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

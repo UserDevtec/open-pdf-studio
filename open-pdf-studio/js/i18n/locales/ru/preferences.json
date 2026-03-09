@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Отрисовка",
-    "thinLines": "Тонкие линии (отображать все линии шириной 1px)"
+    "thinLines": "Тонкие линии (отображать все линии шириной 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

@@ -51,5 +51,8 @@
   "highlightAll": "Маркиране на всички",
   "formFieldsMessage": "Този документ съдържа интерактивни полета на формуляр. Можете да попълните формуляра и да запазите данните си.",
   "enableEditing": "Активиране на редактирането",
-  "pdfAConformance": "Този документ заявява съответствие с PDF/A."
+  "pdfAConformance": "Този документ заявява съответствие с PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

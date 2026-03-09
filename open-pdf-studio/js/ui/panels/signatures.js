@@ -1,6 +1,6 @@
 import i18next from '../../i18n/config.js';
 import { getActiveDocument } from '../../core/state.js';
-import { setItems, setCountText, setEmptyMessage } from '../../solid/stores/panels/signaturesStore.js';
+import { setSignatureItems as setItems, setSignatureCountText as setCountText, setSignatureEmptyMessage as setEmptyMessage } from '../../bridge.js';
 
 // Format a date from a PDF date string
 function formatSignatureDate(dateStr) {

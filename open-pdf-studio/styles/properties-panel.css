@@ -21,6 +21,35 @@
   display: block;
 }
 
+/* Collapsed Properties Panel - vertical tab strip */
+.properties-panel-collapsed {
+  width: 28px;
+  min-width: 28px;
+  background: var(--theme-panel-tab-bg);
+  border-left: 1px solid var(--theme-panel-border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12px;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.properties-panel-collapsed:hover {
+  background: var(--theme-hover);
+}
+
+.properties-panel-collapsed-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--theme-text-secondary);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
 .properties-panel h3,
 .property-section-header {
   user-select: none;
@@ -37,18 +66,16 @@
 .prop-panel-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   margin: 0;
   background: linear-gradient(to bottom, var(--theme-panel-tab-bg) 0%, var(--theme-panel-bg) 100%);
-  padding: 0 4px 0 12px;
+  padding: 0 4px 0 0;
   border-bottom: 1px solid var(--theme-panel-border);
 }
 
-.prop-panel-close-btn {
+.prop-panel-collapse-btn {
   background: none;
   border: none;
   cursor: pointer;
-  font-size: 18px;
   color: var(--theme-text-secondary);
   width: 28px;
   height: 28px;
@@ -60,9 +87,9 @@
   transition: background 0.1s;
 }
 
-.prop-panel-close-btn:hover {
-  background: #e81123;
-  color: #fff;
+.prop-panel-collapse-btn:hover {
+  background: var(--theme-hover);
+  color: var(--theme-text);
 }
 
 .prop-info-value {
@@ -669,5 +696,6 @@
 /* Properties panel width */
 .properties-panel {
   width: 300px;
+  min-width: 300px;
 }
 

@@ -51,5 +51,8 @@
   "highlightAll": "সমস্ত হাইলাইট করুন",
   "formFieldsMessage": "এই নথিতে ইন্টারেক্টিভ ফর্ম ক্ষেত্র রয়েছে। আপনি ফর্মটি পূরণ করে আপনার ডেটা সংরক্ষণ করতে পারেন।",
   "enableEditing": "সম্পাদনা সক্রিয় করুন",
-  "pdfAConformance": "এই নথিটি PDF/A সামঞ্জস্যের দাবি করে।"
+  "pdfAConformance": "এই নথিটি PDF/A সামঞ্জস্যের দাবি করে।",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

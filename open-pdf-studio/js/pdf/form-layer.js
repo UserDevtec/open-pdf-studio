@@ -1,6 +1,6 @@
 import { state } from '../core/state.js';
 import { AnnotationLayer } from 'pdfjs-dist';
-import { showFormFieldsBar as showBar, hideFormFieldsBar as hideBar } from '../solid/stores/formFieldsBarStore.js';
+import { showFormFieldsBar as showBar, hideFormFieldsBar as hideBar } from '../bridge.js';
 
 // Sub-module imports
 import { parseJSConstants, parseJSFunctions, decodeJSString, getMessagesForBlurAction } from './form-layer/js-parser.js';

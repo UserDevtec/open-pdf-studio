@@ -9,7 +9,7 @@ import { PDFDocument, PDFString, PDFName, PDFArray, PDFStream, degrees, rgb, Sta
 import { getAnnotationStorage, getAnnotIdToFieldName } from './form-layer.js';
 import { parsePageRange } from './exporter.js';
 import i18next from '../i18n/config.js';
-import { showMessage } from '../solid/stores/dialogStore.js';
+import { showMessage } from '../bridge.js';
 
 // Save PDF with annotations
 export async function savePDF(saveAsPath = null) {

@@ -1,3 +1,5 @@
+import type { Preferences } from '../types/preferences.js';
+
 // Handle types for annotation selection and manipulation
 export const HANDLE_SIZE = 6;
 
@@ -19,10 +21,10 @@ export const HANDLE_TYPES = {
   CALLOUT_KNEE: 'callout_knee',
   CALLOUT_MOVE: 'callout_move',
   POLYLINE_NODE: 'polyline_node'
-};
+} as const;
 
 // Default application preferences
-export const DEFAULT_PREFERENCES = {
+export const DEFAULT_PREFERENCES: Preferences = {
   // Theme
   theme: 'system',
 
@@ -154,6 +156,9 @@ export const DEFAULT_PREFERENCES = {
 
   // View
   thinLines: false,
+
+  // Panels
+  propertiesPanelVisible: true,
 
   // Language
   language: 'auto'

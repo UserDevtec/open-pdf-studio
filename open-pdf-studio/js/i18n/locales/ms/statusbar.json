@@ -51,5 +51,8 @@
   "highlightAll": "Sorot semua",
   "formFieldsMessage": "Dokumen ini mengandungi medan borang interaktif. Anda boleh mengisi borang dan menyimpan data anda.",
   "enableEditing": "Dayakan Penyuntingan",
-  "pdfAConformance": "Dokumen ini mematuhi pematuhan PDF/A."
+  "pdfAConformance": "Dokumen ini mematuhi pematuhan PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

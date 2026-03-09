@@ -14,6 +14,7 @@ import AppMenu from './components/app-menu/AppMenu.jsx';
 import DialogHost from './components/DialogHost.jsx';
 import ContextMenu from './components/ContextMenu.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
+import { DockedToolPalette, FloatingToolPalette, DockTargets } from './components/ToolPalette.jsx';
 import { useTranslation } from '../i18n/useTranslation.js';
 
 function DesktopApp() {
@@ -32,8 +33,10 @@ function DesktopApp() {
 
       <div class="content">
         <LeftPanel />
+        <DockedToolPalette side="left" />
 
         <div class="main-view">
+          <DockTargets />
           <FindBar />
 
           <div id="placeholder">
@@ -59,6 +62,7 @@ function DesktopApp() {
           </div>
         </div>
 
+        <DockedToolPalette side="right" />
         <PropertiesPanel />
       </div>
 
@@ -67,6 +71,7 @@ function DesktopApp() {
       <AppMenu />
       <DialogHost />
       <ContextMenu />
+      <FloatingToolPalette />
       <LoadingOverlay />
     </>
   );

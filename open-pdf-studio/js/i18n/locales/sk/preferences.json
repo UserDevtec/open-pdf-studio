@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Vykresľovanie",
-    "thinLines": "Tenké čiary (zobraziť všetky čiary so šírkou 1px)"
+    "thinLines": "Tenké čiary (zobraziť všetky čiary so šírkou 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Απόδοση",
-    "thinLines": "Λεπτές γραμμές (εμφάνιση όλων των γραμμών σε πλάτος 1px)"
+    "thinLines": "Λεπτές γραμμές (εμφάνιση όλων των γραμμών σε πλάτος 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

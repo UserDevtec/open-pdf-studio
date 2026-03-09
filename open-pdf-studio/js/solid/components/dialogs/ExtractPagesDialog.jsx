@@ -12,7 +12,7 @@ export default function ExtractPagesDialog(props) {
   const currentPage = props.data?.currentPage || 1;
   const totalPages = props.data?.totalPages || 1;
 
-  const [pageRange, setPageRange] = createSignal(String(currentPage));
+  const [pageRange, setPageRange] = createSignal(props.data?.pageRange || String(currentPage));
   const [deleteAfter, setDeleteAfter] = createSignal(false);
 
   const close = () => closeDialog('extract-pages');

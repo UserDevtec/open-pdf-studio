@@ -1,5 +1,5 @@
-import { For } from 'solid-js';
-import { pageCount } from '../../../stores/panels/thumbnailStore.js';
+import { For, onMount } from 'solid-js';
+import { pageCount, selectAllPages, clearPageSelection, getSelectedPagesArray, formatPageRangeString, setContainerRef } from '../../../stores/panels/thumbnailStore.js';
 import { activeTab } from '../../../stores/leftPanelStore.js';
 import ThumbnailItem from '../ThumbnailItem.jsx';
 import { useTranslation } from '../../../../i18n/useTranslation.js';
@@ -28,12 +28,32 @@ export default function ThumbnailsPanel() {
     await reorderPages(currentOrder);
   };
 
+  const handleKeyDown = async (e) => {
+    if (e.ctrlKey && e.key === 'a') {
+      e.preventDefault();
+      selectAllPages();
+    } else if (e.key === 'Escape') {
+      clearPageSelection();
+    } else if (e.key === 'Delete') {
+      const selected = getSelectedPagesArray();
+      if (selected.length > 0 && selected.length < pageCount()) {
+        const rangeStr = formatPageRangeString(selected);
+        const { openDialog } = await import('../../../stores/dialogStore.js');
+        openDialog('delete-pages', {
+          totalPages: pageCount(),
+          currentPage: selected[0],
+          pageRange: rangeStr
+        });
+      }
+    }
+  };
+
   return (
     <div class={`left-panel-content${activeTab() === 'thumbnails' ? ' active' : ''}`} id="thumbnails-panel">
       <div class="left-panel-header">
         <span>{t('leftPanel.thumbnails')}</span>
       </div>
-      <div class="thumbnails-container" id="thumbnails-container">
+      <div class="thumbnails-container" id="thumbnails-container" ref={setContainerRef} tabIndex={0} onKeyDown={handleKeyDown}>
         <For each={pages()}>
           {(pageNum) => (
             <ThumbnailItem

@@ -1,8 +1,10 @@
 import { state } from '../../core/state.js';
 import { isTauri } from '../../core/platform.js';
-import { openDialog, closeDialog, showMessage } from '../../solid/stores/dialogStore.js';
-import { openAppMenu, setActivePanel } from '../../solid/stores/appMenuStore.js';
-import { setVisible, setMessage } from '../../solid/stores/loadingStore.js';
+import {
+  openDialog, closeDialog, showMessage,
+  openAppMenu, setAppMenuPanel as setActivePanel,
+  setLoadingVisible as setVisible, setLoadingMessage as setMessage,
+} from '../../bridge.js';
 import i18next from '../../i18n/config.js';
 
 // Show loading overlay

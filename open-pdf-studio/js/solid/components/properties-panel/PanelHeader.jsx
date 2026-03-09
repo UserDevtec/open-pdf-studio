@@ -1,5 +1,4 @@
-import { storeClosePanel } from '../../stores/propertiesStore.js';
-import { closePropertiesPanel } from '../../../ui/panels/properties-panel.js';
+import { setPanelCollapsed } from '../../stores/propertiesStore.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 export default function PanelHeader() {
@@ -8,9 +7,15 @@ export default function PanelHeader() {
 
   return (
     <div id="prop-panel-header" class="prop-panel-header">
-      <h3 style="margin: 0; padding: 8px 0; background: none;">{t('title')}</h3>
-      <button class="prop-panel-close-btn" title={tCommon('close')}
-        onClick={() => closePropertiesPanel()}>&times;</button>
+      <button class="prop-panel-collapse-btn" title={tCommon('collapse')}
+        onClick={() => setPanelCollapsed(true)}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="18" height="18" x="3" y="3" rx="2"/>
+          <path d="M15 3v18"/>
+          <path d="m8 9 3 3-3 3"/>
+        </svg>
+      </button>
+      <h3 style="margin: 0; padding: 8px 0; background: none; flex: 1;">{t('title')}</h3>
     </div>
   );
 }

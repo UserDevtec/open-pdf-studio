@@ -197,7 +197,7 @@ export default function PrintDialog(props) {
 
   async function openPrinterProperties() {
     try {
-      await invoke('open_printer_properties', { printerName: selectedPrinter() });
+      await invoke('open_printer_properties', { printer: selectedPrinter() });
     } catch (e) {
       console.error('Failed to open printer properties:', e);
     }
@@ -568,13 +568,27 @@ export default function PrintDialog(props) {
             <button
               class="print-preview-nav-btn"
               disabled={previewIndex() <= 0}
+              onClick={() => { setPreviewIndex(0); renderPreview(); }}
+              title={t('print.firstPage')}
+            ><svg width="10" height="10" viewBox="0 0 10 10"><rect x="1" y="1" width="2" height="8" fill="currentColor"/><polygon points="9,1 9,9 3,5" fill="currentColor"/></svg></button>
+            <button
+              class="print-preview-nav-btn"
+              disabled={previewIndex() <= 0}
               onClick={prevPreview}
-            >&lsaquo;</button>
+              title={t('print.prevPage')}
+            ><svg width="10" height="10" viewBox="0 0 10 10"><polygon points="9,1 9,9 1,5" fill="currentColor"/></svg></button>
             <button
               class="print-preview-nav-btn"
               disabled={previewIndex() >= previewPages().length - 1}
               onClick={nextPreview}
-            >&rsaquo;</button>
+              title={t('print.nextPage')}
+            ><svg width="10" height="10" viewBox="0 0 10 10"><polygon points="1,1 1,9 9,5" fill="currentColor"/></svg></button>
+            <button
+              class="print-preview-nav-btn"
+              disabled={previewIndex() >= previewPages().length - 1}
+              onClick={() => { setPreviewIndex(previewPages().length - 1); renderPreview(); }}
+              title={t('print.lastPage')}
+            ><svg width="10" height="10" viewBox="0 0 10 10"><polygon points="1,1 1,9 7,5" fill="currentColor"/><rect x="7" y="1" width="2" height="8" fill="currentColor"/></svg></button>
           </div>
         </div>
       </div>

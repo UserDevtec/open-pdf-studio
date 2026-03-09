@@ -31,6 +31,7 @@ import { setTool } from '../../tools/manager.js';
 import { alignAnnotations } from '../../annotations/smart-guides.js';
 import { getSelectedText, clearTextSelection } from '../../text/text-selection.js';
 import { showCalibrationDialog } from '../../annotations/measurement.js';
+import { getSelectedPagesArray, formatPageRangeString, selectAllPages, clearPageSelection } from '../stores/panels/thumbnailStore.js';
 import { useTranslation } from '../../i18n/useTranslation.js';
 
 function redraw() {
@@ -54,9 +55,7 @@ function MenuItem(props) {
       class={`context-menu-item${props.disabled ? ' disabled' : ''}${props.checkbox ? ' context-menu-checkbox' : ''}${props.checked ? ' checked' : ''}`}
       onClick={handleClick}
     >
-      <Show when={props.icon}>
-        <span class="context-menu-icon" innerHTML={props.icon} />
-      </Show>
+      <span class="context-menu-icon" innerHTML={props.icon || ''} />
       <span class="context-menu-label">{props.label}</span>
       <Show when={props.shortcut}>
         <span class="context-menu-shortcut">{props.shortcut}</span>
@@ -75,9 +74,7 @@ function Separator() {
 function Submenu(props) {
   return (
     <div class={`context-menu-item context-menu-submenu${props.disabled ? ' disabled' : ''}`}>
-      <Show when={props.icon}>
-        <span class="context-menu-icon" innerHTML={props.icon} />
-      </Show>
+      <span class="context-menu-icon" innerHTML={props.icon || ''} />
       <span class="context-menu-label">{props.label}</span>
       <span class="context-menu-arrow">{'\u25B6'}</span>
       <div class="context-menu-submenu-content">
@@ -546,6 +543,10 @@ function ThumbnailMenuContent() {
   const { t: tCommon } = useTranslation('common');
   const pageNum = () => targetPage();
 
+  const pages = () => getSelectedPagesArray();
+  const count = () => pages().length;
+  const isMulti = () => count() > 1;
+
   const thumbnailCutIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2.5a2.5 2.5 0 1 1 3.164 2.414L8.5 7.25l1.336-2.336a2.5 2.5 0 1 1 1.414 0L9.914 7.25 13 12.5V14H3v-1.5L6.086 7.25 4.75 4.914A2.5 2.5 0 0 1 4 2.5zm2.5 1a1 1 0 1 0-2 0 1 1 0 0 0 2 0zm5 0a1 1 0 1 0-2 0 1 1 0 0 0 2 0z"/></svg>';
   const thumbnailCopyIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H6z"/><path d="M2 5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1h1v1a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h1v1H2z"/></svg>';
   const thumbnailPasteIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M10 1.5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-1zm-5 0A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5v1A1.5 1.5 0 0 1 9.5 4h-3A1.5 1.5 0 0 1 5 2.5v-1zm-2 0h1v1A2.5 2.5 0 0 0 6.5 5h3A2.5 2.5 0 0 0 12 2.5v-1h1a2 2 0 0 1 2 2V14a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V3.5a2 2 0 0 1 2-2z"/></svg>';
@@ -556,17 +557,31 @@ function ThumbnailMenuContent() {
   const thumbnailRotateLeftIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466z"/></svg>';
   const thumbnailRotateRightIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966a.25.25 0 0 1 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>';
   const thumbnailPropertiesIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg>';
+  const selectAllIcon = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm10.03 4.97a.75.75 0 0 1 .011 1.05l-4.5 4.75a.75.75 0 0 1-1.072.014L4.22 8.53a.75.75 0 1 1 1.06-1.06l1.705 1.705L10.97 4.98a.75.75 0 0 1 1.06-.01z"/></svg>';
 
   return (
     <>
-      <MenuItem icon={thumbnailCutIcon} label={tCommon('cut')} onClick={async () => {
-        const { cutPage } = await import('../../pdf/page-manager.js');
-        await cutPage(pageNum());
-      }} disabled={state.pdfDoc?.numPages <= 1} />
-      <MenuItem icon={thumbnailCopyIcon} label={tCommon('copy')} onClick={async () => {
-        const { copyPage } = await import('../../pdf/page-manager.js');
-        await copyPage(pageNum());
-      }} />
+      <MenuItem icon={thumbnailCutIcon}
+        label={isMulti() ? t('thumbnail.cutPages', { count: count() }) : tCommon('cut')}
+        disabled={state.pdfDoc?.numPages <= count()}
+        onClick={async () => {
+          const pm = await import('../../pdf/page-manager.js');
+          if (isMulti()) {
+            await pm.cutPages(pages());
+          } else {
+            await pm.cutPage(pages()[0]);
+          }
+        }} />
+      <MenuItem icon={thumbnailCopyIcon}
+        label={isMulti() ? t('thumbnail.copyPages', { count: count() }) : tCommon('copy')}
+        onClick={async () => {
+          const pm = await import('../../pdf/page-manager.js');
+          if (isMulti()) {
+            await pm.copyPages(pages());
+          } else {
+            await pm.copyPage(pages()[0]);
+          }
+        }} />
       <MenuItem icon={thumbnailPasteIcon} label={tCommon('paste')} onClick={async () => {
         const { pastePage } = await import('../../pdf/page-manager.js');
         await pastePage(pageNum());
@@ -574,14 +589,18 @@ function ThumbnailMenuContent() {
 
       <Separator />
 
-      <MenuItem icon={thumbnailRotateLeftIcon} label={t('thumbnail.rotateLeft')} onClick={async () => {
-        const { rotatePage } = await import('../../pdf/renderer.js');
-        await rotatePage(-90, pageNum());
-      }} />
-      <MenuItem icon={thumbnailRotateRightIcon} label={t('thumbnail.rotateRight')} onClick={async () => {
-        const { rotatePage } = await import('../../pdf/renderer.js');
-        await rotatePage(90, pageNum());
-      }} />
+      <MenuItem icon={thumbnailRotateLeftIcon}
+        label={isMulti() ? t('thumbnail.rotateLeftPages', { count: count() }) : t('thumbnail.rotateLeft')}
+        onClick={async () => {
+          const { rotatePage } = await import('../../pdf/renderer.js');
+          for (const p of pages()) await rotatePage(-90, p);
+        }} />
+      <MenuItem icon={thumbnailRotateRightIcon}
+        label={isMulti() ? t('thumbnail.rotateRightPages', { count: count() }) : t('thumbnail.rotateRight')}
+        onClick={async () => {
+          const { rotatePage } = await import('../../pdf/renderer.js');
+          for (const p of pages()) await rotatePage(90, p);
+        }} />
 
       <Separator />
 
@@ -589,25 +608,34 @@ function ThumbnailMenuContent() {
         import('../../ui/chrome/dialogs.js').then(m => m.showInsertPageDialog());
       }} />
       <MenuItem icon={thumbnailExtractIcon} label={t('thumbnail.extractPages')} onClick={() => {
-        import('../../ui/chrome/dialogs.js').then(m => m.showExtractPagesDialog());
+        const rangeStr = formatPageRangeString(pages());
+        import('../stores/dialogStore.js').then(m => m.openDialog('extract-pages', {
+          totalPages: state.pdfDoc?.numPages, currentPage: pageNum(), pageRange: rangeStr
+        }));
       }} />
-      <MenuItem icon={thumbnailReplaceIcon} label={t('thumbnail.replacePages')} onClick={async () => {
+      <MenuItem icon={thumbnailReplaceIcon} label={t('thumbnail.replacePages')} disabled={isMulti()} onClick={async () => {
         const { replacePages } = await import('../../pdf/page-manager.js');
         replacePages(pageNum());
       }} />
-      <MenuItem icon={thumbnailDeleteIcon} label={t('thumbnail.deletePages')} disabled={state.pdfDoc?.numPages <= 1} onClick={async () => {
-        const confirmed = await window.__TAURI__?.dialog?.ask(t('thumbnail.deletePageConfirm', { page: pageNum() }), { title: t('thumbnail.deletePageTitle'), kind: 'warning' });
-        if (confirmed) {
-          const { deletePages } = await import('../../pdf/page-manager.js');
-          await deletePages([pageNum()]);
-        }
-      }} />
+      <MenuItem icon={thumbnailDeleteIcon}
+        label={isMulti() ? t('thumbnail.deletePagesMulti', { count: count() }) : t('thumbnail.deletePages')}
+        disabled={state.pdfDoc?.numPages <= count()}
+        onClick={() => {
+          const rangeStr = formatPageRangeString(pages());
+          import('../stores/dialogStore.js').then(m => m.openDialog('delete-pages', {
+            totalPages: state.pdfDoc?.numPages, currentPage: pageNum(), pageRange: rangeStr
+          }));
+        }} />
 
       <Separator />
 
-      <MenuItem icon={thumbnailPropertiesIcon} label={t('thumbnail.properties')} onClick={async () => {
-        const { showPageProperties } = await import('../../ui/panels/left-panel.js');
-        await showPageProperties(pageNum());
+      <MenuItem icon={selectAllIcon} label={t('thumbnail.selectAll')} onClick={() => selectAllPages()} />
+      <MenuItem label={t('thumbnail.deselectAll')} onClick={() => clearPageSelection()} />
+
+      <Separator />
+
+      <MenuItem icon={thumbnailPropertiesIcon} label={t('thumbnail.properties')} disabled={isMulti()} onClick={() => {
+        import('../stores/dialogStore.js').then(m => m.openDialog('page-properties', { pageNum: pageNum() }));
       }} />
     </>
   );

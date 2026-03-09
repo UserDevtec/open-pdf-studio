@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Uonyeshaji",
-    "thinLines": "Mistari nyembamba (onyesha mistari yote kwa upana wa 1px)"
+    "thinLines": "Mistari nyembamba (onyesha mistari yote kwa upana wa 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

@@ -51,5 +51,8 @@
   "highlightAll": "Highlight all",
   "formFieldsMessage": "This document contains interactive form fields. You can fill in the form and save your data.",
   "enableEditing": "Enable Editing",
-  "pdfAConformance": "This document claims PDF/A conformance."
+  "pdfAConformance": "This document claims PDF/A conformance.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

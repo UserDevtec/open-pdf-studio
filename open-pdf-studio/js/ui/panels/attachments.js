@@ -3,7 +3,11 @@ import { getActiveDocument } from '../../core/state.js';
 import { isTauri, writeBinaryFile, readBinaryFile } from '../../core/platform.js';
 import { PDFDocument, PDFName, PDFHexString, PDFDict, PDFArray, PDFString } from 'pdf-lib';
 import { getCachedPdfBytes } from '../../pdf/loader.js';
-import { setItems, setCountText, setEmptyMessage, setSelectedKey, setToolbarDisabled } from '../../solid/stores/panels/attachmentsStore.js';
+import {
+  setAttachmentItems as setItems, setAttachmentCountText as setCountText,
+  setAttachmentEmptyMessage as setEmptyMessage, setAttachmentSelectedKey as setSelectedKey,
+  setAttachmentToolbarDisabled as setToolbarDisabled,
+} from '../../bridge.js';
 
 // Current state
 let currentAttachments = {}; // key -> { filename, content, description, createdAt, modifiedAt }

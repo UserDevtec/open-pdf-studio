@@ -1,6 +1,6 @@
 import { state } from '../../core/state.js';
 import { useTranslation } from '../../i18n/useTranslation.js';
-import { openDialog } from '../stores/dialogStore.js';
+import { openDialog, getDialogs } from '../stores/dialogStore.js';
 
 async function handleClose() {
   const { closeActiveTab } = await import('../../ui/chrome/tabs.js');
@@ -29,9 +29,10 @@ export default function TitleBar() {
     const d = doc();
     return !!d && !!d.redoStack && d.redoStack.length > 0;
   };
+  const hasDialogs = () => getDialogs().length > 0;
 
   return (
-    <div class="title-bar" data-tauri-drag-region>
+    <div class={`title-bar${hasDialogs() ? ' dialogs-open' : ''}`} attr:data-tauri-drag-region={hasDialogs() ? undefined : ''}>
       <div class="title-bar-left">
         <div class="quick-access-toolbar">
           <img src="icon.png" class="app-icon" alt={tCommon('appName')} />
@@ -115,7 +116,7 @@ export default function TitleBar() {
         </div>
       </div>
 
-      <div class="title-bar-center" data-tauri-drag-region>
+      <div class="title-bar-center" attr:data-tauri-drag-region={hasDialogs() ? undefined : ''}>
         <span class="app-title">{tCommon('appName')} v{__APP_VERSION__}</span>
         <span class="file-name">{fileName()}</span>
       </div>
@@ -124,15 +125,15 @@ export default function TitleBar() {
         <button class="send-feedback-btn" onClick={() => openDialog('feedback')}>
           {tCommon('sendFeedback')}
         </button>
-        <button class="window-btn" title={tCommon('minimize')}
+        <button class="window-btn" title={tCommon('minimize')} disabled={hasDialogs()}
           onClick={() => import('../../core/platform.js').then(m => m.minimizeWindow())}>
           <svg width="10" height="1" viewBox="0 0 10 1"><rect width="10" height="1" fill="currentColor"/></svg>
         </button>
-        <button class="window-btn" title={tCommon('maximize')}
+        <button class="window-btn" title={tCommon('maximize')} disabled={hasDialogs()}
           onClick={() => import('../../core/platform.js').then(m => m.maximizeWindow())}>
           <svg width="10" height="10" viewBox="0 0 10 10"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>
         </button>
-        <button class="window-btn window-btn-close" title={tCommon('close')}
+        <button class="window-btn window-btn-close" title={tCommon('close')} disabled={hasDialogs()}
           onClick={handleClose}>
           <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
         </button>

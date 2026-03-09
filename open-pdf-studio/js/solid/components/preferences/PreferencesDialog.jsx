@@ -93,6 +93,8 @@ export default function PreferencesDialog(props) {
     }
     savePreferences();
     applyTheme(state.preferences.theme);
+    // Apply properties panel visibility change
+    import('../../stores/propertiesStore.js').then(m => m.setPanelVisible(state.preferences.propertiesPanelVisible));
     // Re-render pages when thin lines setting changed
     if (state.preferences.thinLines !== prevThinLines && state.pdfDoc) {
       if (state.viewMode === 'continuous') {

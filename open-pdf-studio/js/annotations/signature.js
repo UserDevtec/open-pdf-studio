@@ -1,4 +1,4 @@
-import { openDialog } from '../solid/stores/dialogStore.js';
+import { openDialog } from '../bridge.js';
 
 export function showSignatureDialog(x, y) {
   openDialog('signature', { x, y });

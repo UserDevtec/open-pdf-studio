@@ -4,8 +4,8 @@ import { setTool } from '../../tools/manager.js';
 import { recordAdd } from '../../core/undo-manager.js';
 import {
   showAnnotationMenu, showMultiAnnotationMenu, showPageMenu,
-  showTextSelectionMenu, hideMenu
-} from '../../solid/stores/contextMenuStore.js';
+  showTextSelectionMenu, hideMenu,
+} from '../../bridge.js';
 
 export function showContextMenu(e, annotation) {
   e.preventDefault();

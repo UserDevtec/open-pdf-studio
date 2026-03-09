@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Kết xuất",
-    "thinLines": "Đường mảnh (hiển thị tất cả đường với độ rộng 1px)"
+    "thinLines": "Đường mảnh (hiển thị tất cả đường với độ rộng 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

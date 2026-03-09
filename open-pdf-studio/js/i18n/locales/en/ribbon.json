@@ -11,8 +11,10 @@
   },
   "home": {
     "tools": "Tools",
+    "basic": "Basic",
     "handTool": "Hand Tool",
     "hand": "Hand",
+    "select": "Select",
     "selectText": "Select Text",
     "selectComments": "Select Comments",
     "screenshot": "Screenshot",
@@ -110,6 +112,11 @@
     "propertiesLabel": "Properties",
     "annotationsList": "Annotations List (F11)",
     "annotationsLabel": "Annotations",
+    "toolPalette": "Tool Palette",
+    "toolPaletteLabel": "Tool Palette",
+    "movePaletteRight": "Move to right side",
+    "movePaletteLeft": "Move to left side",
+    "closePalette": "Close tool palette",
     "appearance": "Appearance",
     "thinLinesTitle": "Thin Lines (Ctrl+5)",
     "thinLines": "Thin Lines"

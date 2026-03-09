@@ -1,6 +1,6 @@
 import i18next from '../../i18n/config.js';
 import { getActiveDocument } from '../../core/state.js';
-import { setGroups, setCountText, setEmptyMessage } from '../../solid/stores/panels/formFieldsStore.js';
+import { setFormFieldGroups as setGroups, setFormFieldCountText as setCountText, setFormFieldEmptyMessage as setEmptyMessage } from '../../bridge.js';
 
 function getFieldTypeLabel(type) {
   const labels = {

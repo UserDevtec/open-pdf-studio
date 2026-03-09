@@ -1,8 +1,7 @@
 import { DEFAULT_PREFERENCES } from './constants.js';
 import { state } from './state.js';
-import { setColorPickerValue, setLineWidthValue, setCurrentTheme } from '../solid/stores/ribbonStore.js';
+import { setColorPickerValue, setLineWidthValue, setCurrentTheme, openDialog } from '../bridge.js';
 import { updateStatusMessage } from '../ui/chrome/status-bar.js';
-import { openDialog } from '../solid/stores/dialogStore.js';
 import { changeLanguage } from '../i18n/useTranslation.js';
 import { isTauri, getUsername, savePreferencesFile, loadPreferencesFile } from './platform.js';
 

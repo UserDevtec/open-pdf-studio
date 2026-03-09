@@ -1,7 +1,15 @@
 import { state, getActiveDocument, getPageRotation, setPageRotation } from './state.js';
 import { cloneAnnotation } from '../annotations/factory.js';
-import { markDocumentModified } from '../ui/chrome/tabs.js';
 const MAX_UNDO_STACK = 100;
+
+// Sync the modified flag based on whether the undo stack matches the saved clean point
+function syncModifiedState() {
+  const doc = getActiveDocument();
+  if (!doc) return;
+  const isClean = doc.savedUndoStackLength >= 0 &&
+                  (doc.undoStack || []).length === doc.savedUndoStackLength;
+  doc.modified = !isClean;
+}
 
 // Per-document undo stack stored on the document object
 function getUndoStack() {
@@ -21,7 +29,14 @@ function getRedoStack() {
 function pushUndo(cmd) {
   const stack = getUndoStack();
   stack.push(cmd);
-  if (stack.length > MAX_UNDO_STACK) stack.shift();
+  if (stack.length > MAX_UNDO_STACK) {
+    stack.shift();
+    const doc = getActiveDocument();
+    if (doc && doc.savedUndoStackLength >= 0) {
+      doc.savedUndoStackLength--;
+      if (doc.savedUndoStackLength < 0) doc.savedUndoStackLength = -1;
+    }
+  }
 }
 
 function clearRedo() {
@@ -32,11 +47,16 @@ function clearRedo() {
 // No-op: TitleBar.jsx now derives undo/redo enabled from reactive state
 function updateButtons() {}
 
-// Execute a command: push to undo, clear redo, mark modified
+// Execute a command: push to undo, clear redo, sync modified state
 export function execute(cmd) {
+  const doc = getActiveDocument();
+  // If clean point was beyond current position, it's now unreachable (divergent edit)
+  if (doc && doc.savedUndoStackLength > (doc.undoStack || []).length) {
+    doc.savedUndoStackLength = -1;
+  }
   pushUndo(cmd);
   clearRedo();
-  markDocumentModified();
+  syncModifiedState();
   updateButtons();
 }
 
@@ -52,12 +72,13 @@ export async function undo() {
   if (cmd.type === 'pageStructure') {
     const { restorePageState } = await import('../pdf/page-manager.js');
     await restorePageState(cmd.oldBytes, cmd.oldAnnotations, cmd.oldRotations, cmd.oldPage);
+    syncModifiedState();
     updateButtons();
     return;
   }
 
   applyUndo(cmd);
-  markDocumentModified();
+  syncModifiedState();
 
   // For modify operations, keep selection intact and refresh properties
   if (cmd.type === 'modifyAnnotation' || cmd.type === 'bulkModify') {
@@ -94,12 +115,13 @@ export async function redo() {
   if (cmd.type === 'pageStructure') {
     const { restorePageState } = await import('../pdf/page-manager.js');
     await restorePageState(cmd.newBytes, cmd.newAnnotations, cmd.newRotations, cmd.newPage);
+    syncModifiedState();
     updateButtons();
     return;
   }
 
   applyRedo(cmd);
-  markDocumentModified();
+  syncModifiedState();
 
   // For modify operations, keep selection intact and refresh properties
   if (cmd.type === 'modifyAnnotation' || cmd.type === 'bulkModify') {
@@ -554,9 +576,23 @@ export function flushPropertyChange() {
       newState: cloneAnnotation(current)
     };
     if (!targetDoc.undoStack) targetDoc.undoStack = [];
+    // If clean point was beyond current position, it's now unreachable
+    if (targetDoc.savedUndoStackLength > targetDoc.undoStack.length) {
+      targetDoc.savedUndoStackLength = -1;
+    }
     targetDoc.undoStack.push(cmd);
-    if (targetDoc.undoStack.length > MAX_UNDO_STACK) targetDoc.undoStack.shift();
+    if (targetDoc.undoStack.length > MAX_UNDO_STACK) {
+      targetDoc.undoStack.shift();
+      if (targetDoc.savedUndoStackLength >= 0) {
+        targetDoc.savedUndoStackLength--;
+        if (targetDoc.savedUndoStackLength < 0) targetDoc.savedUndoStackLength = -1;
+      }
+    }
     targetDoc.redoStack = [];
+    // Sync modified state
+    const isClean = targetDoc.savedUndoStackLength >= 0 &&
+                    targetDoc.undoStack.length === targetDoc.savedUndoStackLength;
+    targetDoc.modified = !isClean;
   }
 
   pendingPropertyChange = null;

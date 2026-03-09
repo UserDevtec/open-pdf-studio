@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Исцртавање",
-    "thinLines": "Танке линије (прикажи све линије ширином 1px)"
+    "thinLines": "Танке линије (прикажи све линије ширином 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

@@ -14,6 +14,15 @@ export default function PageDisplayTab(props) {
           </label>
         </div>
       </fieldset>
+      <fieldset class="pref-fieldset">
+        <legend>{t('pageDisplay.panels')}</legend>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.propertiesPanelVisible[0]()} onChange={e => p.propertiesPanelVisible[1](e.target.checked)} />
+            <span>{t('pageDisplay.showPropertiesPanel')}</span>
+          </label>
+        </div>
+      </fieldset>
     </>
   );
 }

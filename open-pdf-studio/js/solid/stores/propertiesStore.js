@@ -7,8 +7,9 @@ import { computeTextboxContentHeight } from '../../annotations/rendering/shapes.
 import { formatDate, getTypeDisplayName } from '../../utils/helpers.js';
 import i18next from '../../i18n/config.js';
 
-// Panel visibility
-const [panelVisible, setPanelVisible] = createSignal(false);
+// Panel visibility and collapsed state
+const [panelVisible, setPanelVisible] = createSignal(true);
+const [panelCollapsed, setPanelCollapsed] = createSignal(false);
 
 // Panel mode: 'none' | 'annotation' | 'multi' | 'textEdit'
 const [panelMode, setPanelMode] = createSignal('none');
@@ -751,6 +752,7 @@ export function getCurrentAnnotation() {
 
 export {
   panelVisible, setPanelVisible,
+  panelCollapsed, setPanelCollapsed,
   panelMode, setPanelMode,
   collapsedSections,
   annotProps, setAnnotProps,

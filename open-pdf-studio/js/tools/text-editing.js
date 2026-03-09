@@ -6,8 +6,11 @@ import { cloneAnnotation } from '../annotations/factory.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { injectSyntheticTextSpans } from '../text/text-layer.js';
 import { annotationCanvas } from '../ui/dom-elements.js';
-import { showTextEditOverlay, hideTextEditOverlay, getTextValue, getHeightGrowth } from '../solid/stores/textEditOverlayStore.js';
-import { openStickyPopup } from '../solid/stores/stickyNotePopupStore.js';
+import {
+  showTextEditOverlay, hideTextEditOverlay,
+  getTextEditValue as getTextValue, getTextEditHeightGrowth as getHeightGrowth,
+  openStickyPopup,
+} from '../bridge.js';
 
 // Start inline text editing for textbox/callout
 export function startTextEditing(annotation) {

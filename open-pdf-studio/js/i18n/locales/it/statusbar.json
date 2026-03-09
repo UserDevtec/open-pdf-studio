@@ -48,7 +48,10 @@
   "matchCase": "Distingui maiuscole/minuscole",
   "wholeWords": "Parole intere",
   "highlightAll": "Evidenzia tutto",
-  "formFieldsMessage": "Questo documento contiene campi modulo interattivi. \u00c8 possibile compilare il modulo e salvare i dati.",
+  "formFieldsMessage": "Questo documento contiene campi modulo interattivi. È possibile compilare il modulo e salvare i dati.",
   "enableEditing": "Abilita modifica",
-  "pdfAConformance": "Questo documento dichiara conformit\u00e0 PDF/A."
+  "pdfAConformance": "Questo documento dichiara conformità PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

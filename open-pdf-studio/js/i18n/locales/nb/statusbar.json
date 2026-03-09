@@ -51,5 +51,8 @@
   "highlightAll": "Uthev alle",
   "formFieldsMessage": "Dette dokumentet inneholder interaktive skjemafelt. Du kan fylle ut skjemaet og lagre dataene dine.",
   "enableEditing": "Aktiver redigering",
-  "pdfAConformance": "Dette dokumentet hevder PDF/A-konformitet."
+  "pdfAConformance": "Dette dokumentet hevder PDF/A-konformitet.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

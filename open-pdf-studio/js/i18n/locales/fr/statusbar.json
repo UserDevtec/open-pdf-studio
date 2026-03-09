@@ -50,5 +50,8 @@
   "highlightAll": "Tout surligner",
   "formFieldsMessage": "Ce document contient des champs de formulaire interactifs. Vous pouvez remplir le formulaire et enregistrer vos données.",
   "enableEditing": "Activer la modification",
-  "pdfAConformance": "Ce document est conforme à la norme PDF/A."
+  "pdfAConformance": "Ce document est conforme à la norme PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

@@ -51,5 +51,8 @@
   "highlightAll": "سب نمایاں کریں",
   "formFieldsMessage": "اس دستاویز میں انٹرایکٹو فارم فیلڈز ہیں۔ آپ فارم پُر کر کے اپنا ڈیٹا محفوظ کر سکتے ہیں۔",
   "enableEditing": "ترمیم فعال کریں",
-  "pdfAConformance": "یہ دستاویز PDF/A مطابقت کا دعویٰ کرتی ہے۔"
+  "pdfAConformance": "یہ دستاویز PDF/A مطابقت کا دعویٰ کرتی ہے۔",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

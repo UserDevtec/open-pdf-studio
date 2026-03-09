@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Rendering",
-    "thinLines": "Garis tipis (tampilkan semua garis dengan lebar 1px)"
+    "thinLines": "Garis tipis (tampilkan semua garis dengan lebar 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

@@ -1,4 +1,4 @@
-import { openDialog } from '../solid/stores/dialogStore.js';
+import { openDialog } from '../bridge.js';
 
 // Bridge functions — open Solid.js dialogs
 export function showWatermarkDialog(editWm = null) {

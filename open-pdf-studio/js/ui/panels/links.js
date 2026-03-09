@@ -2,7 +2,11 @@ import i18next from '../../i18n/config.js';
 import { state, getActiveDocument } from '../../core/state.js';
 import { goToPage } from '../../pdf/renderer.js';
 import { isTauri, saveFileDialog, writeBinaryFile, openExternal } from '../../core/platform.js';
-import { setGroups, setCountText, setEmptyMessage, setSelectedIndex, setToolbarDisabled } from '../../solid/stores/panels/linksStore.js';
+import {
+  setLinkGroups as setGroups, setLinkCountText as setCountText,
+  setLinkEmptyMessage as setEmptyMessage, setLinkSelectedIndex as setSelectedIndex,
+  setLinkToolbarDisabled as setToolbarDisabled,
+} from '../../bridge.js';
 
 // State
 let allLinks = [];          // Full list of parsed link objects

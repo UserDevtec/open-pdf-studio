@@ -109,15 +109,17 @@ export default function HomeTab() {
 
         <RibbonGroup label={t('home.navigate')}>
           <RibbonButtonStack>
-            <RibbonButton size="small" id="first-page" title={t('home.firstPage')} icon={firstPageIcon} label={t('home.first')}
+            <RibbonButton size="medium" id="first-page" title={t('home.firstPage')} icon={firstPageIcon} label={t('home.first')}
               disabled={noPdf() || state.currentPage === 1} onClick={() => goToPage(1)} />
-            <RibbonButton size="small" id="prev-page-ribbon" title={t('home.previousPage')} icon={prevPageIcon} label={t('home.previous')}
+            <RibbonButton size="medium" id="prev-page-ribbon" title={t('home.previousPage')} icon={prevPageIcon} label={t('home.previous')}
               disabled={noPdf() || state.currentPage <= 1} onClick={() => goToPage(state.currentPage - 1)} />
-            <RibbonButton size="small" id="next-page-ribbon" title={t('home.nextPage')} icon={nextPageIcon} label={t('home.next')}
-              disabled={noPdf() || state.currentPage >= state.pdfDoc?.numPages} onClick={() => goToPage(state.currentPage + 1)} />
           </RibbonButtonStack>
-          <RibbonButton id="last-page" title={t('home.lastPage')} icon={lastPageIcon} label={t('home.last')}
-            disabled={noPdf() || state.currentPage >= state.pdfDoc?.numPages} onClick={() => goToPage(state.pdfDoc.numPages)} />
+          <RibbonButtonStack>
+            <RibbonButton size="medium" id="next-page-ribbon" title={t('home.nextPage')} icon={nextPageIcon} label={t('home.next')}
+              disabled={noPdf() || state.currentPage >= state.pdfDoc?.numPages} onClick={() => goToPage(state.currentPage + 1)} />
+            <RibbonButton size="medium" id="last-page" title={t('home.lastPage')} icon={lastPageIcon} label={t('home.last')}
+              disabled={noPdf() || state.currentPage >= state.pdfDoc?.numPages} onClick={() => goToPage(state.pdfDoc.numPages)} />
+          </RibbonButtonStack>
         </RibbonGroup>
 
         <RibbonGroup label={t('home.find')}>

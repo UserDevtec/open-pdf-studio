@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "עיבוד",
-    "thinLines": "קווים דקים (הצגת כל הקווים ברוחב 1px)"
+    "thinLines": "קווים דקים (הצגת כל הקווים ברוחב 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "রেন্ডারিং",
-    "thinLines": "পাতলা রেখা (সমস্ত রেখা 1px প্রস্থে প্রদর্শন)"
+    "thinLines": "পাতলা রেখা (সমস্ত রেখা 1px প্রস্থে প্রদর্শন)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

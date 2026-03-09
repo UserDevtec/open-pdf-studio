@@ -5,7 +5,7 @@ import { redrawAnnotations, redrawContinuous } from './rendering.js';
 import { updateStatusMessage } from '../ui/chrome/status-bar.js';
 import { isTauri, readBinaryFile, writeBinaryFile, saveFileDialog, openFileDialog } from '../core/platform.js';
 import i18next from '../i18n/config.js';
-import { showMessage } from '../solid/stores/dialogStore.js';
+import { showMessage } from '../bridge.js';
 
 // Export annotations to XFDF XML format
 export function exportToXFDF() {

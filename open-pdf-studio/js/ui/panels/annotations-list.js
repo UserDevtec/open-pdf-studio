@@ -4,8 +4,12 @@ import { showProperties, showMultiSelectionProperties } from './properties-panel
 import { goToPage } from '../../pdf/renderer.js';
 import { redrawAnnotations } from '../../annotations/rendering.js';
 import { switchLeftPanelTab } from './left-panel.js';
-import { collapsed as leftPanelCollapsed, activeTab } from '../../solid/stores/leftPanelStore.js';
-import { setItems, setCountText, setEmptyMessage, sortMode, filterMode, setFilterMode } from '../../solid/stores/panels/annotationsStore.js';
+import {
+  leftPanelCollapsed, leftPanelActiveTab as activeTab,
+  setAnnotationItems as setItems, setAnnotationCountText as setCountText,
+  setAnnotationEmptyMessage as setEmptyMessage, annotationSortMode as sortMode,
+  annotationFilterMode as filterMode, setAnnotationFilterMode as setFilterMode,
+} from '../../bridge.js';
 
 const statusColors = {
   'accepted': '#22c55e',

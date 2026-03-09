@@ -1,4 +1,4 @@
-import { openAppMenu as open, closeAppMenu as close } from '../../solid/stores/appMenuStore.js';
+import { openAppMenu as open, closeAppMenu as close } from '../../bridge.js';
 
 export function openAppMenu() { open(); }
 export function closeAppMenu() { close(); }

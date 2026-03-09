@@ -1,5 +1,5 @@
 import { state } from '../../core/state.js';
-import { openDialog } from '../../solid/stores/dialogStore.js';
+import { openDialog } from '../../bridge.js';
 
 // ─── Validation dialog ─────────────────────────────────────────────────────────
 

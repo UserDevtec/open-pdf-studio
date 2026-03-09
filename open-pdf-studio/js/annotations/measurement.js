@@ -1,5 +1,5 @@
 import { state, getActiveDocument } from '../core/state.js';
-import { openDialog } from '../solid/stores/dialogStore.js';
+import { openDialog } from '../bridge.js';
 import { redrawAnnotations, redrawContinuous } from './rendering.js';
 
 // Scale calibration: pixels per unit

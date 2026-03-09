@@ -8,12 +8,16 @@ import { updateDestinationsList } from './destinations.js';
 import { updateTagsList } from './tags.js';
 import { updateLinksList } from './links.js';
 import { updateBookmarksList } from './bookmarks.js';
-import { showMessage } from '../../solid/stores/dialogStore.js';
-import { switchToLeftPanelTab, toggleLeftPanelCollapsed, activeTab, setActiveTab, setCollapsed } from '../../solid/stores/leftPanelStore.js';
 import {
-  setPageCount, setActivePage, setPlaceholderSize,
-  setThumbnailImage, clearAllThumbnails, removeThumbnailImage
-} from '../../solid/stores/panels/thumbnailStore.js';
+  showMessage,
+  switchToLeftPanelTab, toggleLeftPanelCollapsed,
+  leftPanelActiveTab as activeTab, setLeftPanelActiveTab as setActiveTab,
+  setLeftPanelCollapsed as setCollapsed,
+  setThumbnailPageCount as setPageCount, setThumbnailActivePage as setActivePage,
+  setThumbnailPlaceholderSize as setPlaceholderSize,
+  setThumbnailImage, clearAllThumbnails, removeThumbnailImage,
+  getThumbnailContainerRef as getContainerRef,
+} from '../../bridge.js';
 
 // Thumbnail scale (relative to actual page size)
 const THUMBNAIL_SCALE = 0.2;
@@ -41,14 +45,15 @@ export function initLeftPanel() {
   attachScrollListener();
 }
 
-// Attach scroll listener to the thumbnails container (may need to retry if Solid hasn't rendered yet)
+// Attach scroll listener to the thumbnails container via store ref
 function attachScrollListener() {
   if (scrollListenerAttached) return;
-  const tc = document.getElementById('thumbnails-container');
+  const tc = getContainerRef();
   if (tc) {
     tc.addEventListener('scroll', handleThumbnailScroll);
     scrollListenerAttached = true;
   } else {
+    // Retry until SolidJS sets the ref
     setTimeout(attachScrollListener, 100);
   }
 }
@@ -66,7 +71,7 @@ function handleThumbnailScroll() {
 
 // Find visible thumbnails and add them to priority queue
 function updateVisiblePriorities() {
-  const thumbnailsContainer = document.getElementById('thumbnails-container');
+  const thumbnailsContainer = getContainerRef();
   if (!thumbnailsContainer) return;
 
   const activeDoc = getActiveDocument();
@@ -475,9 +480,11 @@ export function clearThumbnailCache(docId) {
 export function updateActiveThumbnail() {
   setActivePage(state.currentPage);
 
-  // Scroll active thumbnail into view
+  // Scroll active thumbnail into view using container ref
   setTimeout(() => {
-    const activeThumbnail = document.querySelector('.thumbnail-item.active');
+    const container = getContainerRef();
+    if (!container) return;
+    const activeThumbnail = container.querySelector('.thumbnail-item.active');
     if (activeThumbnail) {
       activeThumbnail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }

@@ -51,5 +51,8 @@
   "highlightAll": "Tô sáng tất cả",
   "formFieldsMessage": "Tài liệu này chứa các trường biểu mẫu tương tác. Bạn có thể điền biểu mẫu và lưu dữ liệu.",
   "enableEditing": "Bật Chỉnh sửa",
-  "pdfAConformance": "Tài liệu này tuân thủ tiêu chuẩn PDF/A."
+  "pdfAConformance": "Tài liệu này tuân thủ tiêu chuẩn PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

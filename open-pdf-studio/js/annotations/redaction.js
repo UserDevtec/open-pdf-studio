@@ -3,7 +3,7 @@ import { createAnnotation } from './factory.js';
 import { redrawAnnotations } from './rendering.js';
 import { recordAdd } from '../core/undo-manager.js';
 import i18next from '../i18n/config.js';
-import { showMessage } from '../solid/stores/dialogStore.js';
+import { showMessage } from '../bridge.js';
 
 // Apply all redaction annotations permanently (flatten them)
 export function applyRedactions() {

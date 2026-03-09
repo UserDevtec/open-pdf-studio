@@ -92,7 +92,14 @@
     "deletePages": "Delete Pages",
     "deletePageConfirm": "Delete page {{page}}?",
     "deletePageTitle": "Delete Page",
-    "properties": "Properties"
+    "properties": "Properties",
+    "cutPages": "Cut {{count}} Pages",
+    "copyPages": "Copy {{count}} Pages",
+    "rotateLeftPages": "Rotate {{count}} Pages Left",
+    "rotateRightPages": "Rotate {{count}} Pages Right",
+    "deletePagesMulti": "Delete {{count}} Pages",
+    "selectAll": "Select All Pages",
+    "deselectAll": "Deselect All"
   },
   "textSelection": {
     "highlightSelection": "Highlight Selection",

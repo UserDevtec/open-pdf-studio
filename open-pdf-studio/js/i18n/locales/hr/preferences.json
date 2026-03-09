@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Iscrtavanje",
-    "thinLines": "Tanke linije (prikaži sve linije širinom 1px)"
+    "thinLines": "Tanke linije (prikaži sve linije širinom 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

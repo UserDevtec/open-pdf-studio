@@ -3,8 +3,11 @@ import { state, getActiveDocument } from '../../core/state.js';
 import { goToPage } from '../../pdf/renderer.js';
 import { markDocumentModified } from '../../ui/chrome/tabs.js';
 import { isPdfAReadOnly } from '../../pdf/loader.js';
-import { openDialog } from '../../solid/stores/dialogStore.js';
-import { setTree, setCountText, setEmptyMessage, setSelectedId, setToolbarDisabled } from '../../solid/stores/panels/bookmarksStore.js';
+import {
+  openDialog, setBookmarkTree as setTree, setBookmarkCountText as setCountText,
+  setBookmarkEmptyMessage as setEmptyMessage, setBookmarkSelectedId as setSelectedId,
+  setBookmarkToolbarDisabled as setToolbarDisabled,
+} from '../../bridge.js';
 
 let selectedBookmarkId = null;
 

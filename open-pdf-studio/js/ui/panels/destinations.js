@@ -1,7 +1,7 @@
 import i18next from '../../i18n/config.js';
 import { getActiveDocument } from '../../core/state.js';
 import { goToPage } from '../../pdf/renderer.js';
-import { setItems, setCountText, setEmptyMessage } from '../../solid/stores/panels/destinationsStore.js';
+import { setDestinationItems as setItems, setDestinationCountText as setCountText, setDestinationEmptyMessage as setEmptyMessage } from '../../bridge.js';
 
 let destinationsMap = {};
 

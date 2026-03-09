@@ -58,7 +58,11 @@
     "printJobSent": "Print job sent successfully.",
     "printFailed": "Print failed:",
     "noPages": "No pages",
-    "pageOf": "Page {{current}} of {{total}}"
+    "pageOf": "Page {{current}} of {{total}}",
+    "firstPage": "First Page",
+    "prevPage": "Previous Page",
+    "nextPage": "Next Page",
+    "lastPage": "Last Page"
   },
   "insertPage": {
     "title": "Insert Pages",
@@ -70,6 +74,25 @@
     "count": "Count:",
     "paperSize": "Paper Size:",
     "sameAsCurrentPage": "Same as current page"
+  },
+  "pageProperties": {
+    "title": "Page {{page}} Properties",
+    "dimensions": "Dimensions",
+    "sizePoints": "Size (pt):",
+    "sizeMm": "Size (mm):",
+    "sizeInches": "Size (in):",
+    "display": "Display",
+    "rotation": "Rotation:",
+    "userUnit": "User Unit:",
+    "loading": "Loading..."
+  },
+  "deletePages": {
+    "title": "Delete Pages",
+    "pageRange": "Page Range:",
+    "placeholder": "e.g. 1-3, 5, 8-10",
+    "documentHas": "Document has",
+    "pagesCount": "pages.",
+    "cannotDeleteAll": "Cannot delete all pages. At least one page must remain."
   },
   "extractPages": {
     "title": "Extract Pages",

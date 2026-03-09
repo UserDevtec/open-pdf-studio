@@ -51,5 +51,8 @@
   "highlightAll": "Angaza yote",
   "formFieldsMessage": "Hati hii ina sehemu za fomu shirikishi. Unaweza kujaza fomu na kuhifadhi data yako.",
   "enableEditing": "Wezesha Kuhariri",
-  "pdfAConformance": "Hati hii inadai kufuata viwango vya PDF/A."
+  "pdfAConformance": "Hati hii inadai kufuata viwango vya PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

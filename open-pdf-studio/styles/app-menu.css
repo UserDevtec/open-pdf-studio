@@ -13,6 +13,7 @@
 
 .app-menu-overlay.visible {
   display: flex;
+  user-select: none;
 }
 
 .app-menu-sidebar {
@@ -29,7 +30,7 @@
   align-items: center;
   gap: 10px;
   padding: 14px 20px;
-  background: var(--theme-accent);
+  background: var(--theme-file-tab-bg);
   border: none;
   color: var(--theme-file-tab-text);
   font-size: 15px;
@@ -39,7 +40,7 @@
 }
 
 .app-menu-back:hover {
-  background: var(--theme-accent-hover);
+  background: var(--theme-file-tab-hover);
 }
 
 .app-menu-back svg {

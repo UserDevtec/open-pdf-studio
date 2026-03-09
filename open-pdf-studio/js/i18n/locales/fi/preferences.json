@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Renderöinti",
-    "thinLines": "Ohuet viivat (näytä kaikki viivat 1px leveydellä)"
+    "thinLines": "Ohuet viivat (näytä kaikki viivat 1px leveydellä)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

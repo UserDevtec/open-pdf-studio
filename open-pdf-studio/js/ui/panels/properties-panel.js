@@ -1,14 +1,17 @@
 import { state } from '../../core/state.js';
 import { redrawAnnotations, redrawContinuous } from '../../annotations/rendering.js';
+import { savePreferences } from '../../core/preferences.js';
 import {
   storeShowProperties,
   storeHideProperties,
   storeClosePanel,
   storeShowMultiSelection,
   storeShowTextEditProperties,
-  setPanelVisible,
-  panelVisible,
-} from '../../solid/stores/propertiesStore.js';
+  setPropertiesPanelVisible as setPanelVisible,
+  propertiesPanelVisible as panelVisible,
+  setPropertiesPanelCollapsed as setPanelCollapsed,
+  propertiesPanelCollapsed as panelCollapsed,
+} from '../../bridge.js';
 
 function redraw() {
   if (state.viewMode === 'continuous') {
@@ -20,8 +23,6 @@ function redraw() {
 
 // Show properties panel for a single annotation
 export function showProperties(annotation) {
-  // Set selectedAnnotation directly on the document to avoid the proxy setter
-  // which would reset selectedAnnotations to a single-item array
   const doc = state.documents[state.activeDocumentIndex];
   if (doc) {
     doc.selectedAnnotation = annotation;
@@ -37,25 +38,34 @@ export function hideProperties() {
   redraw();
 }
 
-// Close the properties panel entirely (X button)
+// Collapse the properties panel (keeps the vertical strip visible)
 export function closePropertiesPanel() {
-  state.selectedAnnotation = null;
-  storeClosePanel();
-  redraw();
+  setPanelCollapsed(true);
 }
 
-// Toggle properties panel open/closed (for keyboard shortcut)
+// Toggle properties panel expanded/collapsed (for keyboard shortcut F12 and ribbon button)
 export function togglePropertiesPanel() {
-  if (panelVisible()) {
-    closePropertiesPanel();
-  } else {
+  if (!panelVisible()) {
     setPanelVisible(true);
+    setPanelCollapsed(false);
+    state.preferences.propertiesPanelVisible = true;
+    savePreferences();
     if (state.selectedAnnotation) {
       showProperties(state.selectedAnnotation);
     } else {
       hideProperties();
     }
+  } else if (panelCollapsed()) {
+    setPanelCollapsed(false);
+  } else {
+    setPanelCollapsed(true);
   }
+}
+
+// Initialize panel — always visible, always expanded on startup
+export function initPropertiesPanel() {
+  setPanelVisible(true);
+  setPanelCollapsed(false);
 }
 
 // Show properties panel for multi-selection

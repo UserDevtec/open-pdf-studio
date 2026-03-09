@@ -50,5 +50,8 @@
   "highlightAll": "Alles markeren",
   "formFieldsMessage": "Dit document bevat interactieve formuliervelden. U kunt het formulier invullen en uw gegevens opslaan.",
   "enableEditing": "Bewerken inschakelen",
-  "pdfAConformance": "Dit document voldoet aan de PDF/A-norm."
+  "pdfAConformance": "Dit document voldoet aan de PDF/A-norm.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

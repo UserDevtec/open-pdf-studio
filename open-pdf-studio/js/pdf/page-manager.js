@@ -12,7 +12,7 @@ import { PDFDocument } from 'pdf-lib';
 import * as pdfjsLib from 'pdfjs-dist';
 import { resetAnnotationStorage } from './form-layer.js';
 import i18next from '../i18n/config.js';
-import { showMessage } from '../solid/stores/dialogStore.js';
+import { showMessage } from '../bridge.js';
 
 // Page clipboard for cut/copy/paste
 let pageClipboard = null; // { bytes: Uint8Array, cut: boolean, sourcePageNum: number }
@@ -45,6 +45,29 @@ export async function copyPage(pageNum) {
 }
 
 /**
+ * Copy multiple pages to the page clipboard.
+ */
+export async function copyPages(pageNumbers) {
+  if (!state.pdfDoc || !pageNumbers || pageNumbers.length === 0) return;
+
+  const cacheKey = getCacheKey();
+  const currentBytes = getCachedPdfBytes(cacheKey);
+  if (!currentBytes) return;
+
+  const srcDoc = await PDFDocument.load(currentBytes, { ignoreEncryption: true });
+  const newDoc = await PDFDocument.create();
+  const indices = pageNumbers.map(p => p - 1);
+  const copiedPages = await newDoc.copyPages(srcDoc, indices);
+  for (const page of copiedPages) newDoc.addPage(page);
+
+  pageClipboard = {
+    bytes: new Uint8Array(await newDoc.save()),
+    cut: false,
+    sourcePageNum: pageNumbers[0],
+  };
+}
+
+/**
  * Cut a page (copy + delete).
  */
 export async function cutPage(pageNum) {
@@ -55,6 +78,20 @@ export async function cutPage(pageNum) {
   if (pageClipboard) {
     pageClipboard.cut = true;
     await deletePages([pageNum]);
+  }
+}
+
+/**
+ * Cut multiple pages (copy + delete).
+ */
+export async function cutPages(pageNumbers) {
+  if (!state.pdfDoc || !pageNumbers || pageNumbers.length === 0) return;
+  if (state.pdfDoc.numPages <= pageNumbers.length) return;
+
+  await copyPages(pageNumbers);
+  if (pageClipboard) {
+    pageClipboard.cut = true;
+    await deletePages(pageNumbers);
   }
 }
 

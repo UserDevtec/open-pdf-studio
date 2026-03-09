@@ -329,6 +329,10 @@ export async function lockFile(path) {
   }
 }
 
+export async function renameFile(oldPath, newPath) {
+  return await invoke('rename_file', { oldPath, newPath });
+}
+
 export async function unlockFile(path) {
   try {
     return await invoke('unlock_file', { path });

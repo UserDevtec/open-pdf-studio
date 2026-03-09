@@ -1,5 +1,10 @@
 import { onMount, onCleanup } from 'solid-js';
 
+// Track when the window last gained focus (shared across all Dialog instances)
+let lastFocusTime = 0;
+function onWindowFocus() { lastFocusTime = Date.now(); }
+window.addEventListener('focus', onWindowFocus);
+
 export default function Dialog(props) {
   let overlayRef;
   let dialogRef;
@@ -40,6 +45,42 @@ export default function Dialog(props) {
     }
   }
 
+  function triggerBump() {
+    if (!dialogRef) return;
+    // Remove class first to allow re-triggering
+    dialogRef.classList.remove('bump');
+    // Force reflow so the animation restarts
+    void dialogRef.offsetWidth;
+    dialogRef.classList.add('bump');
+    // Play system alert sound via Rust backend
+    if (window.__TAURI__?.core?.invoke) {
+      window.__TAURI__.core.invoke('play_alert_sound').catch(() => {});
+    }
+  }
+
+  function onOverlayMouseDown(e) {
+    // If the window just gained focus from this click, only activate — don't interact
+    if (Date.now() - lastFocusTime < 300) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    // Only trigger bump if click is directly on the overlay (not the dialog)
+    if (e.target === overlayRef) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerBump();
+    }
+  }
+
+  function onOverlayDblClick(e) {
+    // Block double-click on overlay from reaching the window behind
+    if (e.target === overlayRef) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
   onMount(() => {
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
@@ -57,8 +98,14 @@ export default function Dialog(props) {
       ref={overlayRef}
       class={`modal-overlay ${props.overlayClass || ''}`}
       style="display:flex"
+      onMouseDown={onOverlayMouseDown}
+      onDblClick={onOverlayDblClick}
     >
-      <div ref={dialogRef} class={`modal-dialog ${props.dialogClass || ''}`}>
+      <div
+        ref={dialogRef}
+        class={`modal-dialog ${props.dialogClass || ''}`}
+        onAnimationEnd={() => dialogRef?.classList.remove('bump')}
+      >
         <div
           class={`modal-header ${props.headerClass || ''}`}
           onMouseDown={onHeaderMouseDown}

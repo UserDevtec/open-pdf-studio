@@ -6,9 +6,9 @@ import { updateAllStatus } from './status-bar.js';
 import { generateThumbnails, clearThumbnails, clearThumbnailCache, refreshActiveTab, refreshAllTabs } from '../panels/left-panel.js';
 import { cancelAnnotationLoading, hidePdfABar } from '../../pdf/loader.js';
 import { savePDF } from '../../pdf/saver.js';
-import { unlockFile } from '../../core/platform.js';
+import { unlockFile, lockFile, renameFile, fileExists } from '../../core/platform.js';
 import { cancelPendingZoom } from '../setup/navigation-events.js';
-import { closeAllPopups } from '../../solid/stores/stickyNotePopupStore.js';
+import { closeAllPopups } from '../../bridge.js';
 
 /**
  * Create a new tab for a document
@@ -67,9 +67,9 @@ export function switchToTab(index) {
   // Cancel any pending zoom render from the previous document
   cancelPendingZoom();
 
-  // Clear any selected annotation and close properties panel
+  // Clear any selected annotation (panel stays open per user preference)
   state.selectedAnnotation = null;
-  import('../../solid/stores/propertiesStore.js').then(m => m.setPanelVisible(false));
+  import('../../solid/stores/propertiesStore.js').then(m => m.storeHideProperties());
 
   // Switch active document
   state.activeDocumentIndex = index;
@@ -258,6 +258,85 @@ export function getUnsavedDocumentNames() {
 }
 
 /**
+ * Rename a document's file on disk and update state.
+ * @param {number} index - Document index
+ * @param {string} newName - New filename (without .pdf extension)
+ * @returns {Promise<boolean>} True if renamed successfully
+ */
+export async function renameDocument(index, newName) {
+  if (index < 0 || index >= state.documents.length) return false;
+
+  const doc = state.documents[index];
+
+  // Untitled docs — trigger Save As instead
+  if (!doc.filePath) {
+    const { savePDFAs } = await import('../../pdf/saver.js');
+    return await savePDFAs();
+  }
+
+  // Validate: no invalid characters
+  const invalidChars = /[\\/:*?"<>|]/;
+  if (invalidChars.test(newName)) {
+    const { showMessage } = await import('../../solid/stores/dialogStore.js');
+    const i18next = (await import('../../i18n/config.js')).default;
+    showMessage(i18next.t('statusbar:renameInvalidChars', { defaultValue: 'File name cannot contain \\ / : * ? " < > |' }));
+    return false;
+  }
+
+  // Validate: not empty
+  const trimmed = newName.trim();
+  if (!trimmed) return false;
+
+  // Auto-append .pdf if missing
+  const finalName = trimmed.toLowerCase().endsWith('.pdf') ? trimmed : trimmed + '.pdf';
+
+  // Build new path
+  const oldPath = doc.filePath;
+  const dir = oldPath.replace(/[\\/][^\\/]+$/, '');
+  const sep = oldPath.includes('\\') ? '\\' : '/';
+  const newPath = dir + sep + finalName;
+
+  // Same name — no-op
+  if (newPath === oldPath) return true;
+
+  // Check if target already exists
+  const exists = await fileExists(newPath);
+  if (exists) {
+    const { showMessage } = await import('../../solid/stores/dialogStore.js');
+    const i18next = (await import('../../i18n/config.js')).default;
+    showMessage(i18next.t('statusbar:renameFileExists', { defaultValue: 'A file with this name already exists.' }));
+    return false;
+  }
+
+  try {
+    // Unlock old file, rename, lock new file
+    await unlockFile(oldPath);
+    await renameFile(oldPath, newPath);
+    await lockFile(newPath);
+
+    // Update PDF byte cache
+    const { getCachedPdfBytes, setCachedPdfBytes, clearCachedPdfBytes } = await import('../../pdf/loader.js');
+    const cached = getCachedPdfBytes(oldPath);
+    if (cached) {
+      setCachedPdfBytes(newPath, cached);
+      clearCachedPdfBytes(oldPath);
+    }
+
+    // Update document state
+    state.currentPdfPath = newPath;
+    updateWindowTitle();
+    return true;
+  } catch (err) {
+    // Re-lock old path on failure
+    await lockFile(oldPath);
+    const { showMessage } = await import('../../solid/stores/dialogStore.js');
+    const i18next = (await import('../../i18n/config.js')).default;
+    showMessage(i18next.t('statusbar:renameError', { defaultValue: 'Failed to rename file: {{error}}', error: err?.message || String(err) }));
+    return false;
+  }
+}
+
+/**
  * Update the tab bar UI to reflect current documents
  */
 export function updateTabBar() {
@@ -287,8 +366,10 @@ export function updateWindowTitle() {
  */
 export function markDocumentModified() {
   const doc = getActiveDocument();
-  if (doc && !doc.modified) {
+  if (doc) {
     doc.modified = true;
+    // Direct modification bypasses undo stack, so clean point is unreachable
+    doc.savedUndoStackLength = -1;
     updateTabBar();
     updateWindowTitle();
   }
@@ -301,6 +382,7 @@ export function markDocumentSaved() {
   const doc = getActiveDocument();
   if (doc) {
     doc.modified = false;
+    doc.savedUndoStackLength = (doc.undoStack || []).length;
     updateTabBar();
     updateWindowTitle();
   }

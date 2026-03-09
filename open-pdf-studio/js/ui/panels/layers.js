@@ -1,6 +1,6 @@
 import i18next from '../../i18n/config.js';
 import { getActiveDocument } from '../../core/state.js';
-import { setItems, setCountText, setEmptyMessage } from '../../solid/stores/panels/layersStore.js';
+import { setLayerItems as setItems, setLayerCountText as setCountText, setLayerEmptyMessage as setEmptyMessage } from '../../bridge.js';
 
 let currentOCConfig = null;
 

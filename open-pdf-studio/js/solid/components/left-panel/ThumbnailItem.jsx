@@ -1,5 +1,8 @@
 import { Show } from 'solid-js';
-import { activePage, thumbnailData, draggedPage, setDraggedPage, dropTarget, setDropTarget, placeholderSize } from '../../stores/panels/thumbnailStore.js';
+import {
+  activePage, thumbnailData, draggedPage, setDraggedPage, dropTarget, setDropTarget, placeholderSize,
+  selectedPages, selectPage, togglePageSelection, selectPageRange, isPageSelected
+} from '../../stores/panels/thumbnailStore.js';
 import { showThumbnailMenu } from '../../stores/contextMenuStore.js';
 
 export default function ThumbnailItem(props) {
@@ -9,26 +12,47 @@ export default function ThumbnailItem(props) {
   const drop = () => dropTarget();
   const isDropBefore = () => drop()?.page === props.pageNum && drop()?.position === 'before';
   const isDropAfter = () => drop()?.page === props.pageNum && drop()?.position === 'after';
+  const isSelected = () => { selectedPages(); return isPageSelected(props.pageNum); };
 
   const size = () => placeholderSize();
+
+  const handleClick = (e) => {
+    if (e.ctrlKey && e.shiftKey) {
+      selectPageRange(props.pageNum, true);
+    } else if (e.shiftKey) {
+      selectPageRange(props.pageNum, false);
+    } else if (e.ctrlKey) {
+      togglePageSelection(props.pageNum);
+    } else {
+      selectPage(props.pageNum);
+      props.onNavigate(props.pageNum);
+    }
+  };
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // If right-clicked page is not in selection, select it alone
+    if (!isPageSelected(props.pageNum)) {
+      selectPage(props.pageNum);
+    }
+    showThumbnailMenu(e.clientX, e.clientY, props.pageNum);
+  };
 
   return (
     <div
       class="thumbnail-item"
       classList={{
         active: isActive(),
+        selected: isSelected(),
         dragging: isDragging(),
         'drop-before': isDropBefore(),
         'drop-after': isDropAfter()
       }}
       data-page={props.pageNum}
       draggable={true}
-      onClick={() => props.onNavigate(props.pageNum)}
-      onContextMenu={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        showThumbnailMenu(e.clientX, e.clientY, props.pageNum);
-      }}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
       onDragStart={(e) => {
         setDraggedPage(props.pageNum);
         e.dataTransfer.effectAllowed = 'move';

@@ -11,7 +11,7 @@ import { resetAnnotationStorage } from './form-layer.js';
 import { addRecentFile } from '../mobile/recent-files.js';
 import { extractFileName } from '../core/platform.js';
 import i18next from '../i18n/config.js';
-import { showMessage } from '../solid/stores/dialogStore.js';
+import { showMessage } from '../bridge.js';
 
 // Sub-module imports
 import { extractAnnotationColors } from './loader/color-extraction.js';

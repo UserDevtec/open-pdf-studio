@@ -1,6 +1,6 @@
 import i18next from '../../i18n/config.js';
 import { getActiveDocument } from '../../core/state.js';
-import { setTree, setCountText, setEmptyMessage } from '../../solid/stores/panels/tagsStore.js';
+import { setTagTree as setTree, setTagCountText as setCountText, setTagEmptyMessage as setEmptyMessage } from '../../bridge.js';
 
 function countNodes(node) {
   let count = 1;

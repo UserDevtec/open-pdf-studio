@@ -5,14 +5,17 @@
 
 import { isTauri } from '../../core/platform.js';
 import { check } from '@tauri-apps/plugin-updater';
-import { openDialog } from '../../solid/stores/dialogStore.js';
+import { openDialog } from '../../bridge.js';
+
+let checking = false;
 
 /**
  * Check for updates using the Tauri updater plugin.
  * @param {boolean} silent - If true, don't show "no update" or error messages
  */
 export async function checkForUpdates(silent = true) {
-  if (!isTauri()) return;
+  if (!isTauri() || checking) return;
+  checking = true;
 
   try {
     const update = await check();
@@ -29,6 +32,8 @@ export async function checkForUpdates(silent = true) {
   } catch (e) {
     console.warn('Update check failed:', e);
     if (!silent) showUpdateError(e);
+  } finally {
+    checking = false;
   }
 }
 

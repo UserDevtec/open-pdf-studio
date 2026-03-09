@@ -4,7 +4,7 @@ import { recordAdd } from '../core/undo-manager.js';
 import { showProperties } from '../ui/panels/properties-panel.js';
 import { redrawAnnotations, redrawContinuous } from './rendering.js';
 import { updateStatusMessage } from '../ui/chrome/status-bar.js';
-import { openDialog } from '../solid/stores/dialogStore.js';
+import { openDialog } from '../bridge.js';
 
 // Built-in stamp definitions
 export const BUILT_IN_STAMPS = [

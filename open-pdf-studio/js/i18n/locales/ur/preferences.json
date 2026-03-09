@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "رینڈرنگ",
-    "thinLines": "پتلی لکیریں (تمام لکیریں 1px چوڑائی میں دکھائیں)"
+    "thinLines": "پتلی لکیریں (تمام لکیریں 1px چوڑائی میں دکھائیں)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

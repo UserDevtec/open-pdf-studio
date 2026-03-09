@@ -4,7 +4,7 @@ import { redrawAnnotations, redrawContinuous } from '../annotations/rendering.js
 import { showTextEditProperties, hideProperties } from '../ui/panels/properties-panel.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { canvasContainer, continuousContainer, pdfCanvas } from '../ui/dom-elements.js';
-import { showPdfTextEditor, hidePdfTextEditor, getEditorText } from '../solid/stores/pdfTextEditStore.js';
+import { showPdfTextEditor, hidePdfTextEditor, getPdfEditorText as getEditorText } from '../bridge.js';
 
 let activeEditor = null;
 let hoverListeners = [];

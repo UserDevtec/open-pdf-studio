@@ -145,6 +145,8 @@
   },
   "pageDisplay": {
     "rendering": "Representación",
-    "thinLines": "Líneas finas (mostrar todas las líneas con 1px de ancho)"
+    "thinLines": "Líneas finas (mostrar todas las líneas con 1px de ancho)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

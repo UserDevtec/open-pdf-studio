@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Gjengivelse",
-    "thinLines": "Tynne linjer (vis alle linjer med 1px bredde)"
+    "thinLines": "Tynne linjer (vis alle linjer med 1px bredde)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

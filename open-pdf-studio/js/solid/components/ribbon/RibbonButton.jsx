@@ -1,3 +1,5 @@
+import { autoShrinkLabel } from './autoShrinkLabel.js';
+
 export default function RibbonButton(props) {
   return (
     <button
@@ -10,7 +12,7 @@ export default function RibbonButton(props) {
     >
       <div class="ribbon-btn-icon" style={props.iconStyle} ref={el => { if (props.icon) el.innerHTML = props.icon; }}>
       </div>
-      <span class="ribbon-btn-label">{props.label}</span>
+      <span class="ribbon-btn-label" ref={el => autoShrinkLabel(el)}>{props.label}</span>
     </button>
   );
 }

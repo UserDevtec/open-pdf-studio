@@ -51,5 +51,8 @@
   "highlightAll": "அனைத்தையும் முன்னிலைப்படுத்து",
   "formFieldsMessage": "இந்த ஆவணத்தில் ஊடாடும் படிவப் புலங்கள் உள்ளன. படிவத்தை நிரப்பி உங்கள் தரவைச் சேமிக்கலாம்.",
   "enableEditing": "திருத்தத்தை இயக்கு",
-  "pdfAConformance": "இந்த ஆவணம் PDF/A இணக்கத்தைக் கோருகிறது."
+  "pdfAConformance": "இந்த ஆவணம் PDF/A இணக்கத்தைக் கோருகிறது.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

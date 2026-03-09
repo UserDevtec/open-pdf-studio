@@ -51,5 +51,8 @@
   "highlightAll": "Виділити все",
   "formFieldsMessage": "Цей документ містить інтерактивні поля форми. Ви можете заповнити форму та зберегти дані.",
   "enableEditing": "Увімкнути редагування",
-  "pdfAConformance": "Цей документ заявляє про відповідність PDF/A."
+  "pdfAConformance": "Цей документ заявляє про відповідність PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

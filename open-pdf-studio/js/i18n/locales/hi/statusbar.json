@@ -51,5 +51,8 @@
   "highlightAll": "सभी हाइलाइट करें",
   "formFieldsMessage": "इस दस्तावेज़ में इंटरैक्टिव फॉर्म फ़ील्ड हैं। आप फॉर्म भर सकते हैं और अपना डेटा सहेज सकते हैं।",
   "enableEditing": "संपादन सक्षम करें",
-  "pdfAConformance": "यह दस्तावेज़ PDF/A अनुरूपता का दावा करता है।"
+  "pdfAConformance": "यह दस्तावेज़ PDF/A अनुरूपता का दावा करता है।",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

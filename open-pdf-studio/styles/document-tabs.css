@@ -21,7 +21,7 @@
 .document-tab {
   display: flex;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 4px 0 5px;
   height: 100%;
   background: var(--theme-tab-bg);
   border-right: 1px solid var(--theme-tab-border);
@@ -64,6 +64,7 @@
   color: var(--theme-tab-close-color);
   font-size: 14px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .document-tab:hover .document-tab-close,
@@ -72,14 +73,36 @@
 }
 
 .document-tab-close:hover {
-  background: #e81123;
-  color: white;
+  background: var(--theme-app-menu-item-hover);
+  color: var(--theme-app-menu-item-hover-text);
 }
 
 .document-tab-modified {
   color: var(--theme-tab-modified);
   font-weight: bold;
   margin-right: 4px;
+}
+
+.document-tab-rename-input {
+  flex: 1;
+  font-size: 12px;
+  color: var(--theme-tab-active-text);
+  background: var(--theme-tab-active-bg);
+  border: 1px solid var(--theme-tab-active-accent);
+  outline: none;
+  padding: 0 2px;
+  margin-right: 8px;
+  height: 20px;
+  min-width: 0;
+  font-family: inherit;
+}
+
+.document-tab.dragging {
+  opacity: 0.4;
+}
+
+.document-tab.drop-target {
+  border-left: 2px solid var(--theme-tab-active-accent);
 }
 
 .document-tabs-empty {

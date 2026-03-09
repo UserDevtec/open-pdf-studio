@@ -5,9 +5,9 @@ import { currentTheme } from '../../stores/ribbonStore.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 const THEME_OPTIONS = [
-  { value: 'system', labelKey: 'theme.system', swatches: ['#1a1a2e', '#16213e', '#e94560', '#eaeaea'] },
-  { value: 'light', labelKey: 'theme.light', swatches: ['#f5f5f5', '#ffffff', '#e94560', '#1f2937'] },
-  { value: 'dark', labelKey: 'theme.dark', swatches: ['#1a1a2e', '#16213e', '#e94560', '#eaeaea'] },
+  { value: 'system', labelKey: 'theme.system', swatches: ['#1a1a2e', '#16213e', '#a82d6e', '#eaeaea'] },
+  { value: 'light', labelKey: 'theme.light', swatches: ['#f5f5f5', '#ffffff', '#a82d6e', '#1f2937'] },
+  { value: 'dark', labelKey: 'theme.dark', swatches: ['#1a1a2e', '#16213e', '#a82d6e', '#eaeaea'] },
   { value: 'blue', labelKey: 'theme.blue', swatches: ['#0d1b2a', '#1b263b', '#00b4d8', '#e0e1dd'] },
   { value: 'highContrast', labelKey: 'theme.highContrast', swatches: ['#000000', '#0a0a0a', '#ffff00', '#ffffff'] },
 ];

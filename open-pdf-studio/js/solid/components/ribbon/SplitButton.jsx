@@ -1,4 +1,5 @@
 import { createSignal, onMount, onCleanup } from 'solid-js';
+import { autoShrinkLabel } from './autoShrinkLabel.js';
 
 export default function SplitButton(props) {
   const [menuOpen, setMenuOpen] = createSignal(false);
@@ -18,7 +19,7 @@ export default function SplitButton(props) {
     <div class="ribbon-split-btn" id={props.id} ref={containerRef}>
       <button class="ribbon-btn" title={props.mainTitle} disabled={props.disabled} onClick={props.onMainClick}>
         <div class="ribbon-btn-icon" ref={el => { if (props.mainIcon) el.innerHTML = props.mainIcon; }}></div>
-        <span class="ribbon-btn-label">{props.mainLabel}</span>
+        <span class="ribbon-btn-label" ref={el => autoShrinkLabel(el)}>{props.mainLabel}</span>
       </button>
       <button
         class="ribbon-split-btn-arrow"

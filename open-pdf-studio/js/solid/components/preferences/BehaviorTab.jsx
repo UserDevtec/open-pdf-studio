@@ -6,24 +6,6 @@ export default function BehaviorTab(props) {
   return (
     <>
       <fieldset class="pref-fieldset">
-        <legend>{t('behavior.startup')}</legend>
-        <div class="pref-row pref-checkbox-row">
-          <label class="pref-checkbox-label">
-            <input type="checkbox" checked={p.restoreLastSession[0]()} onChange={e => p.restoreLastSession[1](e.target.checked)} />
-            <span>{t('behavior.restoreLastSession')}</span>
-          </label>
-        </div>
-      </fieldset>
-
-      <fieldset class="pref-fieldset">
-        <legend>{t('behavior.author')}</legend>
-        <div class="pref-row">
-          <label>{t('behavior.defaultAuthorName')}</label>
-          <input type="text" value={p.authorName[0]()} onInput={e => p.authorName[1](e.target.value)} />
-        </div>
-      </fieldset>
-
-      <fieldset class="pref-fieldset">
         <legend>{t('behavior.snapping')}</legend>
         <div class="pref-row">
           <label>{t('behavior.angleSnap')}</label>

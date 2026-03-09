@@ -51,5 +51,8 @@
   "highlightAll": "Επισήμανση όλων",
   "formFieldsMessage": "Αυτό το έγγραφο περιέχει διαδραστικά πεδία φόρμας. Μπορείτε να συμπληρώσετε τη φόρμα και να αποθηκεύσετε τα δεδομένα σας.",
   "enableEditing": "Ενεργοποίηση επεξεργασίας",
-  "pdfAConformance": "Αυτό το έγγραφο δηλώνει συμμόρφωση με PDF/A."
+  "pdfAConformance": "Αυτό το έγγραφο δηλώνει συμμόρφωση με PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

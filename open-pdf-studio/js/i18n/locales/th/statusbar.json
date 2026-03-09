@@ -51,5 +51,8 @@
   "highlightAll": "เน้นทั้งหมด",
   "formFieldsMessage": "เอกสารนี้มีฟิลด์แบบฟอร์มแบบโต้ตอบ คุณสามารถกรอกแบบฟอร์มและบันทึกข้อมูลของคุณได้",
   "enableEditing": "เปิดใช้การแก้ไข",
-  "pdfAConformance": "เอกสารนี้ระบุว่าสอดคล้องกับ PDF/A"
+  "pdfAConformance": "เอกสารนี้ระบุว่าสอดคล้องกับ PDF/A",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

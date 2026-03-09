@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "การเรนเดอร์",
-    "thinLines": "เส้นบาง (แสดงเส้นทั้งหมดด้วยความกว้าง 1px)"
+    "thinLines": "เส้นบาง (แสดงเส้นทั้งหมดด้วยความกว้าง 1px)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

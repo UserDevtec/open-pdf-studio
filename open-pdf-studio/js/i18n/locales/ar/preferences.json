@@ -145,6 +145,8 @@
   },
   "pageDisplay": {
     "rendering": "العرض",
-    "thinLines": "خطوط رفيعة (عرض جميع الخطوط بعرض 1 بكسل)"
+    "thinLines": "خطوط رفيعة (عرض جميع الخطوط بعرض 1 بكسل)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

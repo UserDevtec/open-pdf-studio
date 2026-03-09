@@ -51,5 +51,8 @@
   "highlightAll": "Zvýrazniť všetky",
   "formFieldsMessage": "Tento dokument obsahuje interaktívne polia formulára. Môžete vyplniť formulár a uložiť svoje údaje.",
   "enableEditing": "Povoliť úpravy",
-  "pdfAConformance": "Tento dokument deklaruje zhodu s PDF/A."
+  "pdfAConformance": "Tento dokument deklaruje zhodu s PDF/A.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

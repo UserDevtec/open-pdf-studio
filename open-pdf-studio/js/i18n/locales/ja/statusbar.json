@@ -50,5 +50,8 @@
   "highlightAll": "すべてハイライト",
   "formFieldsMessage": "このドキュメントにはインタラクティブなフォームフィールドが含まれています。フォームに入力してデータを保存できます。",
   "enableEditing": "編集を有効にする",
-  "pdfAConformance": "このドキュメントは PDF/A 準拠を宣言しています。"
+  "pdfAConformance": "このドキュメントは PDF/A 準拠を宣言しています。",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

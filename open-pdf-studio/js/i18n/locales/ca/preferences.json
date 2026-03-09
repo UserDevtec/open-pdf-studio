@@ -162,6 +162,8 @@
   },
   "pageDisplay": {
     "rendering": "Renderització",
-    "thinLines": "Línies fines (mostra totes les línies amb 1px d'amplada)"
+    "thinLines": "Línies fines (mostra totes les línies amb 1px d'amplada)",
+    "panels": "Panels",
+    "showPropertiesPanel": "Show Properties Panel by default"
   }
 }

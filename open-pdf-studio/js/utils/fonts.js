@@ -1,5 +1,5 @@
 // Font utilities - system font enumeration and dropdown population
-import { systemFontList, setSystemFontList } from '../solid/stores/fontStore.js';
+import { systemFontList, setSystemFontList } from '../bridge.js';
 
 // Comprehensive fallback list (common Windows + macOS + Linux fonts)
 const FALLBACK_FONTS = [

@@ -3,7 +3,7 @@ import RibbonButton from './RibbonButton.jsx';
 import { aboutIcon, shortcutsIcon, updatesIcon, fileAssocIcon } from '../../data/ribbonIcons.js';
 import { showPreferencesDialog } from '../../../core/preferences.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
-import { openDialog, showMessage } from '../../stores/dialogStore.js';
+import { openDialog } from '../../stores/dialogStore.js';
 
 export default function HelpTab() {
   const { t } = useTranslation('ribbon');
@@ -24,9 +24,7 @@ export default function HelpTab() {
             title={t('help.keyboardShortcutsTitle')}
             icon={shortcutsIcon}
             label={t('help.shortcuts')}
-            onClick={() => {
-              showMessage(t('help.keyboardShortcutsContent'));
-            }}
+            onClick={() => openDialog('shortcuts')}
           />
         </RibbonGroup>
 

@@ -9,6 +9,7 @@
 import { state } from './core/state.js';
 import { loadPreferences, savePreferences } from './core/preferences.js';
 import { initDomElements } from './ui/dom-elements.js';
+import { initPropertiesPanel } from './ui/panels/properties-panel.js';
 
 // UI initialization
 import { initMenus } from './ui/chrome/menus.js';
@@ -162,6 +163,9 @@ async function init() {
   // Single render call — mounts the entire UI tree
   // render() is synchronous, so DOM elements exist immediately after
   render(() => App(), document.getElementById('app-root'));
+
+  // Restore properties panel visibility from preferences
+  initPropertiesPanel();
 
   // Show the window after the browser has painted the first frame.
   // Double requestAnimationFrame ensures layout + paint have completed.

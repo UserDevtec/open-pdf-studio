@@ -4,6 +4,8 @@ import DocPropertiesDialog from './DocPropertiesDialog.jsx';
 import PreferencesDialog from './preferences/PreferencesDialog.jsx';
 import NewDocDialog from './dialogs/NewDocDialog.jsx';
 import InsertPageDialog from './dialogs/InsertPageDialog.jsx';
+import DeletePagesDialog from './dialogs/DeletePagesDialog.jsx';
+import PagePropertiesDialog from './dialogs/PagePropertiesDialog.jsx';
 import ExtractPagesDialog from './dialogs/ExtractPagesDialog.jsx';
 import MergePdfsDialog from './dialogs/MergePdfsDialog.jsx';
 import PrintDialog from './dialogs/PrintDialog.jsx';
@@ -22,6 +24,7 @@ import CropMarginsDialog from './dialogs/CropMarginsDialog.jsx';
 import FeedbackDialog from './dialogs/FeedbackDialog.jsx';
 import MessageDialog from './dialogs/MessageDialog.jsx';
 import AboutDialog from './dialogs/AboutDialog.jsx';
+import ShortcutsDialog from './dialogs/ShortcutsDialog.jsx';
 import TextEditOverlay from './TextEditOverlay.jsx';
 import PdfTextEditOverlay from './PdfTextEditOverlay.jsx';
 import StickyNotePopupHost from './StickyNotePopup.jsx';
@@ -31,6 +34,8 @@ const DIALOG_MAP = {
   'preferences': PreferencesDialog,
   'new-doc': NewDocDialog,
   'insert-page': InsertPageDialog,
+  'delete-pages': DeletePagesDialog,
+  'page-properties': PagePropertiesDialog,
   'extract-pages': ExtractPagesDialog,
   'merge-pdfs': MergePdfsDialog,
   'print': PrintDialog,
@@ -49,6 +54,7 @@ const DIALOG_MAP = {
   'feedback': FeedbackDialog,
   'message': MessageDialog,
   'about': AboutDialog,
+  'shortcuts': ShortcutsDialog,
 };
 
 export default function DialogHost() {

@@ -1,12 +1,13 @@
 import RibbonGroup from './RibbonGroup.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import ThemePicker from './ThemePicker.jsx';
-import { singlePageIcon, continuousIcon, navigationIcon, propertiesIcon, annotationsListIcon } from '../../data/ribbonIcons.js';
+import { singlePageIcon, continuousIcon, navigationIcon, propertiesIcon, annotationsListIcon, toolPaletteIcon } from '../../data/ribbonIcons.js';
+import { toggleToolPalette, paletteVisible } from '../ToolPalette.jsx';
 import { setViewMode } from '../../../pdf/renderer.js';
 import { toggleLeftPanel } from '../../../ui/panels/left-panel.js';
 import { toggleAnnotationsListPanel } from '../../../ui/panels/annotations-list.js';
-import { showProperties, hideProperties, closePropertiesPanel } from '../../../ui/panels/properties-panel.js';
-import { panelVisible, setPanelVisible } from '../../stores/propertiesStore.js';
+import { togglePropertiesPanel } from '../../../ui/panels/properties-panel.js';
+import { panelVisible, panelCollapsed } from '../../stores/propertiesStore.js';
 import { state, noPdf } from '../../../core/state.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
@@ -30,21 +31,12 @@ export default function ViewTab() {
             disabled={noPdf()} onClick={() => toggleLeftPanel()} />
           <RibbonButton id="ribbon-properties-panel" title={t('view.propertiesPanel')} icon={propertiesIcon} label={t('view.propertiesLabel')}
             disabled={noPdf()}
-            active={panelVisible()}
-            onClick={() => {
-              if (panelVisible()) {
-                closePropertiesPanel();
-              } else {
-                setPanelVisible(true);
-                if (state.selectedAnnotation) {
-                  showProperties(state.selectedAnnotation);
-                } else {
-                  hideProperties();
-                }
-              }
-            }} />
+            active={panelVisible() && !panelCollapsed()}
+            onClick={togglePropertiesPanel} />
           <RibbonButton id="ribbon-annotations-list" title={t('view.annotationsList')} icon={annotationsListIcon} label={t('view.annotationsLabel')}
             disabled={noPdf()} onClick={() => toggleAnnotationsListPanel()} />
+          <RibbonButton id="ribbon-tool-palette" title={t('view.toolPalette')} icon={toolPaletteIcon} label={t('view.toolPaletteLabel')}
+            active={paletteVisible()} onClick={toggleToolPalette} />
         </RibbonGroup>
 
         <RibbonGroup label={t('view.appearance')}>

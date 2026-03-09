@@ -51,5 +51,8 @@
   "highlightAll": "Istakni sve",
   "formFieldsMessage": "Ovaj dokument sadrži interaktivna polja obrasca. Možete ispuniti obrazac i spremiti podatke.",
   "enableEditing": "Omogući uređivanje",
-  "pdfAConformance": "Ovaj dokument zadovoljava PDF/A sukladnost."
+  "pdfAConformance": "Ovaj dokument zadovoljava PDF/A sukladnost.",
+  "renameError": "Failed to rename file: {{error}}",
+  "renameInvalidChars": "File name cannot contain  / : * ? \" < > |",
+  "renameFileExists": "A file with this name already exists."
 }

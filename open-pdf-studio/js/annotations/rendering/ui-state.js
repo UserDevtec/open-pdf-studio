@@ -1,6 +1,5 @@
 import { state } from '../../core/state.js';
-import { setContextualTabsVisible } from '../../solid/stores/ribbonStore.js';
-import { syncFormatStore } from '../../solid/stores/formatStore.js';
+import { setContextualTabsVisible, syncFormatStore } from '../../bridge.js';
 
 // No-op: TitleBar.jsx now derives button states from reactive state
 export function updateQuickAccessButtons() {}

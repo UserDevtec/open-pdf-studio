@@ -1,5 +1,5 @@
 import { state } from '../core/state.js';
-import { getColorPickerValue, getLineWidthValue } from '../solid/stores/ribbonStore.js';
+import { getColorPickerValue, getLineWidthValue } from '../bridge.js';
 import { createAnnotation } from '../annotations/factory.js';
 import { snapAngle } from '../utils/helpers.js';
 import { calculateDistance, formatMeasurement } from '../annotations/measurement.js';
