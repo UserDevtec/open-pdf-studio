@@ -165,11 +165,12 @@ jobs:
           # Re-create .nsis.zip with the Authenticode-signed exe
           # Use ZipFile API with Deflate compression (Compress-Archive can use
           # Deflate64 which Tauri's updater does not support)
-          Remove-Item $ZIP.FullName
+          $ZIP_PATH = $ZIP.FullName
+          Remove-Item $ZIP_PATH
           Add-Type -AssemblyName System.IO.Compression.FileSystem
-          $zip = [System.IO.Compression.ZipFile]::Open($ZIP.FullName, 'Create')
-          [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $EXE.FullName, $EXE.Name, [System.IO.Compression.CompressionLevel]::Optimal)
-          $zip.Dispose()
+          $archive = [System.IO.Compression.ZipFile]::Open($ZIP_PATH, 'Create')
+          [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $EXE.FullName, $EXE.Name, [System.IO.Compression.CompressionLevel]::Optimal)
+          $archive.Dispose()
 
           # Re-generate updater signatures for both files
           # tauri signer sign writes a .sig file next to the input file
