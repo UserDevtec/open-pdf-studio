@@ -1,6 +1,6 @@
 [package]
 name = "open-pdf-studio"
-version = "1.25.0"
+version = "1.26.0"
 description = "A free, open-source PDF annotation editor"
 authors = ["OpenAEC Foundation"]
 license = "MIT"
@@ -30,6 +30,7 @@ dirs = "5"
 whoami = "1"
 base64 = "0.22"
 open = "5"
+zip = "2"
 
 tauri-plugin-deep-link = "2"
 tauri-plugin-single-instance = "2"

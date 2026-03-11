@@ -7,6 +7,7 @@
   "print": "Print",
   "import": "Import",
   "export": "Export",
+  "extensions": "Extensions",
   "docProperties": "Document Properties",
   "preferences": "Preferences",
   "about": "About",
@@ -85,5 +86,20 @@
     "dpi150": "150 DPI",
     "dpi300": "300 DPI (Print)",
     "dpi600": "600 DPI (High Quality)"
+  },
+  "extensionsPanel": {
+    "title": "Extensions",
+    "installFromFile": "Install from File",
+    "installing": "Installing...",
+    "installHint": "Select an .oppx extension package to install",
+    "installSuccess": "\"{{name}}\" installed successfully",
+    "installError": "Failed to install extension",
+    "installed": "Installed Extensions",
+    "noExtensions": "No extensions installed",
+    "uninstall": "Uninstall",
+    "confirmUninstall": "Are you sure you want to uninstall \"{{name}}\"?",
+    "uninstallSuccess": "\"{{name}}\" has been uninstalled",
+    "uninstallError": "Failed to uninstall extension",
+    "by": "by"
   }
 }

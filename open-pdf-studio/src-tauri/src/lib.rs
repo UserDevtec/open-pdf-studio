@@ -658,6 +658,150 @@ fn play_alert_sound() {
     }
 }
 
+// --- Plugin Management ---
+
+fn get_plugins_dir() -> std::path::PathBuf {
+    let data_dir = dirs::data_local_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    let plugins_dir = data_dir.join("OpenPDFStudio").join("plugins");
+    if !plugins_dir.exists() {
+        let _ = fs::create_dir_all(&plugins_dir);
+    }
+    plugins_dir
+}
+
+#[tauri::command]
+fn list_plugins() -> Result<Vec<serde_json::Value>, String> {
+    let plugins_dir = get_plugins_dir();
+    let mut plugins = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(&plugins_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let manifest_path = path.join("plugin.json");
+                if manifest_path.exists() {
+                    if let Ok(content) = fs::read_to_string(&manifest_path) {
+                        if let Ok(manifest) = serde_json::from_str::<serde_json::Value>(&content) {
+                            plugins.push(manifest);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(plugins)
+}
+
+#[tauri::command]
+fn install_plugin(path: String) -> Result<serde_json::Value, String> {
+    let src_path = std::path::Path::new(&path);
+    if !src_path.exists() {
+        return Err("File not found".to_string());
+    }
+
+    let file = fs::File::open(&src_path).map_err(|e| format!("Failed to open file: {}", e))?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("Invalid plugin archive: {}", e))?;
+
+    // Read plugin.json from the archive to get the plugin id
+    let manifest_content = {
+        let mut manifest_file = archive.by_name("plugin.json")
+            .map_err(|_| "Plugin archive must contain plugin.json".to_string())?;
+        let mut content = String::new();
+        std::io::Read::read_to_string(&mut manifest_file, &mut content)
+            .map_err(|e| format!("Failed to read plugin.json: {}", e))?;
+        content
+    };
+
+    let manifest: serde_json::Value = serde_json::from_str(&manifest_content)
+        .map_err(|e| format!("Invalid plugin.json: {}", e))?;
+
+    let plugin_id = manifest.get("id")
+        .and_then(|v| v.as_str())
+        .ok_or("plugin.json must have an 'id' field")?;
+
+    // Validate plugin id (prevent path traversal)
+    if plugin_id.contains("..") || plugin_id.contains('/') || plugin_id.contains('\\') {
+        return Err("Invalid plugin id".to_string());
+    }
+
+    let plugins_dir = get_plugins_dir();
+    let plugin_dir = plugins_dir.join(plugin_id);
+
+    // Remove existing installation
+    if plugin_dir.exists() {
+        let _ = fs::remove_dir_all(&plugin_dir);
+    }
+    fs::create_dir_all(&plugin_dir).map_err(|e| format!("Failed to create plugin dir: {}", e))?;
+
+    // Re-open archive (consumed by by_name above)
+    let file2 = fs::File::open(&src_path).map_err(|e| format!("Failed to reopen file: {}", e))?;
+    let mut archive2 = zip::ZipArchive::new(file2).map_err(|e| format!("Invalid archive: {}", e))?;
+
+    // Extract all files
+    for i in 0..archive2.len() {
+        let mut file = archive2.by_index(i).map_err(|e| format!("Archive error: {}", e))?;
+        let outpath = plugin_dir.join(file.mangled_name());
+
+        // Prevent path traversal
+        if !outpath.starts_with(&plugin_dir) {
+            continue;
+        }
+
+        if file.is_dir() {
+            let _ = fs::create_dir_all(&outpath);
+        } else {
+            if let Some(parent) = outpath.parent() {
+                let _ = fs::create_dir_all(parent);
+            }
+            let mut outfile = fs::File::create(&outpath)
+                .map_err(|e| format!("Failed to create file: {}", e))?;
+            std::io::copy(&mut file, &mut outfile)
+                .map_err(|e| format!("Failed to extract file: {}", e))?;
+        }
+    }
+
+    Ok(manifest)
+}
+
+#[tauri::command]
+fn uninstall_plugin(id: String) -> Result<bool, String> {
+    // Validate id
+    if id.contains("..") || id.contains('/') || id.contains('\\') {
+        return Err("Invalid plugin id".to_string());
+    }
+
+    let plugins_dir = get_plugins_dir();
+    let plugin_dir = plugins_dir.join(&id);
+
+    if plugin_dir.exists() {
+        fs::remove_dir_all(&plugin_dir).map_err(|e| format!("Failed to remove plugin: {}", e))?;
+    }
+
+    Ok(true)
+}
+
+#[tauri::command]
+fn read_plugin_file(plugin_id: String, file_path: String) -> Result<String, String> {
+    // Validate inputs
+    if plugin_id.contains("..") || plugin_id.contains('/') || plugin_id.contains('\\') {
+        return Err("Invalid plugin id".to_string());
+    }
+    if file_path.contains("..") {
+        return Err("Invalid file path".to_string());
+    }
+
+    let plugins_dir = get_plugins_dir();
+    let full_path = plugins_dir.join(&plugin_id).join(&file_path);
+
+    // Ensure the resolved path is within the plugin directory
+    if !full_path.starts_with(plugins_dir.join(&plugin_id)) {
+        return Err("Path traversal detected".to_string());
+    }
+
+    fs::read_to_string(&full_path).map_err(|e| format!("Failed to read file: {}", e))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Check for PDF files in command line arguments
@@ -747,7 +891,11 @@ pub fn run() {
             list_pdf_files,
             save_preferences,
             load_preferences,
-            play_alert_sound
+            play_alert_sound,
+            list_plugins,
+            install_plugin,
+            uninstall_plugin,
+            read_plugin_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

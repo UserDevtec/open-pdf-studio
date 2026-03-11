@@ -2,6 +2,7 @@ import { createSignal, Switch, Match, For } from 'solid-js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 import PrefColorPicker from './PrefColorPicker.jsx';
 import PrefComboBox from './PrefComboBox.jsx';
+import PrefSelect from './PrefSelect.jsx';
 
 const SUB_TABS = [
   { id: 'general', key: 'annotations.subtabGeneral' },
@@ -9,6 +10,7 @@ const SUB_TABS = [
   { id: 'text', key: 'annotations.subtabText' },
   { id: 'drawing', key: 'annotations.subtabDrawing' },
   { id: 'shapes', key: 'annotations.subtabShapes' },
+  { id: 'measurement', key: 'annotations.subtabMeasurement' },
 ];
 
 export default function AnnotationsTab(props) {
@@ -16,6 +18,77 @@ export default function AnnotationsTab(props) {
   const { t: tCommon } = useTranslation('common');
   const p = props.prefs;
   const [subTab, setSubTab] = createSignal('general');
+
+  const borderStyleOpts = [
+    { value: 'solid', label: tCommon('solid') },
+    { value: 'dashed', label: tCommon('dashed') },
+    { value: 'dotted', label: tCommon('dotted') },
+    { value: 'dash-dot', label: tCommon('dashDot') },
+    { value: 'dash-dot-dot', label: tCommon('dashDotDot') },
+    { value: 'long-dash', label: tCommon('longDash') },
+    { value: 'long-dash-dot', label: tCommon('longDashDot') },
+    { value: 'long-dash-dot-dot', label: tCommon('longDashDotDot') },
+  ];
+
+  const lineEndingOpts = (ns) => [
+    { value: 'none', label: tCommon('none') },
+    { value: 'square', label: t(`${ns}.square`) },
+    { value: 'circle', label: t(`${ns}.circle`) },
+    { value: 'diamond', label: t(`${ns}.diamond`) },
+    { value: 'open', label: t(`${ns}.openArrow`) },
+    { value: 'closed', label: t(`${ns}.closedArrow`) },
+    { value: 'butt', label: t(`${ns}.butt`) },
+    { value: 'openReversed', label: t(`${ns}.openArrowReversed`) },
+    { value: 'closedReversed', label: t(`${ns}.closedArrowReversed`) },
+    { value: 'slash', label: t(`${ns}.slash`) },
+  ];
+
+  const drawHeadOpts = [
+    { value: 'none', label: tCommon('none') },
+    { value: 'square', label: t('drawing.headSquare') },
+    { value: 'circle', label: t('drawing.headCircle') },
+    { value: 'diamond', label: t('drawing.headDiamond') },
+    { value: 'open', label: t('drawing.headOpen') },
+    { value: 'closed', label: t('drawing.headClosed') },
+    { value: 'butt', label: t('drawing.headButt') },
+    { value: 'openReversed', label: t('drawing.headOpenReversed') },
+    { value: 'closedReversed', label: t('drawing.headClosedReversed') },
+    { value: 'slash', label: t('drawing.headSlash') },
+  ];
+
+  const iconOpts = [
+    { value: 'comment', label: t('annotations.iconComment') },
+    { value: 'note', label: t('annotations.iconNote') },
+    { value: 'help', label: t('annotations.iconHelp') },
+    { value: 'insert', label: t('annotations.iconInsert') },
+    { value: 'key', label: t('annotations.iconKey') },
+    { value: 'newparagraph', label: t('annotations.iconNewParagraph') },
+    { value: 'paragraph', label: t('annotations.iconParagraph') },
+    { value: 'check', label: t('annotations.iconCheck') },
+    { value: 'circle', label: t('annotations.iconCircle') },
+    { value: 'cross', label: t('annotations.iconCross') },
+    { value: 'star', label: t('annotations.iconStar') },
+  ];
+
+  const unitOpts = [
+    { value: 'mm', label: 'mm' }, { value: 'cm', label: 'cm' }, { value: 'm', label: 'm' },
+    { value: 'in', label: 'in' }, { value: 'ft', label: 'ft' }, { value: 'pt', label: 'pt' }, { value: 'px', label: 'px' },
+  ];
+
+  const precisionOpts = [
+    { value: 0, label: '1' }, { value: 1, label: '0.1' }, { value: 2, label: '0.01' }, { value: 3, label: '0.001' },
+    { value: 4, label: '0.0001' }, { value: 5, label: '0.00001' }, { value: 6, label: '0.000001' },
+    { value: 7, label: '0.0000001' }, { value: 8, label: '0.00000001' }, { value: 9, label: '0.000000001' },
+  ];
+
+  const roundingOpts = [
+    { value: 'none', label: t('measurement.roundingNone') },
+    { value: '1', label: t('measurement.rounding1mm') },
+    { value: '5', label: t('measurement.rounding5mm') },
+    { value: '10', label: t('measurement.rounding10mm') },
+  ];
+
+  const measureHeadOpts = lineEndingOpts('measurement');
 
   return (
     <div class="pref-subtab-wrapper">
@@ -111,6 +184,14 @@ export default function AnnotationsTab(props) {
                 <PrefColorPicker value={p.highlightColor[0]} setValue={p.highlightColor[1]} />
               </div>
             </fieldset>
+
+            <fieldset class="pref-fieldset">
+              <legend>{t('annotations.redactionDefaults')}</legend>
+              <div class="pref-row">
+                <label>{t('annotations.overlayColor')}</label>
+                <PrefColorPicker value={p.redactionOverlayColor[0]} setValue={p.redactionOverlayColor[1]} />
+              </div>
+            </fieldset>
           </Match>
 
           <Match when={subTab() === 'comments'}>
@@ -122,15 +203,7 @@ export default function AnnotationsTab(props) {
               </div>
               <div class="pref-row">
                 <label>{t('annotations.icon')}</label>
-                <select value={p.commentIcon[0]()} onChange={e => p.commentIcon[1](e.target.value)}>
-                  <option value="comment">{t('annotations.iconComment')}</option>
-                  <option value="key">{t('annotations.iconKey')}</option>
-                  <option value="note">{t('annotations.iconNote')}</option>
-                  <option value="help">{t('annotations.iconHelp')}</option>
-                  <option value="newParagraph">{t('annotations.iconNewParagraph')}</option>
-                  <option value="paragraph">{t('annotations.iconParagraph')}</option>
-                  <option value="insert">{t('annotations.iconInsert')}</option>
-                </select>
+                <PrefSelect value={p.commentIcon[0]} setValue={p.commentIcon[1]} options={iconOpts} />
               </div>
             </fieldset>
           </Match>
@@ -152,11 +225,7 @@ export default function AnnotationsTab(props) {
               </div>
               <div class="pref-row">
                 <label>{t('annotations.borderStyle')}</label>
-                <select value={p.textboxBorderStyle[0]()} onChange={e => p.textboxBorderStyle[1](e.target.value)}>
-                  <option value="solid">{tCommon('solid')}</option>
-                  <option value="dashed">{tCommon('dashed')}</option>
-                  <option value="dotted">{tCommon('dotted')}</option>
-                </select>
+                <PrefSelect value={p.textboxBorderStyle[0]} setValue={p.textboxBorderStyle[1]} options={borderStyleOpts} />
               </div>
               <div class="pref-row">
                 <label>{t('annotations.opacity')}</label>
@@ -184,11 +253,7 @@ export default function AnnotationsTab(props) {
               </div>
               <div class="pref-row">
                 <label>{t('annotations.borderStyle')}</label>
-                <select value={p.calloutBorderStyle[0]()} onChange={e => p.calloutBorderStyle[1](e.target.value)}>
-                  <option value="solid">{tCommon('solid')}</option>
-                  <option value="dashed">{tCommon('dashed')}</option>
-                  <option value="dotted">{tCommon('dotted')}</option>
-                </select>
+                <PrefSelect value={p.calloutBorderStyle[0]} setValue={p.calloutBorderStyle[1]} options={borderStyleOpts} />
               </div>
               <div class="pref-row">
                 <label>{t('annotations.opacity')}</label>
@@ -230,11 +295,7 @@ export default function AnnotationsTab(props) {
               </div>
               <div class="pref-row">
                 <label>{t('drawing.borderStyle')}</label>
-                <select value={p.lineBorderStyle[0]()} onChange={e => p.lineBorderStyle[1](e.target.value)}>
-                  <option value="solid">{tCommon('solid')}</option>
-                  <option value="dashed">{tCommon('dashed')}</option>
-                  <option value="dotted">{tCommon('dotted')}</option>
-                </select>
+                <PrefSelect value={p.lineBorderStyle[0]} setValue={p.lineBorderStyle[1]} options={borderStyleOpts} />
               </div>
               <div class="pref-row">
                 <label>{t('drawing.opacity')}</label>
@@ -258,35 +319,15 @@ export default function AnnotationsTab(props) {
               </div>
               <div class="pref-row">
                 <label>{t('drawing.borderStyle')}</label>
-                <select value={p.arrowBorderStyle[0]()} onChange={e => p.arrowBorderStyle[1](e.target.value)}>
-                  <option value="solid">{tCommon('solid')}</option>
-                  <option value="dashed">{tCommon('dashed')}</option>
-                  <option value="dotted">{tCommon('dotted')}</option>
-                </select>
+                <PrefSelect value={p.arrowBorderStyle[0]} setValue={p.arrowBorderStyle[1]} options={borderStyleOpts} />
               </div>
               <div class="pref-row">
-                <label>{t('drawing.startHead')}</label>
-                <select value={p.arrowStartHead[0]()} onChange={e => p.arrowStartHead[1](e.target.value)}>
-                  <option value="none">{tCommon('none')}</option>
-                  <option value="open">{t('drawing.headOpen')}</option>
-                  <option value="closed">{t('drawing.headClosed')}</option>
-                  <option value="diamond">{t('drawing.headDiamond')}</option>
-                  <option value="circle">{t('drawing.headCircle')}</option>
-                  <option value="square">{t('drawing.headSquare')}</option>
-                  <option value="slash">{t('drawing.headSlash')}</option>
-                </select>
+                <label>{t('drawing.start')}</label>
+                <PrefSelect value={p.arrowStartHead[0]} setValue={p.arrowStartHead[1]} options={drawHeadOpts} />
               </div>
               <div class="pref-row">
-                <label>{t('drawing.endHead')}</label>
-                <select value={p.arrowEndHead[0]()} onChange={e => p.arrowEndHead[1](e.target.value)}>
-                  <option value="none">{tCommon('none')}</option>
-                  <option value="open">{t('drawing.headOpen')}</option>
-                  <option value="closed">{t('drawing.headClosed')}</option>
-                  <option value="diamond">{t('drawing.headDiamond')}</option>
-                  <option value="circle">{t('drawing.headCircle')}</option>
-                  <option value="square">{t('drawing.headSquare')}</option>
-                  <option value="slash">{t('drawing.headSlash')}</option>
-                </select>
+                <label>{t('drawing.end')}</label>
+                <PrefSelect value={p.arrowEndHead[0]} setValue={p.arrowEndHead[1]} options={drawHeadOpts} />
               </div>
               <div class="pref-row">
                 <label>{t('drawing.headSize')}</label>
@@ -332,11 +373,7 @@ export default function AnnotationsTab(props) {
               </div>
               <div class="pref-row">
                 <label>{t('shapes.borderStyle')}</label>
-                <select value={p.rectBorderStyle[0]()} onChange={e => p.rectBorderStyle[1](e.target.value)}>
-                  <option value="solid">{tCommon('solid')}</option>
-                  <option value="dashed">{tCommon('dashed')}</option>
-                  <option value="dotted">{tCommon('dotted')}</option>
-                </select>
+                <PrefSelect value={p.rectBorderStyle[0]} setValue={p.rectBorderStyle[1]} options={borderStyleOpts} />
               </div>
               <div class="pref-row">
                 <label>{t('shapes.opacity')}</label>
@@ -360,11 +397,7 @@ export default function AnnotationsTab(props) {
               </div>
               <div class="pref-row">
                 <label>{t('shapes.borderStyle')}</label>
-                <select value={p.circleBorderStyle[0]()} onChange={e => p.circleBorderStyle[1](e.target.value)}>
-                  <option value="solid">{tCommon('solid')}</option>
-                  <option value="dashed">{tCommon('dashed')}</option>
-                  <option value="dotted">{tCommon('dotted')}</option>
-                </select>
+                <PrefSelect value={p.circleBorderStyle[0]} setValue={p.circleBorderStyle[1]} options={borderStyleOpts} />
               </div>
               <div class="pref-row">
                 <label>{t('shapes.opacity')}</label>
@@ -402,6 +435,177 @@ export default function AnnotationsTab(props) {
                 <label>{t('shapes.opacity')}</label>
                 <PrefComboBox value={p.cloudOpacity[0]} setValue={p.cloudOpacity[1]} min={10} max={100} fallback={100} />
               </div>
+            </fieldset>
+          </Match>
+
+          <Match when={subTab() === 'measurement'}>
+            <fieldset class="pref-fieldset">
+              <legend>{t('measurement.global')}</legend>
+              <div class="pref-row">
+                <label>{t('measurement.rounding')}</label>
+                <PrefSelect value={p.measureRounding[0]} setValue={p.measureRounding[1]} options={roundingOpts} />
+              </div>
+              <div class="pref-row">
+                <label>{t('measurement.ctrlSnap')}</label>
+                <PrefComboBox value={p.measureCtrlSnap[0]} setValue={p.measureCtrlSnap[1]}
+                  options={[1, 5, 10, 20, 50, 100]} min={1} max={1000} suffix="" fallback={10} />
+              </div>
+            </fieldset>
+
+            <fieldset class="pref-fieldset">
+              <legend>{t('measurement.distanceDefaults')}</legend>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.appearance')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.strokeColor')}</label>
+                  <PrefColorPicker value={p.measureDistStrokeColor[0]} setValue={p.measureDistStrokeColor[1]} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.lineWidth')}</label>
+                  <PrefComboBox value={p.measureDistLineWidth[0]} setValue={p.measureDistLineWidth[1]} options={[0.5,1,2,3,4,6,8,10,12]} min={0.5} max={20} fallback={1} suffix="pt" />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.borderStyle')}</label>
+                  <PrefSelect value={p.measureDistBorderStyle[0]} setValue={p.measureDistBorderStyle[1]} options={borderStyleOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.opacity')}</label>
+                  <PrefComboBox value={p.measureDistOpacity[0]} setValue={p.measureDistOpacity[1]} min={10} max={100} fallback={100} />
+                </div>
+              </fieldset>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.lineEndings')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.start')}</label>
+                  <PrefSelect value={p.measureDistStartHead[0]} setValue={p.measureDistStartHead[1]} options={measureHeadOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.end')}</label>
+                  <PrefSelect value={p.measureDistEndHead[0]} setValue={p.measureDistEndHead[1]} options={measureHeadOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.headSize')}</label>
+                  <input type="number" min="4" max="40" value={p.measureDistHeadSize[0]()} onInput={e => p.measureDistHeadSize[1](parseInt(e.target.value) || 12)} />
+                </div>
+              </fieldset>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.scalePrecision')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.scale')}</label>
+                  <input type="number" step="0.001" min="0" value={p.measureDistDimScale[0]()} onInput={e => p.measureDistDimScale[1](parseFloat(e.target.value) || 0)} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.unit')}</label>
+                  <PrefSelect value={p.measureDistDimUnit[0]} setValue={p.measureDistDimUnit[1]} options={unitOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.precision')}</label>
+                  <PrefSelect value={p.measureDistDimPrecision[0]} setValue={p.measureDistDimPrecision[1]} options={precisionOpts} />
+                </div>
+              </fieldset>
+            </fieldset>
+
+            <fieldset class="pref-fieldset">
+              <legend>{t('measurement.areaDefaults')}</legend>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.appearance')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.strokeColor')}</label>
+                  <PrefColorPicker value={p.measureAreaStrokeColor[0]} setValue={p.measureAreaStrokeColor[1]} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.fillColor')}</label>
+                  <PrefColorPicker value={p.measureAreaFillColor[0]} setValue={p.measureAreaFillColor[1]} noneChecked={p.measureAreaFillNone[0]} setNoneChecked={p.measureAreaFillNone[1]} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.lineWidth')}</label>
+                  <PrefComboBox value={p.measureAreaLineWidth[0]} setValue={p.measureAreaLineWidth[1]} options={[0.5,1,2,3,4,6,8,10,12]} min={0.5} max={20} fallback={1} suffix="pt" />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.borderStyle')}</label>
+                  <PrefSelect value={p.measureAreaBorderStyle[0]} setValue={p.measureAreaBorderStyle[1]} options={borderStyleOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.opacity')}</label>
+                  <PrefComboBox value={p.measureAreaOpacity[0]} setValue={p.measureAreaOpacity[1]} min={10} max={100} fallback={100} />
+                </div>
+              </fieldset>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.scalePrecision')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.scale')}</label>
+                  <input type="number" step="0.001" min="0" value={p.measureAreaDimScale[0]()} onInput={e => p.measureAreaDimScale[1](parseFloat(e.target.value) || 0)} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.unit')}</label>
+                  <PrefSelect value={p.measureAreaDimUnit[0]} setValue={p.measureAreaDimUnit[1]} options={unitOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.precision')}</label>
+                  <PrefSelect value={p.measureAreaDimPrecision[0]} setValue={p.measureAreaDimPrecision[1]} options={precisionOpts} />
+                </div>
+              </fieldset>
+            </fieldset>
+
+            <fieldset class="pref-fieldset">
+              <legend>{t('measurement.perimeterDefaults')}</legend>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.appearance')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.strokeColor')}</label>
+                  <PrefColorPicker value={p.measurePerimStrokeColor[0]} setValue={p.measurePerimStrokeColor[1]} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.lineWidth')}</label>
+                  <PrefComboBox value={p.measurePerimLineWidth[0]} setValue={p.measurePerimLineWidth[1]} options={[0.5,1,2,3,4,6,8,10,12]} min={0.5} max={20} fallback={1} suffix="pt" />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.borderStyle')}</label>
+                  <PrefSelect value={p.measurePerimBorderStyle[0]} setValue={p.measurePerimBorderStyle[1]} options={borderStyleOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.opacity')}</label>
+                  <PrefComboBox value={p.measurePerimOpacity[0]} setValue={p.measurePerimOpacity[1]} min={10} max={100} fallback={100} />
+                </div>
+              </fieldset>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.lineEndings')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.start')}</label>
+                  <PrefSelect value={p.measurePerimStartHead[0]} setValue={p.measurePerimStartHead[1]} options={measureHeadOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.end')}</label>
+                  <PrefSelect value={p.measurePerimEndHead[0]} setValue={p.measurePerimEndHead[1]} options={measureHeadOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.headSize')}</label>
+                  <input type="number" min="4" max="40" value={p.measurePerimHeadSize[0]()} onInput={e => p.measurePerimHeadSize[1](parseInt(e.target.value) || 12)} />
+                </div>
+              </fieldset>
+
+              <fieldset class="pref-fieldset pref-fieldset-nested">
+                <legend>{t('measurement.scalePrecision')}</legend>
+                <div class="pref-row">
+                  <label>{t('measurement.scale')}</label>
+                  <input type="number" step="0.001" min="0" value={p.measurePerimDimScale[0]()} onInput={e => p.measurePerimDimScale[1](parseFloat(e.target.value) || 0)} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.unit')}</label>
+                  <PrefSelect value={p.measurePerimDimUnit[0]} setValue={p.measurePerimDimUnit[1]} options={unitOpts} />
+                </div>
+                <div class="pref-row">
+                  <label>{t('measurement.precision')}</label>
+                  <PrefSelect value={p.measurePerimDimPrecision[0]} setValue={p.measurePerimDimPrecision[1]} options={precisionOpts} />
+                </div>
+              </fieldset>
             </fieldset>
           </Match>
         </Switch>

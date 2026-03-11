@@ -64,7 +64,9 @@ export function mapPdfFontName(pdfName) {
 
 // Helper to map PDF.js borderStyle.style to our border style string
 // PDF.js values: 1=SOLID, 2=DASHED, 3=BEVELED, 4=INSET, 5=UNDERLINE
-export function mapBorderStyle(annot) {
+export function mapBorderStyle(annot, extraColors) {
+  // Prefer dash array analysis from pdf-lib (distinguishes dotted from dashed)
+  if (extraColors?.borderStyle) return extraColors.borderStyle;
   const style = annot.borderStyle?.style;
   if (style === 2) return 'dashed';
   if (style === 3 || style === 4) return 'dotted';

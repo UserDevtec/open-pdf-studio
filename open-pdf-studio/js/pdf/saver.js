@@ -211,19 +211,34 @@ export async function savePDF(saveAsPath = null) {
 
           case 'box': {
             // Square annotation
-            const x1 = convertX(ann.x);
-            const y1 = convertY(ann.y + ann.height);
-            const x2 = convertX(ann.x + ann.width);
-            const y2 = convertY(ann.y);
+            let bx1 = convertX(ann.x);
+            let by1 = convertY(ann.y + ann.height);
+            let bx2 = convertX(ann.x + ann.width);
+            let by2 = convertY(ann.y);
+
+            // Expand Rect to axis-aligned bounding box of rotated shape
+            if (ann.rotation) {
+              const rad = ann.rotation * Math.PI / 180;
+              const cos = Math.abs(Math.cos(rad));
+              const sin = Math.abs(Math.sin(rad));
+              const pw = Math.abs(bx2 - bx1);
+              const ph = Math.abs(by2 - by1);
+              const newW = pw * cos + ph * sin;
+              const newH = pw * sin + ph * cos;
+              const cx = (bx1 + bx2) / 2;
+              const cy = (by1 + by2) / 2;
+              bx1 = cx - newW / 2;
+              bx2 = cx + newW / 2;
+              by1 = cy - newH / 2;
+              by2 = cy + newH / 2;
+            }
 
             // Stroke color
             const strokeColorArr = ann.strokeColor ? hexToColorArray(ann.strokeColor) : colorArr;
-            const boxBsStyle = ann.borderStyle === 'dashed' ? 'D' : ann.borderStyle === 'dotted' ? 'D' : 'S';
-
             const annDictObj = {
               Type: 'Annot',
               Subtype: 'Square',
-              Rect: [x1, y1, x2, y2],
+              Rect: [bx1, by1, bx2, by2],
               C: strokeColorArr,
               CA: opacity,
               T: PDFString.of(ann.author || 'User'),
@@ -232,16 +247,14 @@ export async function savePDF(saveAsPath = null) {
               F: computeAnnotFlags(ann)
             };
 
-            annDictObj.BS = context.obj({
-              Type: 'Border',
-              W: borderWidth,
-              S: boxBsStyle
-            });
+            annDictObj.BS = buildBorderStyle(context, borderWidth, ann.borderStyle);
 
             // Add interior color (fill) if specified
             if (ann.fillColor && ann.fillColor !== 'none') {
               annDictObj.IC = hexToColorArray(ann.fillColor);
             }
+
+            if (ann.rotation) annDictObj.OPS_Rotation = ann.rotation;
 
             annotDict = context.obj(annDictObj);
             break;
@@ -249,17 +262,34 @@ export async function savePDF(saveAsPath = null) {
 
           case 'circle': {
             // Circle annotation (ellipse)
-            const cx = convertX(ann.x);
-            const cy = convertY(ann.y + ann.height);
-            const cx2 = convertX(ann.x + ann.width);
-            const cy2 = convertY(ann.y);
+            let ccx1 = convertX(ann.x);
+            let ccy1 = convertY(ann.y + ann.height);
+            let ccx2 = convertX(ann.x + ann.width);
+            let ccy2 = convertY(ann.y);
+
+            // Expand Rect to axis-aligned bounding box of rotated ellipse
+            if (ann.rotation) {
+              const rad = ann.rotation * Math.PI / 180;
+              const cos = Math.abs(Math.cos(rad));
+              const sin = Math.abs(Math.sin(rad));
+              const pw = Math.abs(ccx2 - ccx1);
+              const ph = Math.abs(ccy2 - ccy1);
+              const newW = pw * cos + ph * sin;
+              const newH = pw * sin + ph * cos;
+              const cmx = (ccx1 + ccx2) / 2;
+              const cmy = (ccy1 + ccy2) / 2;
+              ccx1 = cmx - newW / 2;
+              ccx2 = cmx + newW / 2;
+              ccy1 = cmy - newH / 2;
+              ccy2 = cmy + newH / 2;
+            }
 
             const strokeColorArr = ann.strokeColor ? hexToColorArray(ann.strokeColor) : colorArr;
 
             const annDictObj = {
               Type: 'Annot',
               Subtype: 'Circle',
-              Rect: [cx, cy, cx2, cy2],
+              Rect: [ccx1, ccy1, ccx2, ccy2],
               C: strokeColorArr,
               CA: opacity,
               T: PDFString.of(ann.author || 'User'),
@@ -268,16 +298,13 @@ export async function savePDF(saveAsPath = null) {
               F: computeAnnotFlags(ann)
             };
 
-            const circleBsStyle = ann.borderStyle === 'dashed' ? 'D' : ann.borderStyle === 'dotted' ? 'D' : 'S';
-            annDictObj.BS = context.obj({
-              Type: 'Border',
-              W: borderWidth,
-              S: circleBsStyle
-            });
+            annDictObj.BS = buildBorderStyle(context, borderWidth, ann.borderStyle);
 
             if (ann.fillColor && ann.fillColor !== 'none') {
               annDictObj.IC = hexToColorArray(ann.fillColor);
             }
+
+            if (ann.rotation) annDictObj.OPS_Rotation = ann.rotation;
 
             annotDict = context.obj(annDictObj);
             break;
@@ -314,12 +341,7 @@ export async function savePDF(saveAsPath = null) {
             };
 
             // Border style
-            const bsStyle = ann.borderStyle === 'dashed' ? 'D' : ann.borderStyle === 'dotted' ? 'D' : 'S';
-            lineDict.BS = context.obj({
-              Type: 'Border',
-              W: borderWidth,
-              S: bsStyle
-            });
+            lineDict.BS = buildBorderStyle(context, borderWidth, ann.borderStyle);
 
             // Arrow line endings (LE)
             if (ann.type === 'arrow') {
@@ -332,6 +354,8 @@ export async function savePDF(saveAsPath = null) {
                   case 'square': return 'Square';
                   case 'slash': return 'Slash';
                   case 'butt': return 'Butt';
+                  case 'openReversed': return 'ROpenArrow';
+                  case 'closedReversed': return 'RClosedArrow';
                   default: return 'None';
                 }
               };
@@ -381,12 +405,7 @@ export async function savePDF(saveAsPath = null) {
               F: computeAnnotFlags(ann)
             };
 
-            const inkBsStyle = ann.borderStyle === 'dashed' ? 'D' : ann.borderStyle === 'dotted' ? 'D' : 'S';
-            inkDict.BS = context.obj({
-              Type: 'Border',
-              W: borderWidth,
-              S: inkBsStyle
-            });
+            inkDict.BS = buildBorderStyle(context, borderWidth, ann.borderStyle);
 
             annotDict = context.obj(inkDict);
             break;
@@ -421,19 +440,15 @@ export async function savePDF(saveAsPath = null) {
               F: computeAnnotFlags(ann)
             };
 
-            const polylineBsStyle = ann.borderStyle === 'dashed' ? 'D' : ann.borderStyle === 'dotted' ? 'D' : 'S';
-            polylineDict.BS = context.obj({
-              Type: 'Border',
-              W: borderWidth,
-              S: polylineBsStyle
-            });
+            polylineDict.BS = buildBorderStyle(context, borderWidth, ann.borderStyle);
 
             annotDict = context.obj(polylineDict);
             break;
           }
 
           case 'polygon':
-          case 'cloud': {
+          case 'cloud':
+          case 'cloudPolyline': {
             // Polygon annotation
             let polyVertices = [];
             let polyMinX = Infinity, polyMinY = Infinity, polyMaxX = -Infinity, polyMaxY = -Infinity;
@@ -466,7 +481,6 @@ export async function savePDF(saveAsPath = null) {
             }
 
             const polyStrokeColor = ann.strokeColor ? hexToColorArray(ann.strokeColor) : colorArr;
-            const polyBsStyle = ann.borderStyle === 'dashed' ? 'D' : ann.borderStyle === 'dotted' ? 'D' : 'S';
 
             const polygonDict = {
               Type: 'Annot',
@@ -481,14 +495,17 @@ export async function savePDF(saveAsPath = null) {
               F: computeAnnotFlags(ann)
             };
 
-            polygonDict.BS = context.obj({
-              Type: 'Border',
-              W: borderWidth,
-              S: polyBsStyle
-            });
+            polygonDict.BS = buildBorderStyle(context, borderWidth, ann.borderStyle);
 
             if (ann.fillColor && ann.fillColor !== 'none') {
               polygonDict.IC = hexToColorArray(ann.fillColor);
+            }
+
+            // Save custom subtype to distinguish cloud/cloudPolyline from polygon
+            if (ann.type === 'cloud') {
+              polygonDict.OPS_Subtype = PDFString.of('cloud');
+            } else if (ann.type === 'cloudPolyline') {
+              polygonDict.OPS_Subtype = PDFString.of('cloudPolyline');
             }
 
             annotDict = context.obj(polygonDict);
@@ -564,12 +581,7 @@ export async function savePDF(saveAsPath = null) {
 
             // Border style
             const ftBorderWidth = ann.lineWidth !== undefined ? ann.lineWidth : 1;
-            const ftBsStyle = ann.borderStyle === 'dashed' ? 'D' : ann.borderStyle === 'dotted' ? 'D' : 'S';
-            annDictObj.BS = context.obj({
-              Type: 'Border',
-              W: ftBorderWidth,
-              S: ftBsStyle
-            });
+            annDictObj.BS = buildBorderStyle(context, ftBorderWidth, ann.borderStyle);
 
             // Stroke/border color in IC
             annDictObj.IC = ftStrokeColorArr;
@@ -789,13 +801,13 @@ export async function savePDF(saveAsPath = null) {
           }
 
           case 'stamp': {
-            // Stamp annotation (text stamps without image data)
+            // Stamp annotation — with or without embedded image
             const x1 = convertX(ann.x);
             const y1 = convertY(ann.y + ann.height);
             const x2 = convertX(ann.x + ann.width);
             const y2 = convertY(ann.y);
 
-            annotDict = context.obj({
+            const stampDictObj = {
               Type: 'Annot',
               Subtype: 'Stamp',
               Rect: [x1, y1, x2, y2],
@@ -806,7 +818,59 @@ export async function savePDF(saveAsPath = null) {
               T: PDFString.of(ann.author || 'User'),
               M: PDFString.of(new Date().toISOString()),
               F: computeAnnotFlags(ann)
-            });
+            };
+
+            if (ann.rotation) stampDictObj.OPS_Rotation = ann.rotation;
+
+            annotDict = context.obj(stampDictObj);
+
+            // Embed image data if present (e.g. north arrow, custom stamps)
+            if (ann.imageData) {
+              try {
+                let embeddedImage;
+                const dataUrl = ann.imageData;
+                if (dataUrl.startsWith('data:image/jpeg') || dataUrl.startsWith('data:image/jpg')) {
+                  const base64 = dataUrl.split(',')[1];
+                  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                  embeddedImage = await pdfDocLib.embedJpg(bytes);
+                } else {
+                  const base64 = dataUrl.split(',')[1];
+                  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+                  embeddedImage = await pdfDocLib.embedPng(bytes);
+                }
+
+                const imageRef = embeddedImage.ref;
+                const w = ann.width;
+                const h = ann.height;
+                const alpha = ann.opacity !== undefined ? ann.opacity : 1;
+                let apContent;
+                const resources = { XObject: context.obj({ Img: imageRef }) };
+
+                if (alpha < 1) {
+                  const gsDict = context.obj({ Type: 'ExtGState', ca: alpha, CA: alpha });
+                  const gsRef = context.register(gsDict);
+                  resources.ExtGState = context.obj({ GS0: gsRef });
+                  apContent = `q\n/GS0 gs\n${w} 0 0 ${h} 0 0 cm\n/Img Do\nQ\n`;
+                } else {
+                  apContent = `q\n${w} 0 0 ${h} 0 0 cm\n/Img Do\nQ\n`;
+                }
+
+                const apStream = context.stream(
+                  apContent,
+                  {
+                    Type: 'XObject',
+                    Subtype: 'Form',
+                    BBox: [0, 0, w, h],
+                    Resources: context.obj(resources)
+                  }
+                );
+                const apStreamRef = context.register(apStream);
+                const apDict = context.obj({ N: apStreamRef });
+                annotDict.set(PDFName.of('AP'), apDict);
+              } catch (imgErr) {
+                console.warn('Failed to embed stamp image:', imgErr);
+              }
+            }
             break;
           }
 
@@ -820,7 +884,7 @@ export async function savePDF(saveAsPath = null) {
             const w = ann.width;
             const h = ann.height;
 
-            annotDict = context.obj({
+            const imgDictObj = {
               Type: 'Annot',
               Subtype: 'Stamp',
               Rect: [x1, y1, x2, y2],
@@ -831,7 +895,11 @@ export async function savePDF(saveAsPath = null) {
               T: PDFString.of(ann.author || 'User'),
               M: PDFString.of(new Date().toISOString()),
               F: computeAnnotFlags(ann)
-            });
+            };
+
+            if (ann.rotation) imgDictObj.OPS_Rotation = ann.rotation;
+
+            annotDict = context.obj(imgDictObj);
 
             // Embed the actual image data into the appearance stream
             if (ann.imageData) {
@@ -886,25 +954,193 @@ export async function savePDF(saveAsPath = null) {
           }
 
           case 'measureDistance': {
+            const mapDimHead = (h) => {
+              switch (h) {
+                case 'open': return 'OpenArrow';
+                case 'closed': return 'ClosedArrow';
+                case 'diamond': return 'Diamond';
+                case 'circle': return 'Circle';
+                case 'square': return 'Square';
+                case 'slash': return 'Slash';
+                case 'butt': return 'Butt';
+                case 'openReversed': return 'ROpenArrow';
+                case 'closedReversed': return 'RClosedArrow';
+                default: return 'ClosedArrow';
+              }
+            };
             // Save as Line annotation with Measure dictionary
-            const x1 = convertX(ann.startX);
-            const y1 = convertY(ann.startY);
-            const x2 = convertX(ann.endX);
-            const y2 = convertY(ann.endY);
+            // Data model: startX/Y = dimension line, leaderX/Y = base object points
+            const mdx1 = convertX(ann.startX);
+            const mdy1 = convertY(ann.startY);
+            const mdx2 = convertX(ann.endX);
+            const mdy2 = convertY(ann.endY);
 
-            annotDict = context.obj({
+            // Compute rect including all points
+            let mdRectMinX = Math.min(mdx1, mdx2) - 5;
+            let mdRectMinY = Math.min(mdy1, mdy2) - 5;
+            let mdRectMaxX = Math.max(mdx1, mdx2) + 5;
+            let mdRectMaxY = Math.max(mdy1, mdy2) + 5;
+
+            // PDF /L = base object points when leaders exist, else dimension line
+            let pdfLX1 = mdx1, pdfLY1 = mdy1, pdfLX2 = mdx2, pdfLY2 = mdy2;
+
+            const mdDict = {
               Type: 'Annot',
               Subtype: 'Line',
-              Rect: [Math.min(x1,x2) - 5, Math.min(y1,y2) - 5, Math.max(x1,x2) + 5, Math.max(y1,y2) + 5],
-              L: [x1, y1, x2, y2],
               C: hexToColorArray(ann.strokeColor || '#ff0000'),
               CA: opacity,
               T: PDFString.of(ann.author || 'User'),
               Contents: PDFString.of(ann.measureText || ''),
               M: PDFString.of(new Date().toISOString()),
-              IT: 'LineDimension',
+              IT: PDFName.of('LineDimension'),
+              OPS_Subtype: PDFString.of('measureDistance'),
+              LE: [PDFName.of(mapDimHead(ann.startHead)), PDFName.of(mapDimHead(ann.endHead))],
               F: computeAnnotFlags(ann)
-            });
+            };
+
+            // Save custom properties for exact round-trip
+            if (ann.headSize && ann.headSize !== 12) mdDict.OPS_HeadSize = ann.headSize;
+            if (ann.measurePrecision != null && ann.measurePrecision !== 2) mdDict.OPS_Precision = ann.measurePrecision;
+
+            // Save leader line properties if extension lines exist
+            if (ann.leaderStartX !== undefined) {
+              // leaderStartX/Y = /L base object points in our data model
+              const lsx = convertX(ann.leaderStartX);
+              const lsy = convertY(ann.leaderStartY);
+              const lex = convertX(ann.leaderEndX);
+              const ley = convertY(ann.leaderEndY);
+              // /L = base object points
+              pdfLX1 = lsx; pdfLY1 = lsy;
+              pdfLX2 = lex; pdfLY2 = ley;
+              // Compute LL: perpendicular distance from /L base to dimension line
+              const lineAngle = Math.atan2(ley - lsy, lex - lsx);
+              const perpX = -Math.sin(lineAngle);
+              const perpY = Math.cos(lineAngle);
+              const ll = (mdx1 - lsx) * perpX + (mdy1 - lsy) * perpY;
+              mdDict.LL = ll;
+              mdDict.LLE = 5;
+              // Expand rect to include base points
+              mdRectMinX = Math.min(mdRectMinX, lsx, lex);
+              mdRectMinY = Math.min(mdRectMinY, lsy, ley);
+              mdRectMaxX = Math.max(mdRectMaxX, lsx, lex);
+              mdRectMaxY = Math.max(mdRectMaxY, lsy, ley);
+            }
+
+            mdDict.L = [pdfLX1, pdfLY1, pdfLX2, pdfLY2];
+
+            mdDict.Rect = [mdRectMinX, mdRectMinY, mdRectMaxX, mdRectMaxY];
+
+            // Save Measure dictionary with scale factor
+            if (ann.measureScale) {
+              mdDict.Cap = true;
+              mdDict.CP = PDFName.of('Inline');
+            }
+
+            annotDict = context.obj(mdDict);
+
+            if (ann.measureScale) {
+              const numFmt = context.obj({
+                C: ann.measureScale,
+                D: 1,
+                U: PDFString.of(ann.measureUnit || 'mm'),
+              });
+              const measureDict = context.obj({
+                Subtype: PDFName.of('RL'),
+                R: PDFString.of(`1 pt = ${ann.measureScale} ${ann.measureUnit || 'mm'}`),
+                X: context.obj([numFmt]),
+              });
+              annotDict.set(PDFName.of('Measure'), measureDict);
+            }
+
+            annotDict.set(PDFName.of('BS'), buildBorderStyle(context, borderWidth, ann.borderStyle));
+            break;
+          }
+
+          case 'measureArea': {
+            // Save as Polygon annotation with measurement data
+            if (!ann.points || ann.points.length < 3) continue;
+            let maVertices = [];
+            let maMinX = Infinity, maMinY = Infinity, maMaxX = -Infinity, maMaxY = -Infinity;
+
+            for (const pt of ann.points) {
+              const px = convertX(pt.x);
+              const py = convertY(pt.y);
+              maVertices.push(px, py);
+              maMinX = Math.min(maMinX, px); maMaxX = Math.max(maMaxX, px);
+              maMinY = Math.min(maMinY, py); maMaxY = Math.max(maMaxY, py);
+            }
+
+            const maDict = {
+              Type: 'Annot',
+              Subtype: 'Polygon',
+              Rect: [maMinX - 2, maMinY - 2, maMaxX + 2, maMaxY + 2],
+              Vertices: maVertices,
+              C: hexToColorArray(ann.strokeColor || '#ff0000'),
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of(ann.measureText || ''),
+              M: PDFString.of(new Date().toISOString()),
+              IT: PDFName.of('PolygonDimension'),
+              OPS_Subtype: PDFString.of('measureArea'),
+              F: computeAnnotFlags(ann)
+            };
+            if (ann.fillColor && ann.fillColor !== 'none') {
+              maDict.IC = hexToColorArray(ann.fillColor);
+            }
+            annotDict = context.obj(maDict);
+            annotDict.set(PDFName.of('BS'), buildBorderStyle(context, borderWidth, ann.borderStyle));
+            break;
+          }
+
+          case 'measurePerimeter': {
+            // Save as PolyLine annotation with measurement data
+            if (!ann.points || ann.points.length < 2) continue;
+            let mpVertices = [];
+            let mpMinX = Infinity, mpMinY = Infinity, mpMaxX = -Infinity, mpMaxY = -Infinity;
+
+            for (const pt of ann.points) {
+              const px = convertX(pt.x);
+              const py = convertY(pt.y);
+              mpVertices.push(px, py);
+              mpMinX = Math.min(mpMinX, px); mpMaxX = Math.max(mpMaxX, px);
+              mpMinY = Math.min(mpMinY, py); mpMaxY = Math.max(mpMaxY, py);
+            }
+
+            const mpDict = {
+              Type: 'Annot',
+              Subtype: 'PolyLine',
+              Rect: [mpMinX - 2, mpMinY - 2, mpMaxX + 2, mpMaxY + 2],
+              Vertices: mpVertices,
+              C: hexToColorArray(ann.strokeColor || '#ff0000'),
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of(ann.measureText || ''),
+              M: PDFString.of(new Date().toISOString()),
+              IT: PDFName.of('PolyLineDimension'),
+              OPS_Subtype: PDFString.of('measurePerimeter'),
+              F: computeAnnotFlags(ann)
+            };
+            // Save line endings
+            if (ann.startHead || ann.endHead) {
+              const mapHead = (h) => {
+                switch (h) {
+                  case 'open': return 'OpenArrow';
+                  case 'closed': return 'ClosedArrow';
+                  case 'diamond': return 'Diamond';
+                  case 'circle': return 'Circle';
+                  case 'square': return 'Square';
+                  case 'slash': return 'Slash';
+                  case 'butt': return 'Butt';
+                  case 'openReversed': return 'ROpenArrow';
+                  case 'closedReversed': return 'RClosedArrow';
+                  default: return 'None';
+                }
+              };
+              mpDict.LE = [PDFName.of(mapHead(ann.startHead)), PDFName.of(mapHead(ann.endHead))];
+            }
+            if (ann.headSize && ann.headSize !== 12) mpDict.OPS_HeadSize = ann.headSize;
+            annotDict = context.obj(mpDict);
+            annotDict.set(PDFName.of('BS'), buildBorderStyle(context, borderWidth, ann.borderStyle));
             break;
           }
         }
@@ -1541,11 +1777,27 @@ function generateAppearanceStream(context, ann, convertY) {
 
     if (!streamContent || !bbox) return null;
 
-    return context.stream(streamContent, {
+    const streamDict = {
       Type: 'XObject',
       Subtype: 'Form',
       BBox: bbox
-    });
+    };
+
+    // Add rotation Matrix for rotated annotations (negate: canvas Y-down → PDF Y-up)
+    if (ann.rotation && (ann.type === 'box' || ann.type === 'circle')) {
+      const rad = -ann.rotation * Math.PI / 180;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      streamDict.Matrix = [
+        parseFloat(cos.toFixed(6)),
+        parseFloat(sin.toFixed(6)),
+        parseFloat((-sin).toFixed(6)),
+        parseFloat(cos.toFixed(6)),
+        0, 0
+      ];
+    }
+
+    return context.stream(streamContent, streamDict);
   } catch (e) {
     console.warn('Failed to generate appearance stream for', ann.type, e);
     return null;
@@ -1665,6 +1917,17 @@ function ensureAcroFormFonts(pdfDoc, context, usedFonts) {
 }
 
 // Compute annotation flags (F entry) from annotation properties
+function buildBorderStyle(context, width, borderStyle) {
+  const s = (borderStyle === 'dashed' || borderStyle === 'dotted') ? 'D' : 'S';
+  const bs = { Type: 'Border', W: width, S: s };
+  if (borderStyle === 'dashed') {
+    bs.D = [8, 4];
+  } else if (borderStyle === 'dotted') {
+    bs.D = [2, 2];
+  }
+  return context.obj(bs);
+}
+
 function computeAnnotFlags(ann) {
   let flags = 0;
   if (ann.printable !== false) flags |= 4;   // Bit 3: Print (default on)

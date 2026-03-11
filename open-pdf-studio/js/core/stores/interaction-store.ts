@@ -8,6 +8,10 @@ export interface InteractionState {
   currentPath: Point[];
   polylinePoints: Point[];
   isDrawingPolyline: boolean;
+  cloudPolylinePoints: Point[];
+  isDrawingCloudPolyline: boolean;
+  dimPoints: Point[];
+  isDrawingDimension: boolean;
   isDragging: boolean;
   isResizing: boolean;
   activeHandle: string | null;
@@ -35,6 +39,10 @@ export const interactionState = createMutable<InteractionState>({
   currentPath: [],
   polylinePoints: [],
   isDrawingPolyline: false,
+  cloudPolylinePoints: [],
+  isDrawingCloudPolyline: false,
+  dimPoints: [],
+  isDrawingDimension: false,
   isDragging: false,
   isResizing: false,
   activeHandle: null,
@@ -60,6 +68,10 @@ export function resetDrawing(): void {
   interactionState.currentPath = [];
   interactionState.polylinePoints = [];
   interactionState.isDrawingPolyline = false;
+  interactionState.cloudPolylinePoints = [];
+  interactionState.isDrawingCloudPolyline = false;
+  interactionState.dimPoints = [];
+  interactionState.isDrawingDimension = false;
 }
 
 export function resetDrag(): void {

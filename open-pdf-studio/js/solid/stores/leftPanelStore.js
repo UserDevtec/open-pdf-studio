@@ -11,7 +11,18 @@ export function switchToLeftPanelTab(panelId) {
 }
 
 export function toggleLeftPanelCollapsed() {
-  setCollapsed(prev => !prev);
+  const willCollapse = !collapsed();
+  setCollapsed(willCollapse);
+  // Clear inline width set by resize handler so CSS class takes effect
+  const panel = document.getElementById('left-panel');
+  if (panel) {
+    if (willCollapse) {
+      panel.dataset.prevWidth = panel.style.width || '';
+      panel.style.width = '';
+    } else if (panel.dataset.prevWidth) {
+      panel.style.width = panel.dataset.prevWidth;
+    }
+  }
 }
 
 export {

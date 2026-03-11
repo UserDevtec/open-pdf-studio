@@ -39,6 +39,151 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         }
       }
 
+      // Read /OPS_Rotation (our custom rotation key) for ALL annotation types
+      const opsRotRaw = annotDict.get(PDFName.of('OPS_Rotation'));
+      if (opsRotRaw) {
+        const rv = pdfNum(context.lookup(opsRotRaw) || opsRotRaw);
+        if (rv !== null) colors.rotation = rv;
+      }
+
+      // Read /OPS_HeadSize (our custom arrowhead size for dimension annotations)
+      const opsHsRaw = annotDict.get(PDFName.of('OPS_HeadSize'));
+      if (opsHsRaw) {
+        const hs = pdfNum(context.lookup(opsHsRaw) || opsHsRaw);
+        if (hs !== null) colors.opsHeadSize = hs;
+      }
+
+      // Read /OPS_Precision (our custom decimal precision for measurement annotations)
+      const opsPrecRaw = annotDict.get(PDFName.of('OPS_Precision'));
+      if (opsPrecRaw) {
+        const prec = pdfNum(context.lookup(opsPrecRaw) || opsPrecRaw);
+        if (prec !== null) colors.opsPrecision = prec;
+      }
+
+      // Read /OPS_Subtype (our custom subtype for cloud/cloudPolyline/measurements)
+      const opsSubRaw = annotDict.get(PDFName.of('OPS_Subtype'));
+      if (opsSubRaw) {
+        const sub = context.lookup(opsSubRaw) || opsSubRaw;
+        if (sub && typeof sub.value === 'string') {
+          colors.opsSubtype = sub.value;
+        } else if (sub && typeof sub.decodeText === 'function') {
+          colors.opsSubtype = sub.decodeText();
+        }
+      }
+
+      // Read /IT (Intent) for measurement annotations
+      const itRaw = annotDict.get(PDFName.of('IT'));
+      if (itRaw) {
+        const it = context.lookup(itRaw) || itRaw;
+        const itStr = it.toString();
+        if (itStr) colors.intent = itStr.replace('/', '');
+      }
+
+      // Check for /Measure dictionary (PDF measurement annotations)
+      const measureRaw = annotDict.get(PDFName.of('Measure'));
+      if (measureRaw) {
+        colors.hasMeasure = true;
+        // Extract scale, unit, and precision from Measure NumberFormat dictionaries
+        const measureDict = context.lookup(measureRaw);
+        if (measureDict) {
+          // Helper: read a single NumberFormat dict, extract C (scale), U (unit), D (precision)
+          const readOneNF = (dict) => {
+            if (!dict || typeof dict.get !== 'function') return null;
+            const result = {};
+            const cRaw = dict.get(PDFName.of('C'));
+            const cVal = pdfNum(context.lookup(cRaw) || cRaw);
+            if (cVal !== null && cVal > 0) result.scale = cVal;
+            const uRaw = dict.get(PDFName.of('U'));
+            if (uRaw) {
+              const uStr = (context.lookup(uRaw) || uRaw);
+              if (typeof uStr.decodeText === 'function') result.unit = uStr.decodeText();
+              else if (typeof uStr.value === 'string') result.unit = uStr.value;
+              else result.unit = uStr.toString().replace(/[()\/]/g, '');
+            }
+            const dRaw = dict.get(PDFName.of('D'));
+            if (dRaw) {
+              const dVal = pdfNum(context.lookup(dRaw) || dRaw);
+              if (dVal !== null && dVal >= 0) result.precision = dVal;
+            }
+            return Object.keys(result).length > 0 ? result : null;
+          };
+
+          // Read a NumberFormat array: multiply C values across the chain,
+          // take U and D from the last element (the display unit/precision).
+          const readNumberFormat = (nfRaw) => {
+            if (!nfRaw) return null;
+            const arr = context.lookup(nfRaw);
+            if (!arr) return null;
+            // Single dict (not array)
+            if (typeof arr.size !== 'function') return readOneNF(arr);
+            const count = arr.size();
+            if (count === 0) return null;
+            // Read all elements: cumulative scale, last element's unit and precision
+            let cumulativeScale = 1;
+            let unit = null;
+            let precision = undefined;
+            for (let ei = 0; ei < count; ei++) {
+              const nf = readOneNF(context.lookup(arr.get(ei)));
+              if (nf) {
+                if (nf.scale) cumulativeScale *= nf.scale;
+                if (nf.unit) unit = nf.unit;
+                if (nf.precision !== undefined) precision = nf.precision;
+              }
+            }
+const result = {};
+            if (cumulativeScale > 0) result.scale = cumulativeScale;
+            if (unit) result.unit = unit;
+            if (precision !== undefined) result.precision = precision;
+            return Object.keys(result).length > 0 ? result : null;
+          };
+
+          // /X = per-pixel scale factor and unit
+          const xFmt = readNumberFormat(measureDict.get(PDFName.of('X')));
+          if (xFmt && xFmt.scale) {
+            colors.measureScale = xFmt.scale;
+            if (xFmt.unit) colors.measureUnit = xFmt.unit;
+          }
+          // /D = distance display format — its D value is a denominator (e.g. 100000 = 5 decimals)
+          // Fallback to /X precision for annotations without /D (e.g. simple Line dimensions)
+          const dFmt = readNumberFormat(measureDict.get(PDFName.of('D')));
+          if (dFmt && dFmt.precision !== undefined && dFmt.precision > 1) {
+            colors.measurePrecision = Math.round(Math.log10(dFmt.precision));
+          } else if (xFmt && xFmt.precision !== undefined) {
+            colors.measurePrecision = xFmt.precision;
+          }
+          // /A = area display format — D value is also a denominator
+          const aFmt = readNumberFormat(measureDict.get(PDFName.of('A')));
+          if (aFmt && aFmt.unit) {
+            colors.measureAreaUnit = aFmt.unit;
+          }
+          if (aFmt && aFmt.precision !== undefined && aFmt.precision > 1) {
+            colors.measureAreaPrecision = Math.round(Math.log10(aFmt.precision));
+          }
+        }
+      }
+
+      // Read BS/D (dash array) to distinguish dashed from dotted
+      const bsRaw = annotDict.get(PDFName.of('BS'));
+      if (bsRaw) {
+        const bsDict = context.lookup(bsRaw);
+        if (bsDict) {
+          const dRaw = bsDict.get(PDFName.of('D'));
+          if (dRaw) {
+            const dArr = context.lookup(dRaw) || dRaw;
+            if (dArr && typeof dArr.size === 'function' && dArr.size() >= 2) {
+              const d0 = pdfNum(dArr.get(0));
+              const d1 = pdfNum(dArr.get(1));
+              // Short dash segments (<=3) indicate dotted; longer ones are dashed
+              if (d0 !== null && d0 <= 3 && d1 !== null && d1 <= 3) {
+                colors.borderStyle = 'dotted';
+              } else {
+                colors.borderStyle = 'dashed';
+              }
+            }
+          }
+        }
+      }
+
       // IC and type-specific extraction only for shape/text annotations
       const needsIcTypes = ['/FreeText', '/Square', '/Circle', '/Line', '/PolyLine', '/Polygon'];
       if (needsIcTypes.includes(subtypeName)) {
@@ -61,6 +206,37 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
                 pdfNum(lArr.get(2)),
                 pdfNum(lArr.get(3))
               ];
+            }
+          }
+          // Read leader line properties for dimension annotations
+          const llRaw = annotDict.get(PDFName.of('LL'));
+          if (llRaw) {
+            const llVal = pdfNum(context.lookup(llRaw) || llRaw);
+            if (llVal !== null) colors.leaderLength = llVal;
+          }
+          const lleRaw = annotDict.get(PDFName.of('LLE'));
+          if (lleRaw) {
+            const lleVal = pdfNum(context.lookup(lleRaw) || lleRaw);
+            if (lleVal !== null) colors.leaderExtension = lleVal;
+          }
+          const lloRaw = annotDict.get(PDFName.of('LLO'));
+          if (lloRaw) {
+            const lloVal = pdfNum(context.lookup(lloRaw) || lloRaw);
+            if (lloVal !== null) colors.leaderOffset = lloVal;
+          }
+          // Read caption properties
+          const capRaw = annotDict.get(PDFName.of('Cap'));
+          if (capRaw) colors.hasCaption = true;
+          const cpRaw = annotDict.get(PDFName.of('CP'));
+          if (cpRaw) {
+            const cpVal = (context.lookup(cpRaw) || cpRaw).toString();
+            colors.captionPosition = cpVal.replace('/', '');
+          }
+          const coRaw = annotDict.get(PDFName.of('CO'));
+          if (coRaw) {
+            const coArr = context.lookup(coRaw) || coRaw;
+            if (coArr && typeof coArr.size === 'function' && coArr.size() >= 2) {
+              colors.captionOffset = [pdfNum(coArr.get(0)), pdfNum(coArr.get(1))];
             }
           }
         }
@@ -358,6 +534,46 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         }
       }
 
+      // For non-FreeText annotations, extract rotation Matrix and BBox from AP/N stream
+      if (subtypeName !== '/FreeText' && colors.matrixAngle === undefined) {
+        const apRaw2 = annotDict.get(PDFName.of('AP'));
+        if (apRaw2) {
+          const ap2 = context.lookup(apRaw2);
+          if (ap2) {
+            const nRaw2 = ap2.get(PDFName.of('N'));
+            if (nRaw2) {
+              const nStream2 = context.lookup(nRaw2);
+              if (nStream2) {
+                const nDict2 = nStream2.dict || nStream2;
+
+                // Extract rotation from /Matrix [a, b, c, d, e, f]
+                const matrixRaw2 = nDict2.get(PDFName.of('Matrix'));
+                if (matrixRaw2) {
+                  const matrix2 = context.lookup(matrixRaw2) || matrixRaw2;
+                  if (matrix2 && typeof matrix2.size === 'function' && matrix2.size() >= 4) {
+                    const a2 = pdfNum(matrix2.get(0));
+                    const b2 = pdfNum(matrix2.get(1));
+                    if (a2 !== null && b2 !== null) {
+                      colors.matrixAngle = Math.round(Math.atan2(b2, a2) * 180 / Math.PI * 100) / 100;
+                    }
+                  }
+                }
+
+                // Extract BBox - original unrotated dimensions
+                const bboxRaw2 = nDict2.get(PDFName.of('BBox'));
+                if (bboxRaw2) {
+                  const bbox2 = context.lookup(bboxRaw2) || bboxRaw2;
+                  if (bbox2 && typeof bbox2.size === 'function' && bbox2.size() >= 4) {
+                    colors.bboxWidth = Math.abs(pdfNum(bbox2.get(2)) - pdfNum(bbox2.get(0)));
+                    colors.bboxHeight = Math.abs(pdfNum(bbox2.get(3)) - pdfNum(bbox2.get(1)));
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       // Convert absolute line-height (pt) to multiplier using font size
       if (colors.rawLineHeight) {
         // Get font size from DA string
@@ -372,11 +588,7 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         delete colors.rawLineHeight;
       }
 
-      if (colors.ic || colors.apStrokeColor || colors.lineCoords || colors.opacity !== undefined ||
-          colors.matrixAngle !== undefined || colors.bboxWidth || colors.rotation !== undefined ||
-          colors.fontFamily || colors.fontBold || colors.fontItalic ||
-          colors.fontUnderline || colors.fontStrikethrough || colors.borderWidth !== undefined ||
-          colors.calloutLine || colors.rectDiff || colors.lineSpacing || colors.dsFontSize) {
+      if (Object.keys(colors).length > 0) {
         colorMap.set(key, colors);
       }
     }

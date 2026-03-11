@@ -98,6 +98,11 @@ export interface Preferences {
   cloudLineWidth: number;
   cloudOpacity: number;
 
+  // Cloud Polyline defaults
+  cloudPolylineStrokeColor: string;
+  cloudPolylineLineWidth: number;
+  cloudPolylineOpacity: number;
+
   // Comment/Note defaults
   commentColor: string;
   commentIcon: string;
@@ -110,11 +115,44 @@ export interface Preferences {
   // Redaction defaults
   redactionOverlayColor: string;
 
-  // Measurement defaults
-  measureStrokeColor: string;
-  measureLineWidth: number;
-  measureOpacity: number;
+  // Measurement global
   measureRounding: string;
+  measureCtrlSnap: number;
+
+  // Measure Distance defaults
+  measureDistStrokeColor: string;
+  measureDistLineWidth: number;
+  measureDistBorderStyle: string;
+  measureDistOpacity: number;
+  measureDistStartHead: string;
+  measureDistEndHead: string;
+  measureDistHeadSize: number;
+  measureDistDimScale: number;
+  measureDistDimUnit: string;
+  measureDistDimPrecision: number;
+
+  // Measure Area defaults
+  measureAreaStrokeColor: string;
+  measureAreaFillColor: string;
+  measureAreaFillNone: boolean;
+  measureAreaLineWidth: number;
+  measureAreaBorderStyle: string;
+  measureAreaOpacity: number;
+  measureAreaDimScale: number;
+  measureAreaDimUnit: string;
+  measureAreaDimPrecision: number;
+
+  // Measure Perimeter defaults
+  measurePerimStrokeColor: string;
+  measurePerimLineWidth: number;
+  measurePerimBorderStyle: string;
+  measurePerimOpacity: number;
+  measurePerimStartHead: string;
+  measurePerimEndHead: string;
+  measurePerimHeadSize: number;
+  measurePerimDimScale: number;
+  measurePerimDimUnit: string;
+  measurePerimDimPrecision: number;
 
   // Behavior
   autoSelectAfterCreate: boolean;
@@ -137,6 +175,13 @@ export interface Preferences {
   toolPaletteMode: string;
   toolPaletteFloatX: number;
   toolPaletteFloatY: number;
+
+  paletteLeftOrder: string[];
+  paletteRightOrder: string[];
+
+  // Feedback
+  feedbackEmail: string;
+  feedbackFullName: string;
 
   // Language
   language: string;

@@ -68,61 +68,83 @@ function placeStamp(stamp, x, y) {
   updateStatusMessage(`Stamp "${stamp.name}" placed`);
 }
 
-// North arrow SVG template
-const NORTH_ARROW_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 130">
-  <text x="50" y="17" text-anchor="middle" font-size="22" font-weight="900" font-family="Arial,Helvetica,sans-serif" fill="#000">N</text>
-  <polygon points="50,24 35,72 50,72 50,96" fill="#000" stroke="#000" stroke-width="1" stroke-linejoin="miter"/>
-  <polygon points="50,24 65,72 50,72" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="miter"/>
-  <polygon points="50,72 65,72 50,96" fill="none" stroke="#000" stroke-width="1" stroke-linejoin="miter"/>
-  <line x1="12" y1="72" x2="35" y2="72" stroke="#000" stroke-width="1.2"/>
-  <line x1="65" y1="72" x2="88" y2="72" stroke="#000" stroke-width="1.2"/>
-  <text x="7" y="77" text-anchor="middle" font-size="15" font-weight="bold" font-family="Arial,Helvetica,sans-serif" fill="#000">W</text>
-  <text x="93" y="77" text-anchor="middle" font-size="15" font-weight="bold" font-family="Arial,Helvetica,sans-serif" fill="#000">O</text>
-  <text x="50" y="114" text-anchor="middle" font-size="15" font-weight="bold" font-family="Arial,Helvetica,sans-serif" fill="#000">Z</text>
-</svg>`;
-
-// Create and cache north arrow image (preload so it's ready on first click)
-let northArrowImg = null;
-function getNorthArrowImage() {
-  if (northArrowImg) return northArrowImg;
-  const blob = new Blob([NORTH_ARROW_SVG], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  northArrowImg = new Image();
-  northArrowImg.src = url;
-  return northArrowImg;
+// Rasterize an SVG string to a PNG data URL for PDF embedding
+function rasterizeSvg(svgString) {
+  return new Promise((resolve) => {
+    const blob = new Blob([svgString], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = 3;
+      canvas.width = img.naturalWidth * scale;
+      canvas.height = img.naturalHeight * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve({ img, dataUrl: canvas.toDataURL('image/png') });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
 }
-// Preload immediately
-getNorthArrowImage();
 
-// Place north arrow symbol
-export function placeNorthArrow(x, y) {
+// Place a preconfigured image stamp from tool overrides (used by extensions).
+// Supports stampSvg (SVG string) or stampImage (data URL) in state.toolOverrides.
+export async function placeOverrideStamp(x, y) {
   if (!state.pdfDoc) return;
 
-  const width = 65;
-  const height = 85;
-  const img = getNorthArrowImage();
-
-  const imageId = 'northArrow';
-  if (!state.imageCache.has(imageId)) {
-    state.imageCache.set(imageId, img);
+  const overrides = state.toolOverrides;
+  if (!overrides?.stampSvg && !overrides?.stampImage) {
+    updateStatusMessage('No stamp data provided');
+    return;
   }
+
+  let img, dataUrl;
+
+  if (overrides.stampSvg) {
+    const result = await rasterizeSvg(overrides.stampSvg);
+    if (!result) {
+      updateStatusMessage('Failed to render stamp SVG');
+      return;
+    }
+    img = result.img;
+    dataUrl = result.dataUrl;
+  } else {
+    // stampImage is already a data URL (PNG/JPG)
+    img = new Image();
+    img.src = overrides.stampImage;
+    await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+    dataUrl = overrides.stampImage;
+  }
+
+  const aspect = img.naturalWidth / img.naturalHeight;
+  const stampHeight = overrides.stampHeight || 80;
+  const stampWidth = overrides.stampWidth || Math.round(stampHeight * aspect);
+
+  const imageId = 'stamp_' + Date.now();
+  state.imageCache.set(imageId, img);
 
   const ann = createAnnotation({
     type: 'stamp',
     page: state.currentPage,
-    x: x - width / 2,
-    y: y - height / 2,
-    width: width,
-    height: height,
-    stampName: 'NorthArrow',
+    x: x - stampWidth / 2,
+    y: y - stampHeight / 2,
+    width: stampWidth,
+    height: stampHeight,
+    stampName: overrides.stampName || 'Custom',
     stampText: '',
     imageId: imageId,
-    originalWidth: 100,
-    originalHeight: 130,
+    imageData: dataUrl,
+    originalWidth: img.naturalWidth,
+    originalHeight: img.naturalHeight,
     color: '#000000',
     opacity: 1,
     rotation: 0,
-    lockAspectRatio: true
+    lockAspectRatio: overrides.lockAspectRatio !== false
   });
 
   state.annotations.push(ann);
@@ -133,17 +155,10 @@ export function placeNorthArrow(x, y) {
     showProperties(ann);
   }
 
-  const redraw = () => {
-    if (state.viewMode === 'continuous') redrawContinuous();
-    else redrawAnnotations();
-  };
+  if (state.viewMode === 'continuous') redrawContinuous();
+  else redrawAnnotations();
 
-  if (!img.complete) {
-    img.onload = redraw;
-  }
-  redraw();
-
-  updateStatusMessage('North arrow placed');
+  updateStatusMessage(`${overrides.stampName || 'Stamp'} placed`);
 }
 
 // Load custom stamp from image file

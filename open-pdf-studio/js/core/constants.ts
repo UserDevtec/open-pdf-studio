@@ -20,7 +20,9 @@ export const HANDLE_TYPES = {
   CALLOUT_ARROW: 'callout_arrow',
   CALLOUT_KNEE: 'callout_knee',
   CALLOUT_MOVE: 'callout_move',
-  POLYLINE_NODE: 'polyline_node'
+  POLYLINE_NODE: 'polyline_node',
+  LEADER_START: 'leader_start',
+  LEADER_END: 'leader_end'
 } as const;
 
 // Default application preferences
@@ -45,7 +47,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   snapToEndpoints: true,
   snapToMidpoints: true,
   snapToCenters: true,
-  snapToEdges: true,
+  snapToEdges: false,
   objectSnapRadius: 10,
   snapToPdfContent: true,
 
@@ -130,6 +132,11 @@ export const DEFAULT_PREFERENCES: Preferences = {
   cloudBorderStyle: 'solid',
   cloudOpacity: 100,
 
+  // Cloud Polyline defaults
+  cloudPolylineStrokeColor: '#FF0000',
+  cloudPolylineLineWidth: 1,
+  cloudPolylineOpacity: 100,
+
   // Comment/Note defaults
   commentColor: '#FFFF00',
   commentIcon: 'comment',
@@ -143,11 +150,44 @@ export const DEFAULT_PREFERENCES: Preferences = {
   // Redaction defaults
   redactionOverlayColor: '#000000',
 
-  // Measurement defaults
-  measureStrokeColor: '#FF0000',
-  measureLineWidth: 1,
-  measureOpacity: 100,
+  // Measurement global
   measureRounding: 'none', // 'none', '1', '5', '10'
+  measureCtrlSnap: 10,
+
+  // Measure Distance defaults
+  measureDistStrokeColor: '#0000FF',
+  measureDistLineWidth: 1,
+  measureDistBorderStyle: 'solid',
+  measureDistOpacity: 100,
+  measureDistStartHead: 'closed',
+  measureDistEndHead: 'closed',
+  measureDistHeadSize: 12,
+  measureDistDimScale: 1,
+  measureDistDimUnit: 'mm',
+  measureDistDimPrecision: 2,
+
+  // Measure Area defaults
+  measureAreaStrokeColor: '#0000FF',
+  measureAreaFillColor: '#0000FF',
+  measureAreaFillNone: true,
+  measureAreaLineWidth: 1,
+  measureAreaBorderStyle: 'solid',
+  measureAreaOpacity: 100,
+  measureAreaDimScale: 1,
+  measureAreaDimUnit: 'mm',
+  measureAreaDimPrecision: 2,
+
+  // Measure Perimeter defaults
+  measurePerimStrokeColor: '#0000FF',
+  measurePerimLineWidth: 1,
+  measurePerimBorderStyle: 'solid',
+  measurePerimOpacity: 100,
+  measurePerimStartHead: 'none',
+  measurePerimEndHead: 'none',
+  measurePerimHeadSize: 12,
+  measurePerimDimScale: 1,
+  measurePerimDimUnit: 'mm',
+  measurePerimDimPrecision: 2,
 
   // Behavior
   autoSelectAfterCreate: true,
@@ -170,6 +210,13 @@ export const DEFAULT_PREFERENCES: Preferences = {
   toolPaletteMode: 'docked-left',
   toolPaletteFloatX: 200,
   toolPaletteFloatY: 150,
+
+  paletteLeftOrder: [],
+  paletteRightOrder: [],
+
+  // Feedback
+  feedbackEmail: '',
+  feedbackFullName: '',
 
   // Language
   language: 'auto'

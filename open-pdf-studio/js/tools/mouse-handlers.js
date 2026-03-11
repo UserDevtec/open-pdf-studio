@@ -12,15 +12,18 @@ import { openStickyPopup } from '../bridge.js';
 import { findTextEditAtPosition, startTextEditEditing } from './text-edit-tool.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { recordAdd, recordModify, recordBulkModify } from '../core/undo-manager.js';
-import { showStampPicker, placeNorthArrow } from '../annotations/stamps.js';
+import { showStampPicker, placeOverrideStamp } from '../annotations/stamps.js';
 import { showSignatureDialog } from '../annotations/signature.js';
 import { startPan, startContinuousPan, handlePanMove, handleMiddleButtonPanEnd } from './pan-handler.js';
 import { snapAngle } from '../utils/helpers.js';
 import { drawShapePreview } from './shape-preview.js';
 import { createAnnotationFromTool, createContinuousAnnotation } from './annotation-creators.js';
 import { isPdfAReadOnly } from '../pdf/loader.js';
-import { calculateDistance, calculateArea, calculatePerimeter, formatMeasurement } from '../annotations/measurement.js';
+import { calculateDistance, calculateArea, calculatePerimeter, formatMeasurement, snapDistanceTo10 } from '../annotations/measurement.js';
 import { performSnap, drawSnapIndicator } from './snap-engine.js';
+import { buildCloudPolylinePath } from '../annotations/rendering/shapes.js';
+import { drawDimension, drawMeasureAreaShape, drawCentroidLabel, drawMeasurePerimeterShape } from '../annotations/rendering/measurements.js';
+import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 
 // Check if any modal dialog/overlay is blocking interaction
 function isModalDialogOpen() {
@@ -109,8 +112,62 @@ export function handleMouseDown(e) {
     return;
   }
 
-  // Ignore right-click — handled by context menu
-  if (e.button === 2) return;
+  // Right-click finishes cloud polyline / polyline drawing, cancels dimension drawing
+  if (e.button === 2) {
+    if (state.isDrawingDimension) {
+      e.preventDefault();
+      state.dimPoints = [];
+      state.isDrawingDimension = false;
+      redrawAnnotations();
+      return;
+    }
+    if (state.isDrawingCloudPolyline && state.cloudPolylinePoints.length >= 3) {
+      e.preventDefault();
+      const cpPrefs = state.preferences;
+      const pts = [...state.cloudPolylinePoints];
+      const xs = pts.map(p => p.x);
+      const ys = pts.map(p => p.y);
+      const ann = createAnnotation({
+        type: 'cloudPolyline',
+        page: state.currentPage,
+        points: pts,
+        x: Math.min(...xs),
+        y: Math.min(...ys),
+        width: Math.max(...xs) - Math.min(...xs),
+        height: Math.max(...ys) - Math.min(...ys),
+        color: cpPrefs.cloudPolylineStrokeColor,
+        strokeColor: cpPrefs.cloudPolylineStrokeColor,
+        lineWidth: cpPrefs.cloudPolylineLineWidth,
+        opacity: (cpPrefs.cloudPolylineOpacity || 100) / 100
+      });
+      state.annotations.push(ann);
+      recordAdd(ann);
+      state.cloudPolylinePoints = [];
+      state.isDrawingCloudPolyline = false;
+      redrawAnnotations();
+      return;
+    }
+    if (state.isDrawingPolyline && state.polylinePoints.length >= 2) {
+      e.preventDefault();
+      const polyPrefs = state.preferences;
+      const ann = createAnnotation({
+        type: 'polyline',
+        page: state.currentPage,
+        points: [...state.polylinePoints],
+        color: polyPrefs.polylineStrokeColor,
+        strokeColor: polyPrefs.polylineStrokeColor,
+        lineWidth: polyPrefs.polylineLineWidth,
+        opacity: (polyPrefs.polylineOpacity || 100) / 100
+      });
+      state.annotations.push(ann);
+      recordAdd(ann);
+      state.polylinePoints = [];
+      state.isDrawingPolyline = false;
+      redrawAnnotations();
+      return;
+    }
+    return;
+  }
 
 
 
@@ -360,6 +417,170 @@ export function handleMouseDown(e) {
     return;
   }
 
+  // Handle cloudPolyline tool (click to add points, double-click to finish)
+  if (state.currentTool === 'cloudPolyline') {
+    const cpPrefs = state.preferences;
+    if (e.detail === 2) {
+      // Double-click to finish
+      if (state.cloudPolylinePoints.length >= 3) {
+        const pts = [...state.cloudPolylinePoints];
+        const xs = pts.map(p => p.x);
+        const ys = pts.map(p => p.y);
+        const ann = createAnnotation({
+          type: 'cloudPolyline',
+          page: state.currentPage,
+          points: pts,
+          x: Math.min(...xs),
+          y: Math.min(...ys),
+          width: Math.max(...xs) - Math.min(...xs),
+          height: Math.max(...ys) - Math.min(...ys),
+          color: cpPrefs.cloudPolylineStrokeColor,
+          strokeColor: cpPrefs.cloudPolylineStrokeColor,
+          lineWidth: cpPrefs.cloudPolylineLineWidth,
+          opacity: (cpPrefs.cloudPolylineOpacity || 100) / 100
+        });
+        state.annotations.push(ann);
+        recordAdd(ann);
+      }
+      state.cloudPolylinePoints = [];
+      state.isDrawingCloudPolyline = false;
+      redrawAnnotations();
+      return;
+    }
+
+    // Single click - add point (with object snap)
+    const cpSnap = performSnap(x, y, state.annotations, state.currentPage, state.scale, null, state.cloudPolylinePoints);
+    const cpPtX = cpSnap.snapped ? cpSnap.x : x;
+    const cpPtY = cpSnap.snapped ? cpSnap.y : y;
+
+    // Close shape when clicking near the first point (within 10px)
+    if (state.cloudPolylinePoints.length >= 3) {
+      const first = state.cloudPolylinePoints[0];
+      const dx = cpPtX - first.x;
+      const dy = cpPtY - first.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 10 / state.scale) {
+        const pts = [...state.cloudPolylinePoints];
+        const xs = pts.map(p => p.x);
+        const ys = pts.map(p => p.y);
+        const ann = createAnnotation({
+          type: 'cloudPolyline',
+          page: state.currentPage,
+          points: pts,
+          x: Math.min(...xs),
+          y: Math.min(...ys),
+          width: Math.max(...xs) - Math.min(...xs),
+          height: Math.max(...ys) - Math.min(...ys),
+          color: cpPrefs.cloudPolylineStrokeColor,
+          strokeColor: cpPrefs.cloudPolylineStrokeColor,
+          lineWidth: cpPrefs.cloudPolylineLineWidth,
+          opacity: (cpPrefs.cloudPolylineOpacity || 100) / 100
+        });
+        state.annotations.push(ann);
+        recordAdd(ann);
+        state.cloudPolylinePoints = [];
+        state.isDrawingCloudPolyline = false;
+        redrawAnnotations();
+        return;
+      }
+    }
+
+    state.cloudPolylinePoints.push({ x: cpPtX, y: cpPtY });
+    state.isDrawingCloudPolyline = true;
+    redrawAnnotations();
+
+    // Draw in-progress cloud polyline
+    if (state.cloudPolylinePoints.length > 1) {
+      const ctx = annotationCtx || annotationCanvas.getContext('2d');
+      ctx.save();
+      ctx.scale(state.scale, state.scale);
+      ctx.strokeStyle = cpPrefs.cloudPolylineStrokeColor;
+      ctx.lineWidth = cpPrefs.cloudPolylineLineWidth;
+      buildCloudPolylinePath(ctx, state.cloudPolylinePoints, false);
+      ctx.stroke();
+      ctx.restore();
+    }
+    return;
+  }
+
+  // Handle measureDistance tool (3-click: point1, point2, offset)
+  if (state.currentTool === 'measureDistance') {
+    const dimSnap = performSnap(x, y, state.annotations, state.currentPage, state.scale, null, state.dimPoints);
+    const dimX = dimSnap.snapped ? dimSnap.x : x;
+    const dimY = dimSnap.snapped ? dimSnap.y : y;
+
+    if (state.dimPoints.length === 0) {
+      // Click 1: first measurement point (leader tip 1)
+      state.dimPoints.push({ x: dimX, y: dimY });
+      state.isDrawingDimension = true;
+    } else if (state.dimPoints.length === 1) {
+      // Click 2: second measurement point (leader tip 2)
+      const dx = dimX - state.dimPoints[0].x;
+      const dy = dimY - state.dimPoints[0].y;
+      if (Math.sqrt(dx * dx + dy * dy) < 3 / state.scale) return; // too close
+      let finalPt = { x: dimX, y: dimY };
+      if (e.ctrlKey) finalPt = snapDistanceTo10(state.dimPoints[0].x, state.dimPoints[0].y, dimX, dimY);
+      state.dimPoints.push(finalPt);
+    } else if (state.dimPoints.length === 2) {
+      // Click 3: offset point — defines dimension line position
+      const p1 = state.dimPoints[0];
+      const p2 = state.dimPoints[1];
+      const lineAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      const perpX = -Math.sin(lineAngle);
+      const perpY = Math.cos(lineAngle);
+      // Project offset point onto perpendicular from p1
+      const offDx = dimX - p1.x;
+      const offDy = dimY - p1.y;
+      const perpDist = offDx * perpX + offDy * perpY;
+      // Dimension line endpoints (offset along perpendicular)
+      const startX = p1.x + perpDist * perpX;
+      const startY = p1.y + perpDist * perpY;
+      const endX = p2.x + perpDist * perpX;
+      const endY = p2.y + perpDist * perpY;
+
+      const prefs = state.preferences;
+      const dist = calculateDistance(startX, startY, endX, endY);
+      const dimScale = prefs.measureDistDimScale || 0;
+      const dimUnit = prefs.measureDistDimUnit || dist.unit;
+      const dimPrecision = prefs.measureDistDimPrecision != null ? prefs.measureDistDimPrecision : 2;
+      let mText;
+      if (dimScale) {
+        const pixelDist = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+        mText = `${(pixelDist * dimScale).toFixed(dimPrecision)} ${dimUnit}`;
+      } else {
+        mText = formatMeasurement(dist);
+      }
+      const ann = createAnnotation({
+        type: 'measureDistance',
+        page: state.currentPage,
+        startX, startY,
+        endX, endY,
+        leaderStartX: p1.x,
+        leaderStartY: p1.y,
+        leaderEndX: p2.x,
+        leaderEndY: p2.y,
+        startHead: prefs.measureDistStartHead || 'closed',
+        endHead: prefs.measureDistEndHead || 'closed',
+        headSize: prefs.measureDistHeadSize || 12,
+        color: prefs.measureDistStrokeColor,
+        strokeColor: prefs.measureDistStrokeColor,
+        lineWidth: prefs.measureDistLineWidth,
+        opacity: (prefs.measureDistOpacity || 100) / 100,
+        measureText: mText,
+        measureValue: dist.value,
+        measureUnit: dimUnit,
+        measurePixels: dist.pixels,
+        measureScale: dimScale || undefined,
+        measurePrecision: dimPrecision,
+      });
+      state.annotations.push(ann);
+      recordAdd(ann);
+      state.dimPoints = [];
+      state.isDrawingDimension = false;
+      redrawAnnotations();
+    }
+    return;
+  }
+
   // Start drawing for other tools
   state.isDrawing = true;
 
@@ -372,13 +593,25 @@ export function handleMouseDown(e) {
     addTextAnnotation(x, y);
     state.isDrawing = false;
   } else if (state.currentTool === 'stamp') {
-    showStampPicker(x, y);
-    state.isDrawing = false;
-  } else if (state.currentTool === 'northArrow') {
-    placeNorthArrow(x, y);
+    if (state.toolOverrides?.stampSvg || state.toolOverrides?.stampImage) {
+      placeOverrideStamp(x, y);
+    } else {
+      showStampPicker(x, y);
+    }
     state.isDrawing = false;
   } else if (state.currentTool === 'signature') {
     showSignatureDialog(x, y);
+    state.isDrawing = false;
+  } else if (getAnnotationType(state.currentTool)?.drawMode === 'click') {
+    const typeHandler = getAnnotationType(state.currentTool);
+    if (typeHandler.create) {
+      const annProps = typeHandler.create(x, y, x, y, e, state);
+      if (annProps) {
+        const ann = createAnnotation({ ...annProps, page: state.currentPage, ...state.toolOverrides });
+        state.annotations.push(ann);
+        redrawAnnotations();
+      }
+    }
     state.isDrawing = false;
   } else if (state.currentTool === 'measureArea' || state.currentTool === 'measurePerimeter') {
     // Multi-click to add points; use polyline-like behavior
@@ -398,6 +631,33 @@ export function handleMouseDown(e) {
       ptX = last.x + length * Math.cos(snapped);
       ptY = last.y + length * Math.sin(snapped);
     }
+    // Ctrl key: snap segment length to nearest 10 units
+    if (e.ctrlKey && state.measurePoints.length > 0) {
+      const last = state.measurePoints[state.measurePoints.length - 1];
+      const s = snapDistanceTo10(last.x, last.y, ptX, ptY);
+      ptX = s.x; ptY = s.y;
+    }
+    // Close measureArea when clicking near the first point
+    if (state.currentTool === 'measureArea' && state.measurePoints.length >= 3) {
+      const mFirst = state.measurePoints[0];
+      const mdx = ptX - mFirst.x;
+      const mdy = ptY - mFirst.y;
+      if (Math.sqrt(mdx * mdx + mdy * mdy) < 10 / state.scale) {
+        import('./annotation-creators.js').then(({ createMeasureAreaAnnotation }) => {
+          const points = [...state.measurePoints];
+          const ann = createMeasureAreaAnnotation(points);
+          if (ann) {
+            state.annotations.push(ann);
+            recordAdd(ann);
+          }
+          state.measurePoints = null;
+          redrawAnnotations();
+        });
+        state.isDrawing = false;
+        return;
+      }
+    }
+
     state.measurePoints.push({ x: ptX, y: ptY });
     state.isDrawing = false;
     redrawAnnotations();
@@ -405,35 +665,23 @@ export function handleMouseDown(e) {
     // Draw in-progress measurement so points remain visible after click
     if (state.measurePoints.length > 0) {
       const mPrefs = state.preferences;
-      const mColor = mPrefs.measureStrokeColor || '#FF0000';
+      const isArea = state.currentTool === 'measureArea';
+      const mColor = (isArea ? mPrefs.measureAreaStrokeColor : mPrefs.measurePerimStrokeColor) || '#FF0000';
+      const mBorderStyle = (isArea ? mPrefs.measureAreaBorderStyle : mPrefs.measurePerimBorderStyle) || 'solid';
+      const mFillColor = isArea ? (mPrefs.measureAreaFillNone ? 'none' : (mPrefs.measureAreaFillColor || null)) : null;
       const ctx = annotationCtx || annotationCanvas.getContext('2d');
       ctx.save();
       ctx.scale(state.scale, state.scale);
       ctx.strokeStyle = mColor;
-      ctx.lineWidth = mPrefs.measureLineWidth || 1;
-      ctx.globalAlpha = (mPrefs.measureOpacity || 100) / 100;
-      ctx.setLineDash([4, 2]);
+      ctx.lineWidth = (isArea ? mPrefs.measureAreaLineWidth : mPrefs.measurePerimLineWidth) || 1;
+      ctx.globalAlpha = ((isArea ? mPrefs.measureAreaOpacity : mPrefs.measurePerimOpacity) || 100) / 100;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
-      ctx.beginPath();
-      state.measurePoints.forEach((point, index) => {
-        if (index === 0) ctx.moveTo(point.x, point.y);
-        else ctx.lineTo(point.x, point.y);
-      });
-      if (state.currentTool === 'measureArea' && state.measurePoints.length > 2) {
-        ctx.closePath();
-        ctx.fillStyle = mColor + '20';
-        ctx.fill();
+      if (isArea && state.measurePoints.length > 2) {
+        drawMeasureAreaShape(ctx, state.measurePoints, mColor, ctx.lineWidth, mFillColor, mBorderStyle);
+      } else {
+        drawMeasurePerimeterShape(ctx, state.measurePoints, mColor, mBorderStyle);
       }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // Draw vertex markers
-      state.measurePoints.forEach(point => {
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
-        ctx.fillStyle = mColor;
-        ctx.fill();
-      });
       ctx.globalAlpha = 1;
       ctx.restore();
     }
@@ -525,14 +773,67 @@ export function handleMouseMove(e) {
         return;
       }
 
-      const deltaX = currentX - state.dragStartX;
-      const deltaY = currentY - state.dragStartY;
+      // Snap cursor position during resize (exclude the annotation being resized)
+      const resizeSnap = performSnap(currentX, currentY, state.annotations, state.currentPage, state.scale, resizeAnn.id);
+      const snappedX = resizeSnap.snapped ? resizeSnap.x : currentX;
+      const snappedY = resizeSnap.snapped ? resizeSnap.y : currentY;
+      state.lastSnapResult = resizeSnap.snapped ? resizeSnap : null;
+
+      let deltaX, deltaY;
+      if (resizeSnap.snapped) {
+        // When snapped, compute delta from the handle's original position
+        // so the handle lands exactly at the snap target (no click-offset error)
+        const orig = state.originalAnnotation;
+        const h = state.activeHandle;
+        let ox, oy;
+        // Polyline/cloudPolyline node handles: use the node's original position
+        if (typeof h === 'string' && h.startsWith('polyline_node_') && orig.points) {
+          const nodeIdx = parseInt(h.split('_').pop(), 10);
+          if (!isNaN(nodeIdx) && nodeIdx < orig.points.length) {
+            ox = orig.points[nodeIdx].x;
+            oy = orig.points[nodeIdx].y;
+          }
+        }
+        if (ox === undefined) {
+          ox = h === 'line_start' ? orig.startX
+                   : h === 'line_end' ? orig.endX
+                   : h === 'leader_start' ? orig.leaderStartX
+                   : h === 'leader_end' ? orig.leaderEndX
+                   : h === 'callout_arrow' ? (orig.arrowX || orig.x)
+                   : h === 'callout_knee' ? (orig.kneeX || orig.x)
+                   : (h === 'tl' || h === 'l' || h === 'bl') ? orig.x
+                   : (h === 'tr' || h === 'r' || h === 'br') ? orig.x + orig.width
+                   : orig.x + orig.width / 2;
+          oy = h === 'line_start' ? orig.startY
+                   : h === 'line_end' ? orig.endY
+                   : h === 'leader_start' ? orig.leaderStartY
+                   : h === 'leader_end' ? orig.leaderEndY
+                   : h === 'callout_arrow' ? (orig.arrowY || orig.y)
+                   : h === 'callout_knee' ? (orig.kneeY || orig.y)
+                   : (h === 'tl' || h === 't' || h === 'tr') ? orig.y
+                   : (h === 'bl' || h === 'b' || h === 'br') ? orig.y + orig.height
+                   : orig.y + orig.height / 2;
+        }
+        deltaX = snappedX - ox;
+        deltaY = snappedY - oy;
+      } else {
+        deltaX = currentX - state.dragStartX;
+        deltaY = currentY - state.dragStartY;
+      }
 
       // Restore original and apply resize
       Object.assign(resizeAnn, cloneAnnotation(state.originalAnnotation));
-      applyResize(resizeAnn, state.activeHandle, deltaX, deltaY, state.originalAnnotation, e.shiftKey);
+      applyResize(resizeAnn, state.activeHandle, deltaX, deltaY, state.originalAnnotation, e.shiftKey, e.ctrlKey);
 
       redrawAnnotations(true);
+
+      // Draw snap indicator overlay (context must be scaled to match document coordinates)
+      if (state.lastSnapResult) {
+        annotationCtx.save();
+        annotationCtx.scale(state.scale, state.scale);
+        drawSnapIndicator(annotationCtx, state.lastSnapResult, state.scale);
+        annotationCtx.restore();
+      }
       return;
     }
   }
@@ -652,11 +953,147 @@ export function handleMouseMove(e) {
     return;
   }
 
+  // Handle cloudPolyline preview
+  if (state.currentTool === 'cloudPolyline' && state.isDrawingCloudPolyline && state.cloudPolylinePoints.length > 0) {
+    const cpPrefs = state.preferences;
+    const cpPreviewSnap = performSnap(currentX, currentY, state.annotations, state.currentPage, state.scale, null, state.cloudPolylinePoints);
+    let cpSnapX = cpPreviewSnap.snapped ? cpPreviewSnap.x : currentX;
+    let cpSnapY = cpPreviewSnap.snapped ? cpPreviewSnap.y : currentY;
+    let cpNearFirst = false;
+    state.lastSnapResult = cpPreviewSnap.snapped ? cpPreviewSnap : null;
+    // Snap to first point when near it (close shape hint)
+    if (state.cloudPolylinePoints.length >= 3) {
+      const cpFirst = state.cloudPolylinePoints[0];
+      const cpdx = cpSnapX - cpFirst.x;
+      const cpdy = cpSnapY - cpFirst.y;
+      if (Math.sqrt(cpdx * cpdx + cpdy * cpdy) < 10 / state.scale) {
+        cpSnapX = cpFirst.x;
+        cpSnapY = cpFirst.y;
+        cpNearFirst = true;
+      }
+    }
+    redrawAnnotations();
+    annotationCtx.save();
+    annotationCtx.scale(state.scale, state.scale);
+    annotationCtx.strokeStyle = cpPrefs.cloudPolylineStrokeColor;
+    annotationCtx.lineWidth = cpPrefs.cloudPolylineLineWidth;
+    // Build preview with current cursor as temporary next point
+    const previewPts = [...state.cloudPolylinePoints, { x: cpSnapX, y: cpSnapY }];
+    buildCloudPolylinePath(annotationCtx, previewPts, cpNearFirst);
+    annotationCtx.stroke();
+    // Draw close indicator circle at first point
+    if (cpNearFirst) {
+      const cpFirst = state.cloudPolylinePoints[0];
+      annotationCtx.beginPath();
+      annotationCtx.arc(cpFirst.x, cpFirst.y, 5 / state.scale, 0, Math.PI * 2);
+      annotationCtx.fillStyle = cpPrefs.cloudPolylineStrokeColor;
+      annotationCtx.globalAlpha = 0.3;
+      annotationCtx.fill();
+      annotationCtx.globalAlpha = 1;
+    }
+    // Draw snap indicator
+    if (cpPreviewSnap.snapped && !cpNearFirst) {
+      drawSnapIndicator(annotationCtx, cpPreviewSnap, state.scale);
+    }
+    annotationCtx.restore();
+    return;
+  }
+
+  // Handle dimension (measureDistance) preview
+  if (state.currentTool === 'measureDistance' && state.isDrawingDimension && state.dimPoints.length > 0) {
+    const dimPrefs = state.preferences;
+    const dimColor = dimPrefs.measureDistStrokeColor || '#FF0000';
+    const dimPreviewSnap = performSnap(currentX, currentY, state.annotations, state.currentPage, state.scale, null, state.dimPoints);
+    let dimSnapX = dimPreviewSnap.snapped ? dimPreviewSnap.x : currentX;
+    let dimSnapY = dimPreviewSnap.snapped ? dimPreviewSnap.y : currentY;
+    state.lastSnapResult = dimPreviewSnap.snapped ? dimPreviewSnap : null;
+
+    // Shift+snap angle constraint
+    if (!dimPreviewSnap.snapped && e.shiftKey && dimPrefs.enableAngleSnap) {
+      const last = state.dimPoints[state.dimPoints.length - 1];
+      const ddx = currentX - last.x;
+      const ddy = currentY - last.y;
+      const dLen = Math.sqrt(ddx * ddx + ddy * ddy);
+      const dAngle = Math.atan2(ddy, ddx) * (180 / Math.PI);
+      const dSnapped = snapAngle(dAngle, dimPrefs.angleSnapDegrees) * (Math.PI / 180);
+      dimSnapX = last.x + dLen * Math.cos(dSnapped);
+      dimSnapY = last.y + dLen * Math.sin(dSnapped);
+    }
+
+    redrawAnnotations();
+    annotationCtx.save();
+    annotationCtx.scale(state.scale, state.scale);
+    annotationCtx.strokeStyle = dimColor;
+    annotationCtx.lineWidth = dimPrefs.measureDistLineWidth || 1;
+    annotationCtx.globalAlpha = (dimPrefs.measureDistOpacity || 100) / 100;
+    annotationCtx.setLineDash([]);
+
+    const p1 = state.dimPoints[0];
+
+    const dimSHead = dimPrefs.measureDistStartHead || 'closed';
+    const dimEHead = dimPrefs.measureDistEndHead || 'closed';
+    const dimHSize = dimPrefs.measureDistHeadSize || 12;
+    const dimScale = dimPrefs.measureDistDimScale || 0;
+    const dimUnit = dimPrefs.measureDistDimUnit || '';
+    const dimPrecision = dimPrefs.measureDistDimPrecision != null ? dimPrefs.measureDistDimPrecision : 2;
+
+    function dimMeasureText(sx, sy, ex, ey) {
+      if (dimScale) {
+        const pixelDist = Math.sqrt((ex - sx) ** 2 + (ey - sy) ** 2);
+        return `${(pixelDist * dimScale).toFixed(dimPrecision)} ${dimUnit}`;
+      }
+      return formatMeasurement(calculateDistance(sx, sy, ex, ey));
+    }
+
+    if (state.dimPoints.length === 1) {
+      if (e.ctrlKey) {
+        const snapped = snapDistanceTo10(p1.x, p1.y, dimSnapX, dimSnapY);
+        dimSnapX = snapped.x;
+        dimSnapY = snapped.y;
+      }
+      // After click 1: show dimension line from p1 to cursor with arrowheads
+      drawDimension(annotationCtx, {
+        startX: p1.x, startY: p1.y, endX: dimSnapX, endY: dimSnapY,
+        startHead: dimSHead, endHead: dimEHead, headSize: dimHSize,
+        color: dimColor, measureText: dimMeasureText(p1.x, p1.y, dimSnapX, dimSnapY)
+      });
+    } else if (state.dimPoints.length === 2) {
+      // After click 2: show full dimension preview with extension lines following cursor
+      const p2 = state.dimPoints[1];
+      const lineAngle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+      const perpX = -Math.sin(lineAngle);
+      const perpY = Math.cos(lineAngle);
+      const offDx = dimSnapX - p1.x;
+      const offDy = dimSnapY - p1.y;
+      const perpDist = offDx * perpX + offDy * perpY;
+      const dStartX = p1.x + perpDist * perpX;
+      const dStartY = p1.y + perpDist * perpY;
+      const dEndX = p2.x + perpDist * perpX;
+      const dEndY = p2.y + perpDist * perpY;
+      drawDimension(annotationCtx, {
+        startX: dStartX, startY: dStartY, endX: dEndX, endY: dEndY,
+        leaderStartX: p1.x, leaderStartY: p1.y, leaderEndX: p2.x, leaderEndY: p2.y,
+        startHead: dimSHead, endHead: dimEHead, headSize: dimHSize,
+        color: dimColor, measureText: dimMeasureText(dStartX, dStartY, dEndX, dEndY)
+      });
+    }
+
+    if (dimPreviewSnap.snapped) {
+      drawSnapIndicator(annotationCtx, dimPreviewSnap, state.scale);
+    }
+    annotationCtx.globalAlpha = 1;
+    annotationCtx.restore();
+    return;
+  }
+
   // Handle measureArea / measurePerimeter preview
   if ((state.currentTool === 'measureArea' || state.currentTool === 'measurePerimeter') &&
       state.measurePoints && state.measurePoints.length > 0) {
     const mPrefs = state.preferences;
-    const mColor = mPrefs.measureStrokeColor || '#FF0000';
+    const mIsArea = state.currentTool === 'measureArea';
+    const mColor = (mIsArea ? mPrefs.measureAreaStrokeColor : mPrefs.measurePerimStrokeColor) || '#FF0000';
+    const mBorderStyle = (mIsArea ? mPrefs.measureAreaBorderStyle : mPrefs.measurePerimBorderStyle) || 'solid';
+    const mFillColor = mIsArea ? (mPrefs.measureAreaFillNone ? 'none' : (mPrefs.measureAreaFillColor || null)) : null;
     // Object snap for measurement preview (including in-progress vertices)
     const mPreviewSnap = performSnap(currentX, currentY, state.annotations, state.currentPage, state.scale, null, state.measurePoints);
     state.lastSnapResult = mPreviewSnap.snapped ? mPreviewSnap : null;
@@ -664,16 +1101,27 @@ export function handleMouseMove(e) {
     annotationCtx.save();
     annotationCtx.scale(state.scale, state.scale);
     annotationCtx.strokeStyle = mColor;
-    annotationCtx.lineWidth = mPrefs.measureLineWidth || 1;
-    annotationCtx.globalAlpha = (mPrefs.measureOpacity || 100) / 100;
-    annotationCtx.setLineDash([4, 2]);
+    annotationCtx.lineWidth = (mIsArea ? mPrefs.measureAreaLineWidth : mPrefs.measurePerimLineWidth) || 1;
+    annotationCtx.globalAlpha = ((mIsArea ? mPrefs.measureAreaOpacity : mPrefs.measurePerimOpacity) || 100) / 100;
     annotationCtx.lineCap = 'round';
     annotationCtx.lineJoin = 'round';
 
     // Use object snap if available, otherwise angle snap
     let snapX = mPreviewSnap.snapped ? mPreviewSnap.x : currentX;
     let snapY = mPreviewSnap.snapped ? mPreviewSnap.y : currentY;
-    if (!mPreviewSnap.snapped && e.shiftKey && mPrefs.enableAngleSnap) {
+    let mNearFirst = false;
+    // Snap to first point when near it (close shape hint) for measureArea
+    if (state.currentTool === 'measureArea' && state.measurePoints.length >= 3) {
+      const mFirst = state.measurePoints[0];
+      const mfdx = snapX - mFirst.x;
+      const mfdy = snapY - mFirst.y;
+      if (Math.sqrt(mfdx * mfdx + mfdy * mfdy) < 10 / state.scale) {
+        snapX = mFirst.x;
+        snapY = mFirst.y;
+        mNearFirst = true;
+      }
+    }
+    if (!mPreviewSnap.snapped && !mNearFirst && e.shiftKey && mPrefs.enableAngleSnap) {
       const last = state.measurePoints[state.measurePoints.length - 1];
       const dx = currentX - last.x;
       const dy = currentY - last.y;
@@ -683,57 +1131,46 @@ export function handleMouseMove(e) {
       snapX = last.x + length * Math.cos(snapped);
       snapY = last.y + length * Math.sin(snapped);
     }
+    // Ctrl key: snap segment length to nearest 10 units
+    if (!mNearFirst && e.ctrlKey) {
+      const last = state.measurePoints[state.measurePoints.length - 1];
+      const s = snapDistanceTo10(last.x, last.y, snapX, snapY);
+      snapX = s.x; snapY = s.y;
+    }
 
     // Build the current set of points including cursor position
     const previewPoints = [...state.measurePoints, { x: snapX, y: snapY }];
 
-    // Draw lines connecting all points
-    annotationCtx.beginPath();
-    previewPoints.forEach((point, index) => {
-      if (index === 0) annotationCtx.moveTo(point.x, point.y);
-      else annotationCtx.lineTo(point.x, point.y);
-    });
-
     if (state.currentTool === 'measureArea' && previewPoints.length > 2) {
-      // Close the polygon and fill
-      annotationCtx.closePath();
-      annotationCtx.fillStyle = mColor + '20';
-      annotationCtx.fill();
-      annotationCtx.stroke();
+      drawMeasureAreaShape(annotationCtx, previewPoints, mColor, annotationCtx.lineWidth, mFillColor, mBorderStyle);
     } else {
-      annotationCtx.stroke();
+      // Perimeter or area with < 3 points — draw open polyline
+      drawMeasurePerimeterShape(annotationCtx, previewPoints, mColor, mBorderStyle);
     }
-    annotationCtx.setLineDash([]);
-
-    // Draw vertex markers at placed points
-    state.measurePoints.forEach(point => {
-      annotationCtx.beginPath();
-      annotationCtx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
-      annotationCtx.fillStyle = mColor;
-      annotationCtx.fill();
-    });
 
     // Draw live measurement text
-    annotationCtx.font = '11px Arial';
-    annotationCtx.fillStyle = mColor;
     if (state.currentTool === 'measureArea' && previewPoints.length >= 3) {
       const area = calculateArea(previewPoints);
-      const areaText = formatMeasurement(area);
-      let cx = 0, cy = 0;
-      for (const p of previewPoints) { cx += p.x; cy += p.y; }
-      cx /= previewPoints.length;
-      cy /= previewPoints.length;
-      annotationCtx.textAlign = 'center';
-      annotationCtx.fillText(areaText, cx, cy);
-      annotationCtx.textAlign = 'left';
+      drawCentroidLabel(annotationCtx, previewPoints, formatMeasurement(area), mColor);
     } else if (state.currentTool === 'measurePerimeter' && previewPoints.length >= 2) {
       const perim = calculatePerimeter(previewPoints);
-      const perimText = formatMeasurement(perim);
-      annotationCtx.fillText(perimText, snapX + 8, snapY - 4);
+      annotationCtx.font = '11px Arial';
+      annotationCtx.fillStyle = mColor;
+      annotationCtx.fillText(formatMeasurement(perim), snapX + 8, snapY - 4);
     }
 
+    // Draw close indicator at first point when near it
+    if (mNearFirst) {
+      const mFirst = state.measurePoints[0];
+      annotationCtx.beginPath();
+      annotationCtx.arc(mFirst.x, mFirst.y, 5 / state.scale, 0, Math.PI * 2);
+      annotationCtx.fillStyle = mColor;
+      annotationCtx.globalAlpha = 0.3;
+      annotationCtx.fill();
+      annotationCtx.globalAlpha = 1;
+    }
     // Draw snap indicator for measurement preview
-    if (mPreviewSnap.snapped) {
+    if (mPreviewSnap.snapped && !mNearFirst) {
       annotationCtx.globalAlpha = 1;
       drawSnapIndicator(annotationCtx, mPreviewSnap, state.scale);
     }
@@ -746,7 +1183,7 @@ export function handleMouseMove(e) {
   if (!state.isDrawing) {
     const drawingTools = ['line', 'arrow', 'box', 'circle', 'highlight', 'textbox', 'callout',
       'polygon', 'cloud', 'measureDistance', 'polyline', 'measureArea', 'measurePerimeter'];
-    if (drawingTools.includes(state.currentTool)) {
+    if (drawingTools.includes(state.currentTool) || getAnnotationType(state.currentTool)) {
       const hoverSnap = performSnap(currentX, currentY, state.annotations, state.currentPage, state.scale);
       if (hoverSnap.snapped) {
         state.lastSnapResult = hoverSnap;
@@ -875,6 +1312,7 @@ export function handleMouseUp(e) {
     state.originalAnnotations = [];
     state._ctrlDragCopy = false;
     state._ctrlCopiesCreated = false;
+    state.lastSnapResult = null;
     _removeDocumentMouseUp();
     annotationCanvas.style.cursor = state.currentTool === 'hand' ? 'grab' : 'default';
 

@@ -175,9 +175,11 @@ function getStyleMapping(type) {
     case 'redaction':
       return { prefix: 'redaction', overlayColor: 'OverlayColor' };
     case 'measureDistance':
+      return { prefix: 'measureDist', stroke: 'StrokeColor', width: 'LineWidth', borderStyle: 'BorderStyle', opacity: 'Opacity', startHead: 'StartHead', endHead: 'EndHead', headSize: 'HeadSize', dimension: true };
     case 'measureArea':
+      return { prefix: 'measureArea', stroke: 'StrokeColor', fill: 'FillColor', fillNone: 'FillNone', width: 'LineWidth', borderStyle: 'BorderStyle', opacity: 'Opacity', dimension: true };
     case 'measurePerimeter':
-      return { prefix: 'measure', stroke: 'StrokeColor', width: 'LineWidth', opacity: 'Opacity' };
+      return { prefix: 'measurePerim', stroke: 'StrokeColor', width: 'LineWidth', borderStyle: 'BorderStyle', opacity: 'Opacity', startHead: 'StartHead', endHead: 'EndHead', headSize: 'HeadSize', dimension: true };
     default:
       return null;
   }
@@ -213,6 +215,13 @@ export function setAsDefaultStyle(annotation) {
     if (annotation.hatchPattern) prefs[p + 'HatchPattern'] = annotation.hatchPattern;
     if (annotation.hatchColor) prefs[p + 'HatchColor'] = annotation.hatchColor;
     if (annotation.hatchScale != null) prefs[p + 'HatchScale'] = annotation.hatchScale;
+  }
+
+  // Dimension measurement properties (use 'Dim' prefix to avoid clash with global measureScale object)
+  if (m.dimension) {
+    if (annotation.measureScale != null) prefs[p + 'DimScale'] = annotation.measureScale;
+    if (annotation.measureUnit) prefs[p + 'DimUnit'] = annotation.measureUnit;
+    if (annotation.measurePrecision != null) prefs[p + 'DimPrecision'] = annotation.measurePrecision;
   }
 
   savePreferences();
@@ -252,6 +261,13 @@ export function applyDefaultStyle(annotation) {
     if (prefs[p + 'HatchPattern']) annotation.hatchPattern = prefs[p + 'HatchPattern'];
     if (prefs[p + 'HatchColor']) annotation.hatchColor = prefs[p + 'HatchColor'];
     if (prefs[p + 'HatchScale'] != null) annotation.hatchScale = prefs[p + 'HatchScale'];
+  }
+
+  // Dimension measurement properties (use 'Dim' prefix to avoid clash with global measureScale object)
+  if (m.dimension) {
+    if (prefs[p + 'DimScale'] != null) annotation.measureScale = prefs[p + 'DimScale'];
+    if (prefs[p + 'DimUnit']) annotation.measureUnit = prefs[p + 'DimUnit'];
+    if (prefs[p + 'DimPrecision'] != null) annotation.measurePrecision = prefs[p + 'DimPrecision'];
   }
 
   annotation.modifiedAt = new Date().toISOString();

@@ -63,6 +63,7 @@
     "ellipse": "Ellipse",
     "polygon": "Polygon",
     "cloud": "Cloud",
+    "cloudPolyline": "Cloud Polyline",
     "text": "Text",
     "textBox": "Text Box",
     "note": "Note",

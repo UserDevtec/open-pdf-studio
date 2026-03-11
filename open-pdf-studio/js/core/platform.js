@@ -230,6 +230,96 @@ export async function invoke(cmd, args = {}) {
   return null;
 }
 
+// Resolve raw OS type + version into a human-friendly name
+const WINDOWS_BUILDS = [
+  [22000, 'Windows 11'],
+  [0,     'Windows 10'],
+];
+const WINDOWS_VERSIONS = [
+  [6, 3, 'Windows 8.1'],
+  [6, 2, 'Windows 8'],
+  [6, 1, 'Windows 7'],
+  [6, 0, 'Windows Vista'],
+  [5, 2, 'Windows XP x64'],
+  [5, 1, 'Windows XP'],
+];
+const MACOS_NAMES = {
+  26: 'Tahoe',      25: 'Tahoe',
+  15: 'Sequoia',    14: 'Sonoma',     13: 'Ventura',
+  12: 'Monterey',   11: 'Big Sur',
+};
+const MACOS_10_NAMES = {
+  15: 'Catalina',   14: 'Mojave',     13: 'High Sierra',
+  12: 'Sierra',     11: 'El Capitan', 10: 'Yosemite',
+  9:  'Mavericks',  8:  'Mountain Lion', 7: 'Lion',
+  6:  'Snow Leopard', 5: 'Leopard',   4: 'Tiger',
+  3:  'Panther',    2:  'Jaguar',     1: 'Puma',
+  0:  'Cheetah',
+};
+
+function resolveOsInfo(rawType, rawVersion) {
+  const type = (rawType || '').toLowerCase();
+  const parts = rawVersion.split('.').map(p => parseInt(p) || 0);
+  const [major, minor, build] = parts;
+
+  if (type === 'windows') {
+    if (major === 10 && minor === 0) {
+      for (const [minBuild, name] of WINDOWS_BUILDS) {
+        if (build >= minBuild) return { name, version: String(build) };
+      }
+    }
+    for (const [maj, min, name] of WINDOWS_VERSIONS) {
+      if (major === maj && minor === min) return { name, version: rawVersion };
+    }
+    return { name: 'Windows', version: rawVersion };
+  }
+
+  if (type === 'macos' || type === 'darwin') {
+    if (major === 10) {
+      const sub = MACOS_10_NAMES[minor];
+      return { name: sub ? `macOS ${sub}` : 'macOS', version: rawVersion };
+    }
+    const name = MACOS_NAMES[major];
+    return { name: name ? `macOS ${name}` : 'macOS', version: rawVersion };
+  }
+
+  if (type === 'linux')   return { name: 'Linux', version: rawVersion };
+  if (type === 'android') return { name: 'Android', version: rawVersion };
+  if (type === 'ios')     return { name: 'iOS', version: rawVersion };
+
+  return { name: rawType || 'Unknown', version: rawVersion };
+}
+
+// Get OS info as { name, version, arch, locale } — cached after first call
+let _osInfoCache = null;
+export async function getOsInfo() {
+  if (_osInfoCache) return _osInfoCache;
+  if (!isTauri()) {
+    _osInfoCache = { name: 'Browser', version: '', arch: '', locale: '' };
+    return _osInfoCache;
+  }
+  try {
+    const os = await import('@tauri-apps/plugin-os');
+    const resolved = resolveOsInfo(os.type(), os.version());
+    _osInfoCache = {
+      name: resolved.name,
+      version: resolved.version,
+      arch: os.arch() || '',
+      locale: os.locale() || '',
+    };
+  } catch {
+    _osInfoCache = { name: 'Unknown', version: '', arch: '', locale: '' };
+  }
+  return _osInfoCache;
+}
+
+// Build a User-Agent string for API requests
+export async function buildUserAgent() {
+  const ver = await getAppVersion() || '0.0.0';
+  const os = await getOsInfo();
+  return `OpenPDFStudio/${ver} (${os.name} ${os.version}; ${os.arch})`.replace(/\s+/g, ' ').trim();
+}
+
 // Get app version from Tauri config
 export async function getAppVersion() {
   if (!isTauri()) return null;

@@ -15,10 +15,43 @@ import DialogHost from './components/DialogHost.jsx';
 import ContextMenu from './components/ContextMenu.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { DockedToolPalette, FloatingToolPalette, DockTargets } from './components/ToolPalette.jsx';
+import { DockedExtPalette, FloatingExtPalette, ExtDockTargets } from './components/ExtensionToolPalette.jsx';
+import { getRegisteredPalettes } from '../plugins/palette-registry.js';
+import { leftOrder, rightOrder } from './stores/paletteOrder.js';
 import { useTranslation } from '../i18n/useTranslation.js';
+import { For } from 'solid-js';
+
+function OrderedDockedPalettes(props) {
+  const order = () => props.side === 'left' ? leftOrder() : rightOrder();
+  const extPalettes = () => getRegisteredPalettes();
+
+  // Build list of all palette ids: 'tool' (built-in) + extension palette ids
+  const allIds = () => {
+    const o = order();
+    const extIds = extPalettes().map(p => p.id);
+    const all = ['tool', ...extIds];
+    // Ordered ones first, then any remaining (for palettes not yet in the order list)
+    const ordered = [...o.filter(id => all.includes(id)), ...all.filter(id => !o.includes(id))];
+    // Right side: first docked should be closest to the edge (rightmost in DOM), so reverse
+    return props.side === 'right' ? ordered.slice().reverse() : ordered;
+  };
+
+  return (
+    <For each={allIds()}>
+      {(id) => {
+        if (id === 'tool') {
+          return <DockedToolPalette side={props.side} />;
+        }
+        const descriptor = extPalettes().find(p => p.id === id);
+        return descriptor ? <DockedExtPalette side={props.side} descriptor={descriptor} /> : null;
+      }}
+    </For>
+  );
+}
 
 function DesktopApp() {
   const { t } = useTranslation('common');
+  const extPalettes = () => getRegisteredPalettes();
 
   return (
     <>
@@ -33,10 +66,13 @@ function DesktopApp() {
 
       <div class="content">
         <LeftPanel />
-        <DockedToolPalette side="left" />
+        <OrderedDockedPalettes side="left" />
 
         <div class="main-view">
           <DockTargets />
+          <For each={extPalettes()}>
+            {(p) => <ExtDockTargets descriptor={p} />}
+          </For>
           <FindBar />
 
           <div id="placeholder">
@@ -62,7 +98,7 @@ function DesktopApp() {
           </div>
         </div>
 
-        <DockedToolPalette side="right" />
+        <OrderedDockedPalettes side="right" />
         <PropertiesPanel />
       </div>
 
@@ -72,6 +108,9 @@ function DesktopApp() {
       <DialogHost />
       <ContextMenu />
       <FloatingToolPalette />
+      <For each={extPalettes()}>
+        {(p) => <FloatingExtPalette descriptor={p} />}
+      </For>
       <LoadingOverlay />
     </>
   );

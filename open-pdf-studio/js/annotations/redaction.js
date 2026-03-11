@@ -6,7 +6,7 @@ import i18next from '../i18n/config.js';
 import { showMessage } from '../bridge.js';
 
 // Apply all redaction annotations permanently (flatten them)
-export function applyRedactions() {
+export async function applyRedactions() {
   const redactions = state.annotations.filter(a => a.page === state.currentPage && a.type === 'redaction');
   if (redactions.length === 0) {
     showMessage(i18next.t('noRedactionsOnPage'));
@@ -14,10 +14,13 @@ export function applyRedactions() {
   }
 
   const count = redactions.length;
-  const confirmed = confirm(
-    `Apply ${count} redaction${count > 1 ? 's' : ''} on page ${state.currentPage}?\n\n` +
-    'This will permanently black out the marked areas. This action cannot be undone.'
-  );
+  const msg = `Apply ${count} redaction${count > 1 ? 's' : ''} on page ${state.currentPage}?\n\nThis will permanently black out the marked areas. This action cannot be undone.`;
+  let confirmed = false;
+  if (window.__TAURI__?.dialog?.ask) {
+    confirmed = await window.__TAURI__.dialog.ask(msg, { title: 'Apply Redactions', kind: 'warning' });
+  } else {
+    confirmed = confirm(msg);
+  }
 
   if (!confirmed) return;
 
@@ -49,7 +52,7 @@ export function applyRedactions() {
 }
 
 // Apply all redactions across all pages
-export function applyAllRedactions() {
+export async function applyAllRedactions() {
   const allRedactions = state.annotations.filter(a => a.type === 'redaction');
   if (allRedactions.length === 0) {
     showMessage(i18next.t('noRedactionsInDocument'));
@@ -58,10 +61,13 @@ export function applyAllRedactions() {
 
   const count = allRedactions.length;
   const pages = [...new Set(allRedactions.map(a => a.page))].sort((a, b) => a - b);
-  const confirmed = confirm(
-    `Apply ${count} redaction${count > 1 ? 's' : ''} across ${pages.length} page${pages.length > 1 ? 's' : ''}?\n\n` +
-    'This will permanently black out all marked areas. This action cannot be undone.'
-  );
+  const msg = `Apply ${count} redaction${count > 1 ? 's' : ''} across ${pages.length} page${pages.length > 1 ? 's' : ''}?\n\nThis will permanently black out all marked areas. This action cannot be undone.`;
+  let confirmed = false;
+  if (window.__TAURI__?.dialog?.ask) {
+    confirmed = await window.__TAURI__.dialog.ask(msg, { title: 'Apply Redactions', kind: 'warning' });
+  } else {
+    confirmed = confirm(msg);
+  }
 
   if (!confirmed) return;
 

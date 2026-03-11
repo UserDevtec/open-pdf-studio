@@ -51,6 +51,7 @@ export interface AppState {
   documents: DocumentState[];
   activeDocumentIndex: number;
   currentTool: string;
+  toolOverrides: Record<string, any> | null;
   imageCache: Map<string, any>;
   modalDialogOpen: boolean;
   appMenuOpen: boolean;
@@ -69,6 +70,10 @@ export interface AppState {
   currentPath: Point[];
   polylinePoints: Point[];
   isDrawingPolyline: boolean;
+  cloudPolylinePoints: Point[];
+  isDrawingCloudPolyline: boolean;
+  dimPoints: Point[];
+  isDrawingDimension: boolean;
   isDragging: boolean;
   isResizing: boolean;
   activeHandle: string | null;
@@ -120,6 +125,7 @@ export const state = createMutable<AppState>({
   documents: [],
   activeDocumentIndex: -1,
   currentTool: 'hand',
+  toolOverrides: null,
   imageCache: new Map(),
   modalDialogOpen: false,
   appMenuOpen: false,
@@ -158,6 +164,14 @@ export const state = createMutable<AppState>({
   set polylinePoints(v) { interactionState.polylinePoints = v; },
   get isDrawingPolyline() { return interactionState.isDrawingPolyline; },
   set isDrawingPolyline(v) { interactionState.isDrawingPolyline = v; },
+  get cloudPolylinePoints() { return interactionState.cloudPolylinePoints; },
+  set cloudPolylinePoints(v) { interactionState.cloudPolylinePoints = v; },
+  get isDrawingCloudPolyline() { return interactionState.isDrawingCloudPolyline; },
+  set isDrawingCloudPolyline(v) { interactionState.isDrawingCloudPolyline = v; },
+  get dimPoints() { return interactionState.dimPoints; },
+  set dimPoints(v) { interactionState.dimPoints = v; },
+  get isDrawingDimension() { return interactionState.isDrawingDimension; },
+  set isDrawingDimension(v) { interactionState.isDrawingDimension = v; },
   get isDragging() { return interactionState.isDragging; },
   set isDragging(v) { interactionState.isDragging = v; },
   get isResizing() { return interactionState.isResizing; },

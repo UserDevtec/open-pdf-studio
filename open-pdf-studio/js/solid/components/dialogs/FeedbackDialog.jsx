@@ -2,7 +2,9 @@ import { createSignal, Show, For, onMount } from 'solid-js';
 import Dialog from '../Dialog.jsx';
 import { closeDialog } from '../../stores/dialogStore.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
-import { getAppVersion } from '../../../core/platform.js';
+import { getAppVersion, buildUserAgent } from '../../../core/platform.js';
+import { state } from '../../../core/state.js';
+import { savePreferences } from '../../../core/preferences.js';
 
 const API_URL = 'https://open-feedback-studio.pages.dev/api/feedback';
 const APP_ID = 'open-pdf-studio';
@@ -14,11 +16,14 @@ const MIN_MESSAGE = 10;
 export default function FeedbackDialog() {
   const { t } = useTranslation('dialogs');
 
+  const [email, setEmail] = createSignal('');
+  const [fullName, setFullName] = createSignal('');
   const [category, setCategory] = createSignal('general');
   const [message, setMessage] = createSignal('');
   const [images, setImages] = createSignal([]);
   const [sentiment, setSentiment] = createSignal(null);
   const [appVersion, setAppVersion] = createSignal('');
+  const [userAgent, setUserAgent] = createSignal('');
   const [status, setStatus] = createSignal('idle'); // idle | submitting | success | error
   const [errorMsg, setErrorMsg] = createSignal('');
 
@@ -27,11 +32,17 @@ export default function FeedbackDialog() {
   onMount(async () => {
     const ver = await getAppVersion();
     setAppVersion(ver || (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : ''));
+    setUserAgent(await buildUserAgent());
+    if (state.preferences.feedbackEmail) setEmail(state.preferences.feedbackEmail);
+    if (state.preferences.feedbackFullName) setFullName(state.preferences.feedbackFullName);
   });
 
   const close = () => closeDialog('feedback');
 
+  const isValidEmail = () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email().trim());
+
   const canSubmit = () =>
+    isValidEmail() &&
     message().length >= MIN_MESSAGE &&
     message().length <= MAX_MESSAGE &&
     status() !== 'submitting';
@@ -76,6 +87,8 @@ export default function FeedbackDialog() {
   }
 
   function resetForm() {
+    setEmail('');
+    setFullName('');
     setCategory('general');
     setMessage('');
     images().forEach(img => URL.revokeObjectURL(img.url));
@@ -98,9 +111,14 @@ export default function FeedbackDialog() {
 
       let response;
 
+      const emailVal = email().trim();
+      const nameVal = fullName().trim() || undefined;
+
       if (images().length > 0) {
         const formData = new FormData();
         formData.append('app', APP_ID);
+        formData.append('email', emailVal);
+        if (nameVal) formData.append('fullname', nameVal);
         formData.append('category', category());
         formData.append('message', message().trim());
         if (sentimentLabel) formData.append('sentiment', sentimentLabel);
@@ -109,16 +127,21 @@ export default function FeedbackDialog() {
           formData.append('images', img.file);
         });
 
+        const ua = userAgent();
         response = await fetch(API_URL, {
           method: 'POST',
+          headers: ua ? { 'User-Agent': ua } : {},
           body: formData,
         });
       } else {
+        const ua = userAgent();
         response = await fetch(API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(ua ? { 'User-Agent': ua } : {}) },
           body: JSON.stringify({
             app: APP_ID,
+            email: emailVal,
+            fullname: nameVal,
             category: category(),
             message: message().trim(),
             sentiment: sentimentLabel,
@@ -130,6 +153,11 @@ export default function FeedbackDialog() {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
+
+      // Remember email and name for next time
+      state.preferences.feedbackEmail = email().trim();
+      state.preferences.feedbackFullName = fullName().trim();
+      savePreferences();
 
       setStatus('success');
     } catch (e) {
@@ -161,6 +189,30 @@ export default function FeedbackDialog() {
     >
       <Show when={status() === 'success'} fallback={
         <div class="feedback-form">
+          {/* Email & Name */}
+          <div class="feedback-section">
+            <div class="feedback-field-row">
+              <label class="feedback-field-label">{t('feedback.email')} <span class="feedback-required">*</span></label>
+              <input
+                type="email"
+                class="feedback-input"
+                placeholder={t('feedback.emailPlaceholder')}
+                value={email()}
+                onInput={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div class="feedback-field-row">
+              <label class="feedback-field-label">{t('feedback.fullName')}</label>
+              <input
+                type="text"
+                class="feedback-input"
+                placeholder={t('feedback.fullNamePlaceholder')}
+                value={fullName()}
+                onInput={(e) => setFullName(e.target.value)}
+              />
+            </div>
+          </div>
+
           {/* Category */}
           <div class="feedback-section">
             <div class="feedback-categories">

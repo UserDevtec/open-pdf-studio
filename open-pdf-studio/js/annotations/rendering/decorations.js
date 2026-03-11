@@ -10,13 +10,15 @@ export function drawArrowheadOnCanvas(ctx, x, y, angle, size, style) {
 
   ctx.beginPath();
   if (style === 'open' || style === 'stealth') {
-    // Open arrow style - two lines
+    // Open arrow style - two lines; use round join to limit tip overshoot
+    ctx.lineJoin = 'round';
     ctx.moveTo(-size, -size * Math.tan(halfAngle));
     ctx.lineTo(0, 0);
     ctx.lineTo(-size, size * Math.tan(halfAngle));
     ctx.stroke();
   } else if (style === 'closed') {
-    // Closed/filled arrow style - triangle
+    // Closed/filled arrow style - thin stroke so visual tip aligns with data endpoint
+    ctx.lineWidth = Math.min(ctx.lineWidth, 1);
     ctx.moveTo(0, 0);
     ctx.lineTo(-size, -size * Math.tan(halfAngle));
     ctx.lineTo(-size, size * Math.tan(halfAngle));
@@ -24,7 +26,8 @@ export function drawArrowheadOnCanvas(ctx, x, y, angle, size, style) {
     ctx.fill();
     ctx.stroke();
   } else if (style === 'diamond') {
-    // Diamond style
+    // Diamond style - thin stroke for filled shape
+    ctx.lineWidth = Math.min(ctx.lineWidth, 1);
     const halfSize = size / 2;
     ctx.moveTo(0, 0);
     ctx.lineTo(-halfSize, -halfSize * 0.6);
@@ -34,15 +37,38 @@ export function drawArrowheadOnCanvas(ctx, x, y, angle, size, style) {
     ctx.fill();
     ctx.stroke();
   } else if (style === 'circle') {
-    // Circle style
+    // Circle style - thin stroke for filled shape
+    ctx.lineWidth = Math.min(ctx.lineWidth, 1);
     const radius = size / 3;
     ctx.arc(-radius, 0, radius, 0, 2 * Math.PI);
     ctx.fill();
     ctx.stroke();
   } else if (style === 'square') {
-    // Square style
+    // Square style - thin stroke for filled shape
+    ctx.lineWidth = Math.min(ctx.lineWidth, 1);
     const halfSize = size / 3;
     ctx.rect(-size / 2 - halfSize, -halfSize, halfSize * 2, halfSize * 2);
+    ctx.fill();
+    ctx.stroke();
+  } else if (style === 'butt') {
+    // Butt style - perpendicular line at the endpoint (like slash but thicker)
+    ctx.moveTo(0, -size / 2);
+    ctx.lineTo(0, size / 2);
+    ctx.stroke();
+  } else if (style === 'openReversed') {
+    // Open arrow reversed - two lines pointing backward
+    ctx.lineJoin = 'round';
+    ctx.moveTo(size, -size * Math.tan(halfAngle));
+    ctx.lineTo(0, 0);
+    ctx.lineTo(size, size * Math.tan(halfAngle));
+    ctx.stroke();
+  } else if (style === 'closedReversed') {
+    // Closed arrow reversed - filled triangle pointing backward
+    ctx.lineWidth = Math.min(ctx.lineWidth, 1);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(size, -size * Math.tan(halfAngle));
+    ctx.lineTo(size, size * Math.tan(halfAngle));
+    ctx.closePath();
     ctx.fill();
     ctx.stroke();
   } else if (style === 'slash') {
@@ -53,6 +79,29 @@ export function drawArrowheadOnCanvas(ctx, x, y, angle, size, style) {
   }
 
   ctx.restore();
+}
+
+// Draw a dimension line ending with centering offsets for circle/diamond/square,
+// transparent fill for those shapes, and 30° rotation for slash.
+export function drawDimensionLineEnding(ctx, x, y, angle, size, style) {
+  if (style === 'none') return;
+  let ox = x, oy = y, a = angle;
+  const unfilled = style === 'circle' || style === 'diamond' || style === 'square';
+  if (style === 'circle') {
+    const r = size / 3;
+    ox += Math.cos(angle) * r;
+    oy += Math.sin(angle) * r;
+  } else if (style === 'diamond' || style === 'square') {
+    const off = size / 2;
+    ox += Math.cos(angle) * off;
+    oy += Math.sin(angle) * off;
+  } else if (style === 'slash') {
+    a = angle + Math.PI / 6;
+  }
+  const savedFill = ctx.fillStyle;
+  if (unfilled) ctx.fillStyle = 'rgba(0,0,0,0)';
+  drawArrowheadOnCanvas(ctx, ox, oy, a, size, style);
+  if (unfilled) ctx.fillStyle = savedFill;
 }
 
 // Apply border style (dashed/dotted/solid and extended patterns) to canvas context

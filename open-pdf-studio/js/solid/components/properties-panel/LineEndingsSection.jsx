@@ -21,11 +21,14 @@ export default function LineEndingsSection() {
               <option value="mixed" disabled hidden>{tCommon('mixed')}</option>
             </Show>
             <option value="none">{tCommon('none')}</option>
+            <option value="square">{t('lineEndings.square')}</option>
+            <option value="circle">{t('lineEndings.circle')}</option>
+            <option value="diamond">{t('lineEndings.diamond')}</option>
             <option value="open">{t('lineEndings.openArrow')}</option>
             <option value="closed">{t('lineEndings.closedArrow')}</option>
-            <option value="diamond">{t('lineEndings.diamond')}</option>
-            <option value="circle">{t('lineEndings.circle')}</option>
-            <option value="square">{t('lineEndings.square')}</option>
+            <option value="butt">{t('lineEndings.butt')}</option>
+            <option value="openReversed">{t('lineEndings.openArrowReversed')}</option>
+            <option value="closedReversed">{t('lineEndings.closedArrowReversed')}</option>
             <option value="slash">{t('lineEndings.slash')}</option>
           </select>
         </div>
@@ -39,11 +42,14 @@ export default function LineEndingsSection() {
               <option value="mixed" disabled hidden>{tCommon('mixed')}</option>
             </Show>
             <option value="none">{tCommon('none')}</option>
+            <option value="square">{t('lineEndings.square')}</option>
+            <option value="circle">{t('lineEndings.circle')}</option>
+            <option value="diamond">{t('lineEndings.diamond')}</option>
             <option value="open">{t('lineEndings.openArrow')}</option>
             <option value="closed">{t('lineEndings.closedArrow')}</option>
-            <option value="diamond">{t('lineEndings.diamond')}</option>
-            <option value="circle">{t('lineEndings.circle')}</option>
-            <option value="square">{t('lineEndings.square')}</option>
+            <option value="butt">{t('lineEndings.butt')}</option>
+            <option value="openReversed">{t('lineEndings.openArrowReversed')}</option>
+            <option value="closedReversed">{t('lineEndings.closedArrowReversed')}</option>
             <option value="slash">{t('lineEndings.slash')}</option>
           </select>
         </div>

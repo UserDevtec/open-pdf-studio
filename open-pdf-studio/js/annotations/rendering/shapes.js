@@ -68,6 +68,44 @@ export function drawCloudShape(ctx, x, y, width, height) {
   ctx.stroke();
 }
 
+// Build cloud path along arbitrary points (closed polygon with scallop edges)
+export function buildCloudPolylinePath(ctx, points, closed = true) {
+  if (!points || points.length < 2) return;
+  const TARGET_BUMP = 12; // target bump radius in user units
+
+  ctx.beginPath();
+  const len = closed ? points.length : points.length - 1;
+  for (let i = 0; i < len; i++) {
+    const p1 = points[i];
+    const p2 = points[(i + 1) % points.length];
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const edgeLen = Math.sqrt(dx * dx + dy * dy);
+    if (edgeLen < 1) continue;
+
+    const numBumps = Math.max(1, Math.round(edgeLen / (TARGET_BUMP * 1.5)));
+    const bumpRadius = edgeLen / numBumps / 2;
+    const angle = Math.atan2(dy, dx);
+    // Normal direction (perpendicular, pointing outward for CW winding)
+    const nx = -Math.sin(angle);
+    const ny = Math.cos(angle);
+
+    for (let j = 0; j < numBumps; j++) {
+      const t = (j + 0.5) / numBumps;
+      const cx = p1.x + dx * t;
+      const cy = p1.y + dy * t;
+      // Arc center offset outward
+      const arcCx = cx + nx * 0;
+      const arcCy = cy + ny * 0;
+      // Start and end angles for the arc (perpendicular to edge, sweeping outward)
+      const startAngle = angle + Math.PI;
+      const endAngle = angle;
+      ctx.arc(arcCx, arcCy, bumpRadius, startAngle, endAngle, false);
+    }
+  }
+  if (closed) ctx.closePath();
+}
+
 // Compute the minimum height needed for textbox content (same word-wrap logic as drawTextboxContent)
 export function computeTextboxContentHeight(annotation) {
   if (!annotation.text) return annotation.height || 50;

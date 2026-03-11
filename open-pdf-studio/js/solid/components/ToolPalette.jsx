@@ -4,13 +4,14 @@ import { setTool } from '../../tools/manager.js';
 import { isPdfAReadOnly } from '../../pdf/loader.js';
 import {
   highlightIcon, freehandIcon, lineIcon, arrowIcon, polylineIcon,
-  rectIcon, ellipseIcon, polygonIcon, cloudIcon,
+  rectIcon, ellipseIcon, polygonIcon, cloudIcon, cloudPolylineIcon,
   textboxIcon, calloutIcon, noteIcon,
-  stampIcon, signatureIcon, northArrowIcon,
+  stampIcon, signatureIcon,
   measureDistanceIcon, measureAreaIcon, measurePerimeterIcon
 } from '../data/ribbonIcons.js';
 import { useTranslation } from '../../i18n/useTranslation.js';
 import { savePreferences } from '../../core/preferences.js';
+import { registerPaletteDock, unregisterPaletteDock } from '../stores/paletteOrder.js';
 
 const handIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"/></svg>`;
 const selectIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>`;
@@ -34,15 +35,26 @@ function savePaletteState() {
 }
 
 export function toggleToolPalette() {
-  setPaletteVisible(v => !v);
+  const willBeVisible = !paletteVisible();
+  setPaletteVisible(willBeVisible);
+  const mode = paletteMode();
+  if (willBeVisible && mode.startsWith('docked-')) {
+    registerPaletteDock('tool', mode.replace('docked-', ''));
+  } else {
+    unregisterPaletteDock('tool');
+  }
   savePaletteState();
 }
 
 export function initToolPalette() {
   const prefs = state.preferences;
   setPaletteVisible(prefs.toolPaletteVisible);
-  setPaletteMode(prefs.toolPaletteMode || 'docked-left');
+  const mode = prefs.toolPaletteMode || 'docked-left';
+  setPaletteMode(mode);
   setFloatPos({ x: prefs.toolPaletteFloatX ?? 200, y: prefs.toolPaletteFloatY ?? 150 });
+  if (prefs.toolPaletteVisible && mode.startsWith('docked-')) {
+    registerPaletteDock('tool', mode.replace('docked-', ''));
+  }
 }
 
 window.__toggleToolPalette = toggleToolPalette;
@@ -62,6 +74,7 @@ const tools = [
   { tool: 'circle', key: 'comment.ellipse', icon: ellipseIcon, group: 2 },
   { tool: 'polygon', key: 'comment.polygon', icon: polygonIcon, group: 2 },
   { tool: 'cloud', key: 'comment.cloud', icon: cloudIcon, group: 2 },
+  { tool: 'cloudPolyline', key: 'comment.cloudPolyline', icon: cloudPolylineIcon, group: 2 },
   { tool: 'textbox', key: 'comment.textBox', icon: textboxIcon, group: 3 },
   { tool: 'callout', key: 'comment.callout', icon: calloutIcon, group: 3 },
   { tool: 'comment', key: 'comment.note', icon: noteIcon, group: 3 },
@@ -70,7 +83,6 @@ const tools = [
   { tool: 'measureDistance', key: 'comment.measureDistance', icon: measureDistanceIcon, group: 5 },
   { tool: 'measureArea', key: 'comment.measureArea', icon: measureAreaIcon, group: 5 },
   { tool: 'measurePerimeter', key: 'comment.measurePerimeter', icon: measurePerimeterIcon, group: 5 },
-  { tool: 'northArrow', key: 'comment.northArrow', icon: northArrowIcon, group: 6 },
 ];
 
 // --- Shared drag logic ---
@@ -105,6 +117,7 @@ function startDrag(e, fromDocked) {
       hasMoved = true;
       if (fromDocked) {
         setPaletteMode('float');
+        unregisterPaletteDock('tool');
       }
     }
 
@@ -125,6 +138,9 @@ function startDrag(e, fromDocked) {
     const snap = getSnapSide(ev.clientX);
     if (snap) {
       setPaletteMode(`docked-${snap}`);
+      registerPaletteDock('tool', snap);
+    } else {
+      unregisterPaletteDock('tool');
     }
     savePaletteState();
   }
@@ -138,7 +154,7 @@ function startDrag(e, fromDocked) {
 function ToolBtn(props) {
   const toolDisabled = () => noPdf() || isPdfAReadOnly();
   const alwaysEnabled = props.tool === 'hand' || props.tool === 'select';
-  const isActive = () => state.currentTool === props.tool;
+  const isActive = () => state.currentTool === props.tool && !state.toolOverrides;
   return (
     <button
       class={`tp-btn ${isActive() ? 'active' : ''}`}
@@ -206,7 +222,7 @@ export function DockedToolPalette(props) {
         <div class={`tp-docked-tools${twoCol() ? ' two-col' : ''}`}>
           <ToolList />
         </div>
-        <button class="tp-close" onClick={() => { setPaletteVisible(false); savePaletteState(); }}>
+        <button class="tp-close" onClick={() => { setPaletteVisible(false); unregisterPaletteDock('tool'); savePaletteState(); }}>
           <svg width="8" height="8" viewBox="0 0 10 10">
             <line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" stroke-width="1.5"/>
             <line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" stroke-width="1.5"/>

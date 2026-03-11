@@ -11,6 +11,8 @@ import { loadPreferences, savePreferences } from './core/preferences.js';
 import { initDomElements } from './ui/dom-elements.js';
 import { initPropertiesPanel } from './ui/panels/properties-panel.js';
 import { initToolPalette } from './solid/components/ToolPalette.jsx';
+import { initPaletteOrder } from './solid/stores/paletteOrder.js';
+import { initPlugins } from './plugins/plugin-manager.js';
 
 // UI initialization
 import { initMenus } from './ui/chrome/menus.js';
@@ -169,7 +171,11 @@ async function init() {
   initPropertiesPanel();
 
   // Restore tool palette visibility, mode and position from preferences
+  initPaletteOrder();
   initToolPalette();
+
+  // Load installed plugins (extension palettes, custom annotation types, etc.)
+  initPlugins();
 
   // Show the window after the browser has painted the first frame.
   // Double requestAnimationFrame ensures layout + paint have completed.

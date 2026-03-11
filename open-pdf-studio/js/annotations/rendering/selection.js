@@ -45,7 +45,7 @@ export function drawSelectionHandles(ctx, annotation) {
       }
       ctx.beginPath();
       ctx.moveTo(selCircX + selCircW/2, selCircY - 2);
-      ctx.lineTo(selCircX + selCircW/2, selCircY - 25);
+      ctx.lineTo(selCircX + selCircW/2, selCircY - 25 / sc);
       ctx.stroke();
       ctx.restore();
       break;
@@ -64,8 +64,8 @@ export function drawSelectionHandles(ctx, annotation) {
         ctx.translate(-boxSelCenterX, -boxSelCenterY);
       }
       ctx.beginPath();
-      ctx.moveTo(annotation.x + annotation.width + 2, annotation.y + annotation.height / 2);
-      ctx.lineTo(annotation.x + annotation.width + 25 / sc, annotation.y + annotation.height / 2);
+      ctx.moveTo(annotation.x + annotation.width / 2, annotation.y - 2);
+      ctx.lineTo(annotation.x + annotation.width / 2, annotation.y - 25 / sc);
       ctx.stroke();
       ctx.restore();
       break;
@@ -84,8 +84,8 @@ export function drawSelectionHandles(ctx, annotation) {
         ctx.translate(-tbSelCenterX, -tbSelCenterY);
       }
       ctx.beginPath();
-      ctx.moveTo(annotation.x + selTbWidth + 2, annotation.y + selTbHeight/2);
-      ctx.lineTo(annotation.x + selTbWidth + 25 / sc, annotation.y + selTbHeight/2);
+      ctx.moveTo(annotation.x + selTbWidth / 2, annotation.y - 2);
+      ctx.lineTo(annotation.x + selTbWidth / 2, annotation.y - 25 / sc);
       ctx.stroke();
       ctx.restore();
       break;
@@ -93,10 +93,19 @@ export function drawSelectionHandles(ctx, annotation) {
     case 'image':
     case 'stamp':
     case 'signature':
+      ctx.save();
+      if (annotation.rotation) {
+        const imgCenterX = annotation.x + annotation.width / 2;
+        const imgCenterY = annotation.y + annotation.height / 2;
+        ctx.translate(imgCenterX, imgCenterY);
+        ctx.rotate(annotation.rotation * Math.PI / 180);
+        ctx.translate(-imgCenterX, -imgCenterY);
+      }
       ctx.beginPath();
       ctx.moveTo(annotation.x + annotation.width/2, annotation.y - 2);
       ctx.lineTo(annotation.x + annotation.width/2, annotation.y - 25 / sc);
       ctx.stroke();
+      ctx.restore();
       break;
   }
 
@@ -156,12 +165,25 @@ export function drawSelectionHandles(ctx, annotation) {
       return;
     }
 
-    // Square handles (white fill, blue border for all)
+    // Square handles (white fill, blue border) — rotated to match annotation
+    ctx.save();
+    if (annotation.type === 'measureDistance') {
+      // Rotate handles to match dimension line angle
+      const mdAngle = Math.atan2(annotation.endY - annotation.startY, annotation.endX - annotation.startX);
+      ctx.translate(cx, cy);
+      ctx.rotate(mdAngle);
+      ctx.translate(-cx, -cy);
+    } else if (annotation.rotation) {
+      ctx.translate(cx, cy);
+      ctx.rotate(annotation.rotation * Math.PI / 180);
+      ctx.translate(-cx, -cy);
+    }
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(cx - hs / 2, cy - hs / 2, hs, hs);
     ctx.strokeStyle = '#0066cc';
     ctx.lineWidth = lw;
     ctx.strokeRect(cx - hs / 2, cy - hs / 2, hs, hs);
+    ctx.restore();
   });
 }
 

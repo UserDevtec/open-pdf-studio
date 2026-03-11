@@ -47,9 +47,10 @@ Open PDF Studio is a lightweight, native desktop application that provides profe
 
 ### Annotations & Markup (20+ Tools)
 - **Text markup:** Highlight, underline, strikethrough
-- **Shapes:** Rectangle, ellipse, polygon, cloud, line, arrow, polyline
+- **Shapes:** Rectangle, ellipse, polygon, cloud, cloud polyline, line, arrow, polyline
+- **Hatch fill patterns:** Cross-hatch, diagonal, dots, and more for shape fills
 - **Freehand drawing:** Pen tool with configurable color, width, and opacity
-- **Text annotations:** Text box, callout with leader line, sticky notes
+- **Text annotations:** Text box, callout with leader line, sticky notes with popup editing
 - **Stamps:** 10 built-in stamps (Approved, Rejected, Draft, Confidential, Final, etc.)
 - **Images:** Insert from file, paste from clipboard, or drag-and-drop
 - **Signatures:** Draw multi-stroke signatures, save up to 5 for quick reuse
@@ -57,9 +58,17 @@ Open PDF Studio is a lightweight, native desktop application that provides profe
 
 ### Measurement Tools
 - Distance, area, and perimeter measurement
-- Scale calibration with mm, cm, inches, and points
+- Scale calibration dialog with mm, cm, m, inches, feet, and points
+- Quick scale: right-click a dimension line and type a value (e.g. "12.3m") to recalibrate
 - Object snapping to endpoints, midpoints, centers, and edges
 - Angle snapping with configurable increments
+
+### Screenshot
+- Capture full page or a selected region as an image
+- Copy to clipboard or save to file
+
+### Crop Margins
+- Auto-detect and trim whitespace around page content
 
 ### Text Editing
 - Edit existing PDF text content inline
@@ -100,12 +109,19 @@ Open PDF Studio is a lightweight, native desktop application that provides profe
 - Highlight all matches with result count
 - Navigate results with F3
 
+### Format & Styles
+- 12 pre-defined style gallery for quick annotation styling
+- Fill color, stroke color, line width, opacity, and border style
+- Blend modes for annotation compositing
+- Per-annotation-type default styles
+
 ### Multi-Select & Alignment
 - Select multiple annotations with rubber band or Ctrl+Click
+- Shared property editing across selected annotations
 - 6-point alignment (left, center, right, top, middle, bottom)
 - Horizontal and vertical distribution
 - Match size (width, height, or both)
-- Flip and rotate selected annotations
+- Flip horizontal/vertical and rotate selected annotations
 - Z-order control (bring to front/back, forward/backward)
 
 ### Object Snapping
@@ -114,6 +130,11 @@ Open PDF Studio is a lightweight, native desktop application that provides profe
 - Configurable snap radius (3-30px)
 - Angle snapping (1-90 degree increments)
 - Optional grid overlay with grid snapping
+
+### Tool Palette
+- Floating or dockable toolbar with all annotation tools
+- Dock to left or right side of the canvas
+- Quick access without switching ribbon tabs
 
 ### PDF Viewing & Navigation
 - High-quality rendering powered by PDF.js
@@ -140,11 +161,13 @@ Thumbnails, Bookmarks, Annotations, Attachments, Digital Signatures, Layers, For
 - Document properties dialog
 - File locking to prevent external writes
 
+### Ribbon Interface (7 Tabs)
+Home, Comment, View, Organize, Arrange, Format, Help
+
 ### Customization
 - **5 themes:** Dark, Light, Blue, High Contrast, System (auto-detect)
 - **39 languages** including RTL support:
   [Arabic](https://en.wikipedia.org/wiki/Arabic_language), [Bengali](https://en.wikipedia.org/wiki/Bengali_language), [Bulgarian](https://en.wikipedia.org/wiki/Bulgarian_language), [Catalan](https://en.wikipedia.org/wiki/Catalan_language), [Chinese](https://en.wikipedia.org/wiki/Chinese_language), [Croatian](https://en.wikipedia.org/wiki/Croatian_language), [Czech](https://en.wikipedia.org/wiki/Czech_language), [Danish](https://en.wikipedia.org/wiki/Danish_language), [Dutch](https://en.wikipedia.org/wiki/Dutch_language), [English](https://en.wikipedia.org/wiki/English_language), [Finnish](https://en.wikipedia.org/wiki/Finnish_language), [French](https://en.wikipedia.org/wiki/French_language), [German](https://en.wikipedia.org/wiki/German_language), [Greek](https://en.wikipedia.org/wiki/Greek_language), [Hebrew](https://en.wikipedia.org/wiki/Hebrew_language), [Hindi](https://en.wikipedia.org/wiki/Hindi), [Hungarian](https://en.wikipedia.org/wiki/Hungarian_language), [Indonesian](https://en.wikipedia.org/wiki/Indonesian_language), [Italian](https://en.wikipedia.org/wiki/Italian_language), [Japanese](https://en.wikipedia.org/wiki/Japanese_language), [Korean](https://en.wikipedia.org/wiki/Korean_language), [Malay](https://en.wikipedia.org/wiki/Malay_language), [Norwegian](https://en.wikipedia.org/wiki/Norwegian_language), [Farsi (Persian)](https://en.wikipedia.org/wiki/Persian_language), [Polish](https://en.wikipedia.org/wiki/Polish_language), [Portuguese](https://en.wikipedia.org/wiki/Portuguese_language), [Romanian](https://en.wikipedia.org/wiki/Romanian_language), [Russian](https://en.wikipedia.org/wiki/Russian_language), [Serbian](https://en.wikipedia.org/wiki/Serbian_language), [Slovak](https://en.wikipedia.org/wiki/Slovak_language), [Spanish](https://en.wikipedia.org/wiki/Spanish_language), [Swahili](https://en.wikipedia.org/wiki/Swahili_language), [Swedish](https://en.wikipedia.org/wiki/Swedish_language), [Tamil](https://en.wikipedia.org/wiki/Tamil_language), [Thai](https://en.wikipedia.org/wiki/Thai_language), [Turkish](https://en.wikipedia.org/wiki/Turkish_language), [Ukrainian](https://en.wikipedia.org/wiki/Ukrainian_language), [Urdu](https://en.wikipedia.org/wiki/Urdu), [Vietnamese](https://en.wikipedia.org/wiki/Vietnamese_language)
-- Per-annotation-type default styles
 - Configurable preferences dialog
 
 ### Undo/Redo
@@ -166,7 +189,7 @@ Thumbnails, Bookmarks, Annotations, Attachments, Digital Signatures, Layers, For
 | `Ctrl+Shift+S` | Save As |
 | `Ctrl+P` | Print |
 | `Ctrl+Z` | Undo |
-| `Ctrl+Y` | Redo |
+| `Ctrl+Y` / `Ctrl+Shift+Z` | Redo |
 | `Ctrl+F` | Find |
 | `F3` | Find next |
 | `Ctrl+A` | Select all annotations on page |
@@ -174,6 +197,18 @@ Thumbnails, Bookmarks, Annotations, Attachments, Digital Signatures, Layers, For
 | `Delete` | Delete selected annotation(s) |
 | `Ctrl+D` | Document properties |
 | `Ctrl+W` | Close active tab |
+| `V` | Select tool |
+| `H` | Hand tool |
+| `T` | Text box tool |
+| `N` | Sticky note tool |
+| `Ctrl+=` / `Ctrl+-` | Zoom in / Zoom out |
+| `Ctrl+0` | Actual size |
+| `Ctrl+1` | Fit width |
+| `Ctrl+2` | Fit page |
+| `F9` | Toggle navigation panel |
+| `F11` | Toggle annotations list |
+| `F12` | Toggle properties panel |
+| `F1` | Keyboard shortcuts |
 | `Arrow keys` | Nudge annotation (1px, Shift for 10px) |
 | `Enter` | Complete area/perimeter measurement |
 

@@ -307,6 +307,10 @@
   },
   "feedback": {
     "title": "Send Feedback",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "fullName": "Full Name",
+    "fullNamePlaceholder": "Your name (optional)",
     "categoryBug": "Bug",
     "categoryFeature": "Feature",
     "categoryGeneral": "General",
@@ -337,6 +341,17 @@
     "info": "{{count}} page(s) in document. CropBox preserves the original content — fully reversible with Undo.",
     "noContent": "No content detected — all selected pages appear to be blank.",
     "resultWithSkipped": "Cropped {{cropped}} page(s). Skipped {{skipped}} blank page(s)."
+  },
+  "scale": {
+    "title": "Set Scale",
+    "currentValue": "Current value",
+    "enterValue": "Enter the real-world value for this line:",
+    "placeholder": "e.g. 12.3m, 5.2 ft, 100 mm",
+    "hint": "Type a number followed by a unit (mm, cm, m, km, in, ft, yd)",
+    "invalidInput": "Please enter a valid number with an optional unit (e.g. 12.3m)",
+    "invalidLine": "Invalid measurement line.",
+    "ok": "OK",
+    "cancel": "Cancel"
   },
   "defaultPdfApp": {
     "title": "Default PDF App",

@@ -65,6 +65,12 @@
     "title": "Size & Dimensions",
     "length": "Length"
   },
+  "measurement": {
+    "title": "Measurement",
+    "scale": "Scale",
+    "unit": "Unit",
+    "precision": "Precision (Decimals)"
+  },
   "lineEndings": {
     "title": "Line Endings",
     "start": "Start",
@@ -74,6 +80,9 @@
     "diamond": "Diamond",
     "circle": "Circle",
     "square": "Square",
+    "butt": "Butt",
+    "openArrowReversed": "Open Arrow (reversed)",
+    "closedArrowReversed": "Closed Arrow (reversed)",
     "slash": "Slash",
     "headSize": "Head Size"
   },

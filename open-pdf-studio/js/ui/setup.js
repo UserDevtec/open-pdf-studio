@@ -96,9 +96,12 @@ function setupPanelResize() {
       startX = e.clientX;
       startWidth = leftPanel.offsetWidth;
       leftHandle.classList.add('dragging');
+      leftPanel.style.transition = 'none';
       document.body.style.userSelect = 'none';
 
       const onMouseMove = (e) => {
+        // Don't resize if collapsed
+        if (leftPanel.classList.contains('collapsed')) return;
         const isRtl = document.documentElement.dir === 'rtl';
         const delta = e.clientX - startX;
         const newWidth = Math.max(120, Math.min(500, startWidth + (isRtl ? -delta : delta)));
@@ -107,6 +110,7 @@ function setupPanelResize() {
 
       const onMouseUp = () => {
         leftHandle.classList.remove('dragging');
+        leftPanel.style.transition = '';
         document.body.style.userSelect = '';
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
@@ -127,6 +131,9 @@ export function setupEventListeners() {
     annotationCanvas.addEventListener('mouseup', handleMouseUp);
     annotationCanvas.addEventListener('dblclick', handleDblClick);
   }
+
+  // Catch mouseup outside canvas to stop stuck drawing/shape state
+  document.addEventListener('mouseup', handleMouseUp);
 
   initKeyboardHandlers();
   setupDragDrop();

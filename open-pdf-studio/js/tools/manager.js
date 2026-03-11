@@ -4,6 +4,7 @@ import { hideProperties } from '../ui/panels/properties-panel.js';
 import { redrawAnnotations } from '../annotations/rendering.js';
 import { updateStatusTool } from '../ui/chrome/status-bar.js';
 import { isPdfAReadOnly } from '../pdf/loader.js';
+import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 
 // Tools that are always allowed (view-only, non-modifying)
 const READONLY_ALLOWED_TOOLS = new Set(['select', 'selectComments', 'hand']);
@@ -19,8 +20,10 @@ export function getCursorForTool(tool = state.currentTool) {
     case 'text':
     case 'editText':
       return 'text';
-    default:
-      return 'crosshair';
+    default: {
+      const typeHandler = getAnnotationType(tool);
+      return (typeHandler && typeHandler.cursor) || 'crosshair';
+    }
   }
 }
 
@@ -79,8 +82,22 @@ export function setTool(tool) {
     redrawAnnotations();
   }
 
-  // Cancel any ongoing measurement when switching tools
-  if (state.measurePoints && tool !== 'measureArea' && tool !== 'measurePerimeter') {
+  // Cancel any ongoing cloud polyline drawing when switching tools
+  if (state.isDrawingCloudPolyline && tool !== 'cloudPolyline') {
+    state.cloudPolylinePoints = [];
+    state.isDrawingCloudPolyline = false;
+    redrawAnnotations();
+  }
+
+  // Cancel any ongoing dimension drawing when switching tools
+  if (state.isDrawingDimension && tool !== 'measureDistance') {
+    state.dimPoints = [];
+    state.isDrawingDimension = false;
+    redrawAnnotations();
+  }
+
+  // Cancel any ongoing measurement when switching tools (including between area/perimeter)
+  if (state.measurePoints && tool !== state.currentTool) {
     state.measurePoints = null;
     redrawAnnotations();
   }
@@ -91,6 +108,7 @@ export function setTool(tool) {
   }
 
   state.currentTool = tool;
+  state.toolOverrides = null;
 
   // Hide properties panel when switching tools (keep visible for annotation tools)
   if (tool !== 'select' && tool !== 'selectComments') {

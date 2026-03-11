@@ -7,8 +7,7 @@ import { copyAnnotation, copyAnnotations } from '../annotations/clipboard.js';
 import { redrawAnnotations, redrawContinuous } from '../annotations/rendering.js';
 // Properties panel managed by Solid.js — imports below are bridge functions
 import { applyMove } from '../annotations/transforms.js';
-import { calculateArea, calculatePerimeter, formatMeasurement } from '../annotations/measurement.js';
-import { createAnnotation } from '../annotations/factory.js';
+import { createMeasureAreaAnnotation, createMeasurePerimeterAnnotation } from './annotation-creators.js';
 import { openPDFFile, isPdfAReadOnly } from '../pdf/loader.js';
 import { actualSize, fitWidth, fitPage } from '../pdf/renderer.js';
 import { savePDF, savePDFAs } from '../pdf/saver.js';
@@ -26,7 +25,7 @@ function redraw() {
 }
 
 // Handle keydown events
-export function handleKeydown(e) {
+export async function handleKeydown(e) {
   const ctrl = e.ctrlKey || e.metaKey;
   const shift = e.shiftKey;
 
@@ -65,36 +64,11 @@ export function handleKeydown(e) {
   if (e.key === 'Enter' && state.measurePoints && state.measurePoints.length >= 2) {
     e.preventDefault();
     const points = [...state.measurePoints];
-    const mPrefs = state.preferences;
     let ann;
     if (state.currentTool === 'measureArea' && points.length >= 3) {
-      const area = calculateArea(points);
-      ann = createAnnotation({
-        type: 'measureArea',
-        page: state.currentPage,
-        points: points,
-        color: mPrefs.measureStrokeColor,
-        strokeColor: mPrefs.measureStrokeColor,
-        lineWidth: mPrefs.measureLineWidth,
-        opacity: (mPrefs.measureOpacity || 100) / 100,
-        measureText: formatMeasurement(area),
-        measureValue: area.value,
-        measureUnit: area.unit
-      });
+      ann = createMeasureAreaAnnotation(points);
     } else if (state.currentTool === 'measurePerimeter' && points.length >= 2) {
-      const perim = calculatePerimeter(points);
-      ann = createAnnotation({
-        type: 'measurePerimeter',
-        page: state.currentPage,
-        points: points,
-        color: mPrefs.measureStrokeColor,
-        strokeColor: mPrefs.measureStrokeColor,
-        lineWidth: mPrefs.measureLineWidth,
-        opacity: (mPrefs.measureOpacity || 100) / 100,
-        measureText: formatMeasurement(perim),
-        measureValue: perim.value,
-        measureUnit: perim.unit
-      });
+      ann = createMeasurePerimeterAnnotation(points);
     }
     if (ann) {
       state.annotations.push(ann);
@@ -152,11 +126,24 @@ export function handleKeydown(e) {
     e.preventDefault();
     if (isPdfAReadOnly()) { /* block */ }
     else if (state.selectedAnnotations.length > 0) {
-      const selected = state.selectedAnnotations;
-      // Multi-delete confirmation
-      if (selected.length > 1 && !confirm(`Delete ${selected.length} annotations?`)) return;
+      const selected = [...state.selectedAnnotations];
       // Single locked check
       if (selected.length === 1 && selected[0].locked) return;
+
+      // Confirmation dialog (async for Tauri)
+      if (state.preferences.confirmBeforeDelete) {
+        let confirmed = false;
+        const msg = selected.length > 1
+          ? `Delete ${selected.length} annotations?`
+          : 'Delete this annotation?';
+        const title = selected.length > 1 ? 'Delete Annotations' : 'Delete Annotation';
+        if (window.__TAURI__?.dialog?.ask) {
+          confirmed = await window.__TAURI__.dialog.ask(msg, { title, kind: 'warning' });
+        } else {
+          confirmed = confirm(msg);
+        }
+        if (!confirmed) return;
+      }
 
       if (selected.length > 1) {
         recordBulkDelete(selected);
@@ -202,7 +189,13 @@ export function handleKeydown(e) {
 
   else if (ctrl && shift && e.key === 'C') {
     e.preventDefault();
-    if (confirm('Clear all annotations on current page?')) {
+    let confirmed = false;
+    if (window.__TAURI__?.dialog?.ask) {
+      confirmed = await window.__TAURI__.dialog.ask('Clear all annotations on current page?', { title: 'Clear Page', kind: 'warning' });
+    } else {
+      confirmed = confirm('Clear all annotations on current page?');
+    }
+    if (confirmed) {
       recordClearPage(state.currentPage, state.annotations);
       state.annotations = state.annotations.filter(a => a.page !== state.currentPage);
       hideProperties();
@@ -234,6 +227,13 @@ export function handleKeydown(e) {
     // First check if find bar is open
     if (state.search.isOpen) {
       closeFindBar();
+      return;
+    }
+    // Cancel in-progress dimension drawing
+    if (state.isDrawingDimension) {
+      state.dimPoints = [];
+      state.isDrawingDimension = false;
+      redraw();
       return;
     }
     // Cancel in-progress measurement

@@ -34,7 +34,7 @@ export function hideContextMenu() {
 export function initContextMenus() {
   document.addEventListener('contextmenu', (e) => {
     const nonDrawTools = ['select', 'hand'];
-    if (!nonDrawTools.includes(state.currentTool) && !state.isDrawing && !state.isDrawingPolyline && !(state.measurePoints && state.measurePoints.length >= 1)) {
+    if (!nonDrawTools.includes(state.currentTool) && !state.isDrawing && !state.isDrawingPolyline && !state.isDrawingCloudPolyline && !(state.measurePoints && state.measurePoints.length >= 1)) {
       e.preventDefault();
       e.stopPropagation();
       setTool('hand');
@@ -45,41 +45,18 @@ export function initContextMenus() {
     annotationCanvas.addEventListener('contextmenu', (e) => {
       if (!state.pdfDoc) return;
 
-      if ((state.currentTool === 'measureArea' || state.currentTool === 'measurePerimeter') && state.measurePoints && state.measurePoints.length >= 2) {
+      if ((state.currentTool === 'measureArea' || state.currentTool === 'measurePerimeter') && state.measurePoints && state.measurePoints.length >= 1) {
         e.preventDefault();
-        import('../../annotations/factory.js').then(({ createAnnotation }) => {
-          import('../../annotations/measurement.js').then(({ calculateArea, calculatePerimeter, formatMeasurement }) => {
+        const canFinalize = (state.currentTool === 'measureArea' && state.measurePoints.length >= 3) ||
+                            (state.currentTool === 'measurePerimeter' && state.measurePoints.length >= 2);
+        if (canFinalize) {
+          import('../../tools/annotation-creators.js').then(({ createMeasureAreaAnnotation, createMeasurePerimeterAnnotation }) => {
             const points = [...state.measurePoints];
             let ann;
-            const mPrefs = state.preferences;
-            if (state.currentTool === 'measureArea' && points.length >= 3) {
-              const area = calculateArea(points);
-              ann = createAnnotation({
-                type: 'measureArea',
-                page: state.currentPage,
-                points: points,
-                color: mPrefs.measureStrokeColor,
-                strokeColor: mPrefs.measureStrokeColor,
-                lineWidth: mPrefs.measureLineWidth,
-                opacity: (mPrefs.measureOpacity || 100) / 100,
-                measureText: formatMeasurement(area),
-                measureValue: area.value,
-                measureUnit: area.unit
-              });
-            } else if (state.currentTool === 'measurePerimeter' && points.length >= 2) {
-              const perim = calculatePerimeter(points);
-              ann = createAnnotation({
-                type: 'measurePerimeter',
-                page: state.currentPage,
-                points: points,
-                color: mPrefs.measureStrokeColor,
-                strokeColor: mPrefs.measureStrokeColor,
-                lineWidth: mPrefs.measureLineWidth,
-                opacity: (mPrefs.measureOpacity || 100) / 100,
-                measureText: formatMeasurement(perim),
-                measureValue: perim.value,
-                measureUnit: perim.unit
-              });
+            if (state.currentTool === 'measureArea') {
+              ann = createMeasureAreaAnnotation(points);
+            } else {
+              ann = createMeasurePerimeterAnnotation(points);
             }
             if (ann) {
               state.annotations.push(ann);
@@ -90,7 +67,13 @@ export function initContextMenus() {
               redrawAnnotations();
             });
           });
-        });
+        } else {
+          // Not enough points to finalize — cancel the drawing
+          state.measurePoints = null;
+          import('../../annotations/rendering.js').then(({ redrawAnnotations }) => {
+            redrawAnnotations();
+          });
+        }
         return;
       }
 

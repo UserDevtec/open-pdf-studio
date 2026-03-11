@@ -327,6 +327,22 @@
   padding: 0 4px;
 }
 
+.pref-fieldset-nested {
+  border-color: var(--theme-border, #e0e0e0);
+  padding: 6px 8px 8px;
+  margin: 0 0 8px;
+}
+
+.pref-fieldset-nested:last-child {
+  margin-bottom: 0;
+}
+
+.pref-fieldset-nested legend {
+  font-weight: 500;
+  font-size: 10.5px;
+  color: var(--theme-text-secondary, #555);
+}
+
 .pref-row {
   display: flex;
   align-items: center;
@@ -370,21 +386,20 @@
   cursor: pointer;
 }
 
-.pref-row select {
-  width: 100px;
-  padding: 3px 6px;
-  border: 1px solid var(--theme-border, #acacac);
-  border-radius: 0;
+.pref-select-display {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 2px 0 6px;
   font-size: 11px;
   font-family: inherit;
-  background-color: var(--theme-surface, white);
   color: var(--theme-text, #333);
   cursor: pointer;
-}
-
-.pref-row select:focus {
-  outline: none;
-  border-color: var(--theme-active, #0078d7);
+  user-select: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Horizontal sub-tabs inside a pref tab (e.g. Annotations) */
@@ -3323,6 +3338,26 @@
 
 .feedback-section { margin-bottom: 12px; }
 
+.feedback-field-row { margin-bottom: 8px; }
+.feedback-field-label {
+  display: block;
+  font-size: 11px;
+  color: var(--theme-text, #333);
+  margin-bottom: 3px;
+}
+.feedback-required { color: #e81123; }
+.feedback-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 6px;
+  font-size: 12px;
+  border: 1px solid var(--theme-border, #d4d4d4);
+  background: var(--theme-surface, #fff);
+  color: var(--theme-text, #333);
+  font-family: inherit;
+}
+.feedback-input:focus { outline: none; border-color: var(--theme-active, #0078d7); }
+
 .feedback-label {
   font-size: 11px;
   color: var(--theme-text-secondary, #666);
@@ -3897,3 +3932,249 @@
 .tp-dock-preview.active { opacity: 0.12; }
 .tp-dock-preview-left { left: 0; }
 .tp-dock-preview-right { right: 0; }
+
+/* Extensions Panel */
+.ext-install-section {
+  margin-bottom: 16px;
+}
+
+.ext-install-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+  cursor: pointer;
+}
+
+.ext-install-btn:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.ext-install-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.ext-install-btn svg {
+  stroke: white;
+}
+
+.ext-install-hint {
+  margin: 6px 0 0 0;
+  font-size: 11px;
+  color: var(--theme-app-menu-shortcut);
+}
+
+.ext-divider {
+  height: 1px;
+  background: var(--theme-app-menu-sidebar-border);
+  margin: 16px 0;
+}
+
+.ext-section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-app-menu-text);
+  margin: 0 0 12px 0;
+}
+
+.ext-empty {
+  font-size: 12px;
+  color: var(--theme-app-menu-shortcut);
+  margin: 0;
+}
+
+.ext-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ext-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-app-menu-sidebar-border);
+  background: var(--theme-app-menu-bg, #fff);
+}
+
+.ext-card:hover {
+  background: var(--theme-app-menu-item-hover);
+}
+
+.ext-card-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--theme-app-menu-icon);
+}
+
+.ext-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ext-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ext-card-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--theme-app-menu-text);
+}
+
+.ext-card-version {
+  font-size: 11px;
+  color: var(--theme-app-menu-shortcut);
+}
+
+.ext-card-desc {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: var(--theme-app-menu-text);
+}
+
+.ext-card-author {
+  margin: 2px 0 0 0;
+  font-size: 10px;
+  color: var(--theme-app-menu-shortcut);
+}
+
+.ext-uninstall-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--theme-app-menu-shortcut);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ext-uninstall-btn:hover {
+  color: #e81123;
+  border-color: #e81123;
+}
+
+.ext-message {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.ext-message-success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+.ext-message-error {
+  background: #fef2f2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+}
+
+[data-theme="dark"] .ext-message-success {
+  background: #14532d;
+  border-color: #166534;
+  color: #86efac;
+}
+
+[data-theme="dark"] .ext-message-error {
+  background: #450a0a;
+  border-color: #991b1b;
+  color: #fca5a5;
+}
+
+/* ===== Scale Dialog ===== */
+.scale-dialog { width: 360px; }
+.scale-dialog .modal-body { padding: 0; }
+
+.scale-dialog-body {
+  padding: 12px 16px;
+}
+
+.scale-current-value {
+  font-size: 12px;
+  color: var(--theme-text, #333);
+  margin-bottom: 12px;
+  padding: 6px 8px;
+  background: var(--theme-bg, #f5f5f5);
+  border: 1px solid var(--theme-border, #d4d4d4);
+}
+
+.scale-input-label {
+  display: block;
+  font-size: 12px;
+  color: var(--theme-text, #333);
+  margin-bottom: 4px;
+}
+
+.scale-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 6px;
+  font-size: 13px;
+  border: 1px solid var(--theme-border, #d4d4d4);
+  background: var(--theme-surface, #fff);
+  color: var(--theme-text, #333);
+  font-family: inherit;
+}
+.scale-input:focus {
+  outline: none;
+  border-color: var(--theme-active, #0078d7);
+}
+
+.scale-hint {
+  font-size: 10px;
+  color: var(--theme-text-secondary, #888);
+  margin-top: 4px;
+}
+
+.scale-error {
+  font-size: 11px;
+  color: #e81123;
+  margin-top: 6px;
+}
+
+.scale-dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.scale-btn {
+  padding: 4px 16px;
+  font-size: 12px;
+  font-family: inherit;
+  border: 1px solid var(--theme-border, #d4d4d4);
+  background: var(--theme-surface, #fff);
+  color: var(--theme-text, #333);
+  cursor: pointer;
+}
+.scale-btn:hover { background: var(--theme-bg, #f5f5f5); }
+.scale-btn:disabled { opacity: 0.5; cursor: default; }
+.scale-btn-ok {
+  background: var(--theme-active, #0078d7);
+  color: #fff;
+  border-color: var(--theme-active, #0078d7);
+}
+.scale-btn-ok:hover { background: #006cc1; }
+.scale-btn-ok:disabled { background: var(--theme-active, #0078d7); opacity: 0.5; }

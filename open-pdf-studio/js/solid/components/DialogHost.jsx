@@ -20,6 +20,7 @@ import BookmarkDialog from './dialogs/BookmarkDialog.jsx';
 import FormValidationDialog from './dialogs/FormValidationDialog.jsx';
 import StampPickerDialog from './dialogs/StampPickerDialog.jsx';
 import CalibrationDialog from './dialogs/CalibrationDialog.jsx';
+import ScaleDialog from './dialogs/ScaleDialog.jsx';
 import CropMarginsDialog from './dialogs/CropMarginsDialog.jsx';
 import FeedbackDialog from './dialogs/FeedbackDialog.jsx';
 import MessageDialog from './dialogs/MessageDialog.jsx';
@@ -50,6 +51,7 @@ const DIALOG_MAP = {
   'form-validation': FormValidationDialog,
   'stamp-picker': StampPickerDialog,
   'calibration': CalibrationDialog,
+  'scale': ScaleDialog,
   'crop-margins': CropMarginsDialog,
   'feedback': FeedbackDialog,
   'message': MessageDialog,

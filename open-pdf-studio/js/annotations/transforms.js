@@ -1,6 +1,21 @@
 import { HANDLE_TYPES } from '../core/constants.js';
 import { state } from '../core/state.js';
 import { snapAngle } from '../utils/helpers.js';
+import { calculateDistance, calculateArea, calculatePerimeter, formatMeasurement, snapDistanceTo10 } from './measurement.js';
+
+// Compute measurement text for a dimension annotation, using its own scale if available
+function computeDimensionText(ann) {
+  if (ann.measureScale) {
+    const dx = ann.endX - ann.startX;
+    const dy = ann.endY - ann.startY;
+    const pixelDist = Math.sqrt(dx * dx + dy * dy);
+    const scaledVal = pixelDist * ann.measureScale;
+    const unit = ann.measureUnit || 'mm';
+    const prec = ann.measurePrecision !== undefined ? ann.measurePrecision : 2;
+    return `${scaledVal.toFixed(prec)} ${unit}`;
+  }
+  return formatMeasurement(calculateDistance(ann.startX, ann.startY, ann.endX, ann.endY));
+}
 
 // Recalculate callout leader line geometry from box position and arrow tip.
 // Picks the best box edge based on arrow position:
@@ -69,7 +84,7 @@ function rotateDelta(deltaX, deltaY, rotationDeg) {
 // The idea: resize in local (unrotated) space, then reposition so the
 // anchor corner (opposite to the dragged handle) stays in the same
 // screen position.
-function applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn) {
+function applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn, lockRatio = false) {
   const rot = originalAnn.rotation || 0;
   const { dx, dy } = rotateDelta(deltaX, deltaY, rot);
 
@@ -78,38 +93,83 @@ function applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn)
   let newY = originalAnn.y;
   let newW = originalAnn.width;
   let newH = originalAnn.height;
+  const aspectRatio = lockRatio && originalAnn.originalWidth && originalAnn.originalHeight
+    ? originalAnn.originalWidth / originalAnn.originalHeight
+    : (lockRatio ? originalAnn.width / originalAnn.height : 0);
 
   // Apply local-space resize
   switch (handleType) {
     case HANDLE_TYPES.TOP_LEFT:
-      newX += dx; newY += dy; newW -= dx; newH -= dy;
+      if (lockRatio) {
+        newW -= dx; newH = newW / aspectRatio;
+        newX = originalAnn.x + originalAnn.width - newW;
+        newY = originalAnn.y + originalAnn.height - newH;
+      } else {
+        newX += dx; newY += dy; newW -= dx; newH -= dy;
+      }
       break;
     case HANDLE_TYPES.TOP_RIGHT:
-      newY += dy; newW += dx; newH -= dy;
+      if (lockRatio) {
+        newW += dx; newH = newW / aspectRatio;
+        newY = originalAnn.y + originalAnn.height - newH;
+      } else {
+        newY += dy; newW += dx; newH -= dy;
+      }
       break;
     case HANDLE_TYPES.BOTTOM_LEFT:
-      newX += dx; newW -= dx; newH += dy;
+      if (lockRatio) {
+        newW -= dx; newH = newW / aspectRatio;
+        newX = originalAnn.x + originalAnn.width - newW;
+      } else {
+        newX += dx; newW -= dx; newH += dy;
+      }
       break;
     case HANDLE_TYPES.BOTTOM_RIGHT:
-      newW += dx; newH += dy;
+      if (lockRatio) {
+        newW += dx; newH = newW / aspectRatio;
+      } else {
+        newW += dx; newH += dy;
+      }
       break;
     case HANDLE_TYPES.TOP:
-      newY += dy; newH -= dy;
+      if (lockRatio) {
+        newH -= dy; newW = newH * aspectRatio;
+        newY = originalAnn.y + originalAnn.height - newH;
+        newX = originalAnn.x + (originalAnn.width - newW) / 2;
+      } else {
+        newY += dy; newH -= dy;
+      }
       break;
     case HANDLE_TYPES.BOTTOM:
-      newH += dy;
+      if (lockRatio) {
+        newH += dy; newW = newH * aspectRatio;
+        newX = originalAnn.x + (originalAnn.width - newW) / 2;
+      } else {
+        newH += dy;
+      }
       break;
     case HANDLE_TYPES.LEFT:
-      newX += dx; newW -= dx;
+      if (lockRatio) {
+        newW -= dx; newH = newW / aspectRatio;
+        newX = originalAnn.x + originalAnn.width - newW;
+        newY = originalAnn.y + (originalAnn.height - newH) / 2;
+      } else {
+        newX += dx; newW -= dx;
+      }
       break;
     case HANDLE_TYPES.RIGHT:
-      newW += dx;
+      if (lockRatio) {
+        newW += dx; newH = newW / aspectRatio;
+        newY = originalAnn.y + (originalAnn.height - newH) / 2;
+      } else {
+        newW += dx;
+      }
       break;
   }
 
   // Enforce minimum size
-  if (newW < 10) { newW = 10; }
-  if (newH < 10) { newH = 10; }
+  if (newW < 10) { newW = 10; if (lockRatio) newH = newW / aspectRatio; }
+  if (newH < 10) { newH = 10; if (lockRatio) newW = newH * aspectRatio; }
 
   // The center of the original annotation in screen space
   const rad = rot * Math.PI / 180;
@@ -139,7 +199,7 @@ function applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn)
 }
 
 // Apply resize based on handle being dragged
-export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn, shiftKey = false) {
+export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn, shiftKey = false, ctrlKey = false) {
   if (annotation.locked) return;
 
   switch (annotation.type) {
@@ -272,8 +332,6 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
       if (handleType === HANDLE_TYPES.LINE_START) {
         let newStartX = originalAnn.startX + deltaX;
         let newStartY = originalAnn.startY + deltaY;
-
-        // Snap to angle increments when Shift is held (and angle snapping is enabled)
         if (shiftKey && state.preferences.enableAngleSnap) {
           const fixedX = originalAnn.endX;
           const fixedY = originalAnn.endY;
@@ -285,14 +343,11 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
           newStartX = fixedX + length * Math.cos(snappedAngle);
           newStartY = fixedY + length * Math.sin(snappedAngle);
         }
-
         annotation.startX = newStartX;
         annotation.startY = newStartY;
       } else if (handleType === HANDLE_TYPES.LINE_END) {
         let newEndX = originalAnn.endX + deltaX;
         let newEndY = originalAnn.endY + deltaY;
-
-        // Snap to angle increments when Shift is held (and angle snapping is enabled)
         if (shiftKey && state.preferences.enableAngleSnap) {
           const fixedX = originalAnn.startX;
           const fixedY = originalAnn.startY;
@@ -304,11 +359,101 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
           newEndX = fixedX + length * Math.cos(snappedAngle);
           newEndY = fixedY + length * Math.sin(snappedAngle);
         }
-
         annotation.endX = newEndX;
         annotation.endY = newEndY;
       }
       break;
+
+    case 'measureDistance': {
+      if (handleType === HANDLE_TYPES.LEADER_START || handleType === HANDLE_TYPES.LEADER_END) {
+        // Outer handles: move freely, define the measured points
+        let newLSX = handleType === HANDLE_TYPES.LEADER_START
+          ? originalAnn.leaderStartX + deltaX : originalAnn.leaderStartX;
+        let newLSY = handleType === HANDLE_TYPES.LEADER_START
+          ? originalAnn.leaderStartY + deltaY : originalAnn.leaderStartY;
+        let newLEX = handleType === HANDLE_TYPES.LEADER_END
+          ? originalAnn.leaderEndX + deltaX : originalAnn.leaderEndX;
+        let newLEY = handleType === HANDLE_TYPES.LEADER_END
+          ? originalAnn.leaderEndY + deltaY : originalAnn.leaderEndY;
+
+        // Snap to angle increments when Shift is held
+        if (shiftKey && state.preferences.enableAngleSnap) {
+          if (handleType === HANDLE_TYPES.LEADER_START) {
+            const dx = newLSX - newLEX;
+            const dy = newLSY - newLEY;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const cur = Math.atan2(dy, dx) * (180 / Math.PI);
+            const snapped = snapAngle(cur, state.preferences.angleSnapDegrees) * (Math.PI / 180);
+            newLSX = newLEX + len * Math.cos(snapped);
+            newLSY = newLEY + len * Math.sin(snapped);
+          } else {
+            const dx = newLEX - newLSX;
+            const dy = newLEY - newLSY;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const cur = Math.atan2(dy, dx) * (180 / Math.PI);
+            const snapped = snapAngle(cur, state.preferences.angleSnapDegrees) * (Math.PI / 180);
+            newLEX = newLSX + len * Math.cos(snapped);
+            newLEY = newLSY + len * Math.sin(snapped);
+          }
+        }
+
+        // Ctrl key: snap distance between leader tips to nearest 10 units
+        if (ctrlKey) {
+          if (handleType === HANDLE_TYPES.LEADER_START) {
+            const s = snapDistanceTo10(newLEX, newLEY, newLSX, newLSY);
+            newLSX = s.x; newLSY = s.y;
+          } else {
+            const s = snapDistanceTo10(newLSX, newLSY, newLEX, newLEY);
+            newLEX = s.x; newLEY = s.y;
+          }
+        }
+
+        annotation.leaderStartX = newLSX;
+        annotation.leaderStartY = newLSY;
+        annotation.leaderEndX = newLEX;
+        annotation.leaderEndY = newLEY;
+
+        // Recompute dimension line: keep the same perpendicular offset from leader tips
+        // Compute perpDist from ORIGINAL geometry (so it stays constant at any angle)
+        const origLDx = originalAnn.leaderEndX - originalAnn.leaderStartX;
+        const origLDy = originalAnn.leaderEndY - originalAnn.leaderStartY;
+        const origLLen = Math.sqrt(origLDx * origLDx + origLDy * origLDy) || 1;
+        const origPerpX = -origLDy / origLLen;
+        const origPerpY = origLDx / origLLen;
+        const offDx = originalAnn.startX - originalAnn.leaderStartX;
+        const offDy = originalAnn.startY - originalAnn.leaderStartY;
+        const perpDist = offDx * origPerpX + offDy * origPerpY;
+        // Apply that fixed offset along the NEW perpendicular direction
+        const newLDx = newLEX - newLSX;
+        const newLDy = newLEY - newLSY;
+        const newLLen = Math.sqrt(newLDx * newLDx + newLDy * newLDy) || 1;
+        const perpX = -newLDy / newLLen;
+        const perpY = newLDx / newLLen;
+        // Place dimension line endpoints at the perpendicular offset from new leader tips
+        annotation.startX = newLSX + perpDist * perpX;
+        annotation.startY = newLSY + perpDist * perpY;
+        annotation.endX = newLEX + perpDist * perpX;
+        annotation.endY = newLEY + perpDist * perpY;
+
+        annotation.measureText = computeDimensionText(annotation);
+      } else if (handleType === HANDLE_TYPES.LINE_START || handleType === HANDLE_TYPES.LINE_END) {
+        // Inner handles: constrain to perpendicular direction only (change offset, not measurement)
+        // Perpendicular direction based on the leader line
+        const ldrDx = originalAnn.leaderEndX - originalAnn.leaderStartX;
+        const ldrDy = originalAnn.leaderEndY - originalAnn.leaderStartY;
+        const ldrLen = Math.sqrt(ldrDx * ldrDx + ldrDy * ldrDy) || 1;
+        const pX = -ldrDy / ldrLen;
+        const pY = ldrDx / ldrLen;
+        // Project mouse delta onto perpendicular
+        const pDot = deltaX * pX + deltaY * pY;
+        // Move both dimension line endpoints together (keep parallel to leader line)
+        annotation.startX = originalAnn.startX + pDot * pX;
+        annotation.startY = originalAnn.startY + pDot * pY;
+        annotation.endX = originalAnn.endX + pDot * pX;
+        annotation.endY = originalAnn.endY + pDot * pY;
+      }
+      break;
+    }
 
     case 'draw':
       // Scale the path based on bounding box resize
@@ -354,13 +499,35 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
       break;
 
     case 'polyline':
+    case 'cloudPolyline':
+    case 'measureArea':
+    case 'measurePerimeter':
       // Drag individual node
       if (typeof handleType === 'string' && handleType.startsWith(HANDLE_TYPES.POLYLINE_NODE + '_')) {
         const nodeIdx = parseInt(handleType.split('_').pop(), 10);
         if (originalAnn.points && !isNaN(nodeIdx) && nodeIdx < originalAnn.points.length) {
           annotation.points = originalAnn.points.map((p, i) => {
             if (i === nodeIdx) {
-              return { x: p.x + deltaX, y: p.y + deltaY };
+              let nx = p.x + deltaX, ny = p.y + deltaY;
+              // Shift key: constrain movement to horizontal/vertical/diagonal
+              if (shiftKey) {
+                const len = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                if (len > 0) {
+                  const ang = snapAngle(Math.atan2(deltaY, deltaX) * (180 / Math.PI), 45) * (Math.PI / 180);
+                  nx = p.x + len * Math.cos(ang);
+                  ny = p.y + len * Math.sin(ang);
+                }
+              }
+              // Ctrl key: snap segment to previous point to nearest N units (measure types only)
+              if (ctrlKey && (annotation.type === 'measureArea' || annotation.type === 'measurePerimeter')) {
+                const prevIdx = i > 0 ? i - 1 : originalAnn.points.length - 1;
+                const prev = originalAnn.points[prevIdx];
+                if (prev && prevIdx !== i) {
+                  const s = snapDistanceTo10(prev.x, prev.y, nx, ny);
+                  nx = s.x; ny = s.y;
+                }
+              }
+              return { x: nx, y: ny };
             }
             return { x: p.x, y: p.y };
           });
@@ -371,6 +538,12 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
           annotation.y = Math.min(...ys);
           annotation.width = Math.max(...xs) - annotation.x;
           annotation.height = Math.max(...ys) - annotation.y;
+          // Recalculate measurement text
+          if (annotation.type === 'measureArea') {
+            annotation.measureText = formatMeasurement(calculateArea(annotation.points));
+          } else if (annotation.type === 'measurePerimeter') {
+            annotation.measureText = formatMeasurement(calculatePerimeter(annotation.points));
+          }
         }
       }
       break;
@@ -378,111 +551,120 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
     case 'image':
     case 'stamp':
     case 'signature': {
-      // Maintain aspect ratio when shift is held or lockAspectRatio is enabled
-      const aspectRatio = originalAnn.originalWidth / originalAnn.originalHeight;
       const lockRatio = shiftKey || annotation.lockAspectRatio;
+      if (originalAnn.rotation) {
+        applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn, lockRatio);
+      } else {
+        const aspectRatio = originalAnn.originalWidth && originalAnn.originalHeight
+          ? originalAnn.originalWidth / originalAnn.originalHeight
+          : originalAnn.width / originalAnn.height;
 
-      switch (handleType) {
-        case HANDLE_TYPES.TOP_LEFT:
-          if (lockRatio) {
-            const newWidth = originalAnn.width - deltaX;
-            const newHeight = newWidth / aspectRatio;
-            annotation.x = originalAnn.x + originalAnn.width - newWidth;
-            annotation.y = originalAnn.y + originalAnn.height - newHeight;
-            annotation.width = newWidth;
-            annotation.height = newHeight;
-          } else {
-            annotation.x = originalAnn.x + deltaX;
-            annotation.y = originalAnn.y + deltaY;
-            annotation.width = originalAnn.width - deltaX;
-            annotation.height = originalAnn.height - deltaY;
-          }
-          break;
-        case HANDLE_TYPES.TOP_RIGHT:
-          if (lockRatio) {
-            const newWidth = originalAnn.width + deltaX;
-            const newHeight = newWidth / aspectRatio;
-            annotation.y = originalAnn.y + originalAnn.height - newHeight;
-            annotation.width = newWidth;
-            annotation.height = newHeight;
-          } else {
-            annotation.y = originalAnn.y + deltaY;
-            annotation.width = originalAnn.width + deltaX;
-            annotation.height = originalAnn.height - deltaY;
-          }
-          break;
-        case HANDLE_TYPES.BOTTOM_LEFT:
-          if (lockRatio) {
-            const newWidth = originalAnn.width - deltaX;
-            const newHeight = newWidth / aspectRatio;
-            annotation.x = originalAnn.x + originalAnn.width - newWidth;
-            annotation.width = newWidth;
-            annotation.height = newHeight;
-          } else {
-            annotation.x = originalAnn.x + deltaX;
-            annotation.width = originalAnn.width - deltaX;
-            annotation.height = originalAnn.height + deltaY;
-          }
-          break;
-        case HANDLE_TYPES.BOTTOM_RIGHT:
-          if (lockRatio) {
-            const newWidth = originalAnn.width + deltaX;
-            const newHeight = newWidth / aspectRatio;
-            annotation.width = newWidth;
-            annotation.height = newHeight;
-          } else {
-            annotation.width = originalAnn.width + deltaX;
-            annotation.height = originalAnn.height + deltaY;
-          }
-          break;
-        case HANDLE_TYPES.TOP:
-          if (lockRatio) {
-            const newHeight = originalAnn.height - deltaY;
-            const newWidth = newHeight * aspectRatio;
-            annotation.y = originalAnn.y + deltaY;
-            annotation.height = newHeight;
-            annotation.width = newWidth;
-          } else {
-            annotation.y = originalAnn.y + deltaY;
-            annotation.height = originalAnn.height - deltaY;
-          }
-          break;
-        case HANDLE_TYPES.BOTTOM:
-          if (lockRatio) {
-            const newHeight = originalAnn.height + deltaY;
-            const newWidth = newHeight * aspectRatio;
-            annotation.height = newHeight;
-            annotation.width = newWidth;
-          } else {
-            annotation.height = originalAnn.height + deltaY;
-          }
-          break;
-        case HANDLE_TYPES.LEFT:
-          if (lockRatio) {
-            const newWidth = originalAnn.width - deltaX;
-            const newHeight = newWidth / aspectRatio;
-            annotation.x = originalAnn.x + deltaX;
-            annotation.width = newWidth;
-            annotation.height = newHeight;
-          } else {
-            annotation.x = originalAnn.x + deltaX;
-            annotation.width = originalAnn.width - deltaX;
-          }
-          break;
-        case HANDLE_TYPES.RIGHT:
-          if (lockRatio) {
-            const newWidth = originalAnn.width + deltaX;
-            const newHeight = newWidth / aspectRatio;
-            annotation.width = newWidth;
-            annotation.height = newHeight;
-          } else {
-            annotation.width = originalAnn.width + deltaX;
-          }
-          break;
+        switch (handleType) {
+          case HANDLE_TYPES.TOP_LEFT:
+            if (lockRatio) {
+              const newWidth = originalAnn.width - deltaX;
+              const newHeight = newWidth / aspectRatio;
+              annotation.x = originalAnn.x + originalAnn.width - newWidth;
+              annotation.y = originalAnn.y + originalAnn.height - newHeight;
+              annotation.width = newWidth;
+              annotation.height = newHeight;
+            } else {
+              annotation.x = originalAnn.x + deltaX;
+              annotation.y = originalAnn.y + deltaY;
+              annotation.width = originalAnn.width - deltaX;
+              annotation.height = originalAnn.height - deltaY;
+            }
+            break;
+          case HANDLE_TYPES.TOP_RIGHT:
+            if (lockRatio) {
+              const newWidth = originalAnn.width + deltaX;
+              const newHeight = newWidth / aspectRatio;
+              annotation.y = originalAnn.y + originalAnn.height - newHeight;
+              annotation.width = newWidth;
+              annotation.height = newHeight;
+            } else {
+              annotation.y = originalAnn.y + deltaY;
+              annotation.width = originalAnn.width + deltaX;
+              annotation.height = originalAnn.height - deltaY;
+            }
+            break;
+          case HANDLE_TYPES.BOTTOM_LEFT:
+            if (lockRatio) {
+              const newWidth = originalAnn.width - deltaX;
+              const newHeight = newWidth / aspectRatio;
+              annotation.x = originalAnn.x + originalAnn.width - newWidth;
+              annotation.width = newWidth;
+              annotation.height = newHeight;
+            } else {
+              annotation.x = originalAnn.x + deltaX;
+              annotation.width = originalAnn.width - deltaX;
+              annotation.height = originalAnn.height + deltaY;
+            }
+            break;
+          case HANDLE_TYPES.BOTTOM_RIGHT:
+            if (lockRatio) {
+              const newWidth = originalAnn.width + deltaX;
+              const newHeight = newWidth / aspectRatio;
+              annotation.width = newWidth;
+              annotation.height = newHeight;
+            } else {
+              annotation.width = originalAnn.width + deltaX;
+              annotation.height = originalAnn.height + deltaY;
+            }
+            break;
+          case HANDLE_TYPES.TOP:
+            if (lockRatio) {
+              const newHeight = originalAnn.height - deltaY;
+              const newWidth = newHeight * aspectRatio;
+              annotation.y = originalAnn.y + deltaY;
+              annotation.x = originalAnn.x + (originalAnn.width - newWidth) / 2;
+              annotation.height = newHeight;
+              annotation.width = newWidth;
+            } else {
+              annotation.y = originalAnn.y + deltaY;
+              annotation.height = originalAnn.height - deltaY;
+            }
+            break;
+          case HANDLE_TYPES.BOTTOM:
+            if (lockRatio) {
+              const newHeight = originalAnn.height + deltaY;
+              const newWidth = newHeight * aspectRatio;
+              annotation.x = originalAnn.x + (originalAnn.width - newWidth) / 2;
+              annotation.height = newHeight;
+              annotation.width = newWidth;
+            } else {
+              annotation.height = originalAnn.height + deltaY;
+            }
+            break;
+          case HANDLE_TYPES.LEFT:
+            if (lockRatio) {
+              const newWidth = originalAnn.width - deltaX;
+              const newHeight = newWidth / aspectRatio;
+              annotation.x = originalAnn.x + deltaX;
+              annotation.y = originalAnn.y + (originalAnn.height - newHeight) / 2;
+              annotation.width = newWidth;
+              annotation.height = newHeight;
+            } else {
+              annotation.x = originalAnn.x + deltaX;
+              annotation.width = originalAnn.width - deltaX;
+            }
+            break;
+          case HANDLE_TYPES.RIGHT:
+            if (lockRatio) {
+              const newWidth = originalAnn.width + deltaX;
+              const newHeight = newWidth / aspectRatio;
+              annotation.y = originalAnn.y + (originalAnn.height - newHeight) / 2;
+              annotation.width = newWidth;
+              annotation.height = newHeight;
+            } else {
+              annotation.width = originalAnn.width + deltaX;
+            }
+            break;
+        }
+        // Ensure minimum size
+        if (annotation.width < 20) annotation.width = 20;
+        if (annotation.height < 20) annotation.height = 20;
       }
-      // Ensure minimum size
-      if (annotation.width < 20) annotation.width = 20;
-      if (annotation.height < 20) annotation.height = 20;
       break;
     }
 
@@ -559,14 +741,8 @@ export function applyMove(annotation, deltaX, deltaY) {
       break;
 
     case 'circle':
-      // Support both old (centerX/centerY) and new (x/y) model
-      if (annotation.x !== undefined) {
-        annotation.x += deltaX;
-        annotation.y += deltaY;
-      } else {
-        annotation.centerX += deltaX;
-        annotation.centerY += deltaY;
-      }
+      annotation.x += deltaX;
+      annotation.y += deltaY;
       break;
 
     case 'line':
@@ -575,6 +751,19 @@ export function applyMove(annotation, deltaX, deltaY) {
       annotation.startY += deltaY;
       annotation.endX += deltaX;
       annotation.endY += deltaY;
+      break;
+
+    case 'measureDistance':
+      annotation.startX += deltaX;
+      annotation.startY += deltaY;
+      annotation.endX += deltaX;
+      annotation.endY += deltaY;
+      if (annotation.leaderStartX !== undefined) {
+        annotation.leaderStartX += deltaX;
+        annotation.leaderStartY += deltaY;
+        annotation.leaderEndX += deltaX;
+        annotation.leaderEndY += deltaY;
+      }
       break;
 
     case 'comment':
@@ -593,6 +782,9 @@ export function applyMove(annotation, deltaX, deltaY) {
       break;
 
     case 'polyline':
+    case 'cloudPolyline':
+    case 'measureArea':
+    case 'measurePerimeter':
       if (annotation.points) {
         annotation.points = annotation.points.map(p => ({
           x: p.x + deltaX,
@@ -652,23 +844,15 @@ export function applyRotation(annotation, mouseX, mouseY, originalAnn) {
   // Calculate center of annotation
   let width, height, centerX, centerY;
 
-  if (annotation.type === 'circle' && originalAnn.radius) {
-    // Handle old circle format with radius
-    width = originalAnn.radius * 2;
-    height = originalAnn.radius * 2;
-    centerX = originalAnn.centerX || (originalAnn.x + width / 2);
-    centerY = originalAnn.centerY || (originalAnn.y + height / 2);
-  } else {
-    width = originalAnn.width || 24;
-    height = originalAnn.height || 24;
-    centerX = originalAnn.x + width / 2;
-    centerY = originalAnn.y + height / 2;
-  }
+  width = originalAnn.width || 24;
+  height = originalAnn.height || 24;
+  centerX = originalAnn.x + width / 2;
+  centerY = originalAnn.y + height / 2;
 
   // Calculate angle from center to mouse position
-  const angle = Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI);
+  // +90 offset because the rotation handle is above the annotation (at -90°)
+  const angle = Math.atan2(mouseY - centerY, mouseX - centerX) * (180 / Math.PI) + 90;
 
-  // Adjust angle (rotation handle is to the right, so no offset needed)
   annotation.rotation = Math.round(angle);
 
   // Snap to 15 degree increments when shift is held

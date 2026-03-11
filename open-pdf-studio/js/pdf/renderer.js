@@ -11,7 +11,7 @@ import { updateActiveThumbnail } from '../ui/panels/left-panel.js';
 import { createSinglePageTextLayer, clearSinglePageTextLayer, createTextLayer, clearTextLayers } from '../text/text-layer.js';
 import { createSinglePageLinkLayer, clearSinglePageLinkLayer, createLinkLayer, clearLinkLayers } from './link-layer.js';
 import { createSinglePageFormLayer, clearSinglePageFormLayer, createFormLayer, clearFormLayers, hideFormFieldsBar } from './form-layer.js';
-import { clearPdfVectorCache } from '../tools/pdf-snap-extractor.js';
+import { clearPdfVectorCache, prefetchPdfVectorGeometry } from '../tools/pdf-snap-extractor.js';
 import { clearDetectionCache } from '../tools/pdf-element-detector.js';
 import { onPageRendered, clearHighlights } from '../search/find-bar.js';
 
@@ -130,6 +130,11 @@ export async function renderPage(pageNum) {
 
   // Ensure annotations for this page are loaded (on-demand if background hasn't reached it yet)
   await ensureAnnotationsForPage(pageNum);
+
+  // Prefetch PDF vector geometry for snap-to-drawing (fire-and-forget)
+  if (state.preferences.snapToPdfContent) {
+    prefetchPdfVectorGeometry(pageNum);
+  }
 
   // Redraw annotations
   redrawAnnotations();

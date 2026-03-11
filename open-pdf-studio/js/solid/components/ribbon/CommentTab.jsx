@@ -1,4 +1,3 @@
-import { createSignal } from 'solid-js';
 import RibbonGroup from './RibbonGroup.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
@@ -6,41 +5,24 @@ import { colorPickerValue, setColorPickerValue, lineWidthValue, setLineWidthValu
 import { setTool } from '../../../tools/manager.js';
 import { state, noPdf } from '../../../core/state.js';
 import { isPdfAReadOnly } from '../../../pdf/loader.js';
-import { undo, recordClearPage, recordClearAll } from '../../../core/undo-manager.js';
+import { recordClearPage, recordClearAll } from '../../../core/undo-manager.js';
 import { hideProperties } from '../../../ui/panels/properties-panel.js';
+import { clearSelection } from '../../../core/stores/selection-helpers.js';
 import { redrawAnnotations, redrawContinuous } from '../../../annotations/rendering.js';
 import {
   highlightIcon, freehandIcon, lineIcon, arrowIcon, polylineIcon,
-  rectIcon, ellipseIcon, polygonIcon, cloudIcon,
+  rectIcon, ellipseIcon, polygonIcon, cloudIcon, cloudPolylineIcon,
   textAnnotIcon, textboxIcon, noteIcon, calloutIcon,
   stampIcon, signatureIcon,
-  measureDistanceIcon, measureAreaIcon, measurePerimeterIcon, calibrateIcon, snapToDrawingIcon,
+  measureDistanceIcon, measureAreaIcon, measurePerimeterIcon, calibrateIcon,
   redactionIcon, applyRedactionsIcon,
-  undoIcon, clearPageIcon, clearAllIcon
+  clearPageIcon, clearAllIcon
 } from '../../data/ribbonIcons.js';
 import { showCalibrationDialog } from '../../../annotations/measurement.js';
-import { loadAllPdfSnapData, isPdfSnapLoaded, clearPdfVectorCache } from '../../../tools/pdf-snap-extractor.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 export default function CommentTab() {
   const { t } = useTranslation('ribbon');
-  const [snapLoading, setSnapLoading] = createSignal(false);
-  const [snapLoaded, setSnapLoaded] = createSignal(false);
-
-  async function handleSnapToDrawing() {
-    if (snapLoaded()) {
-      // Toggle off: clear cache
-      clearPdfVectorCache();
-      setSnapLoaded(false);
-      return;
-    }
-    setSnapLoading(true);
-    try {
-      await loadAllPdfSnapData();
-      setSnapLoaded(true);
-    } catch { /* ignore */ }
-    setSnapLoading(false);
-  }
 
   return (
     <div class="ribbon-content active" id="tab-comment">
@@ -70,6 +52,8 @@ export default function CommentTab() {
               disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'polygon'} onClick={() => setTool('polygon')} />
             <RibbonButton size="small" id="tool-cloud" title={t('comment.cloud')} icon={cloudIcon} label={t('comment.cloud')}
               disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'cloud'} onClick={() => setTool('cloud')} />
+            <RibbonButton size="small" id="tool-cloudPolyline" title={t('comment.cloudPolyline')} icon={cloudPolylineIcon} label={t('comment.cloudPolyline')}
+              disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'cloudPolyline'} onClick={() => setTool('cloudPolyline')} />
           </RibbonButtonStack>
         </RibbonGroup>
 
@@ -100,9 +84,6 @@ export default function CommentTab() {
           </RibbonButtonStack>
           <RibbonButton id="tool-calibrate" title={t('comment.calibrateTitle')} icon={calibrateIcon} label={t('comment.calibrate')}
             disabled={noPdf()} onClick={() => showCalibrationDialog()} />
-          <RibbonButton id="tool-snap-drawing" title={t('comment.snapToDrawingTitle')} icon={snapToDrawingIcon}
-            label={snapLoading() ? t('comment.loading') : snapLoaded() ? t('comment.snapActive') : t('comment.snapToDrawing')}
-            disabled={noPdf() || snapLoading()} active={snapLoaded()} onClick={handleSnapToDrawing} />
         </RibbonGroup>
 
         <RibbonGroup label={t('comment.redaction')}>
@@ -112,7 +93,7 @@ export default function CommentTab() {
             disabled={noPdf() || isPdfAReadOnly()} iconStyle={{ color: '#dc2626' }}
             onClick={async () => {
               const { applyRedactions } = await import('../../../annotations/redaction.js');
-              applyRedactions();
+              await applyRedactions();
             }} />
         </RibbonGroup>
 
@@ -137,8 +118,6 @@ export default function CommentTab() {
 
         <RibbonGroup label={t('comment.edit')}>
           <RibbonButtonStack>
-            <RibbonButton size="small" id="tool-undo" title={t('comment.undo')} icon={undoIcon} label={t('comment.undo')}
-              disabled={noPdf() || isPdfAReadOnly()} onClick={() => undo()} />
             <RibbonButton size="small" id="tool-clear" title={t('comment.clearPageAnnotations')} icon={clearPageIcon} label={t('comment.clearPage')}
               disabled={noPdf() || isPdfAReadOnly()} onClick={async () => {
                 let confirmed = false;
@@ -150,6 +129,7 @@ export default function CommentTab() {
                 if (confirmed) {
                   recordClearPage(state.currentPage, state.annotations);
                   state.annotations = state.annotations.filter(a => a.page !== state.currentPage);
+                  clearSelection();
                   hideProperties();
                   if (state.viewMode === 'continuous') { redrawContinuous(); } else { redrawAnnotations(); }
                 }
@@ -161,6 +141,7 @@ export default function CommentTab() {
                 if (confirmed) {
                   recordClearAll(state.annotations);
                   state.annotations = [];
+                  clearSelection();
                   hideProperties();
                   if (state.viewMode === 'continuous') { redrawContinuous(); } else { redrawAnnotations(); }
                 }

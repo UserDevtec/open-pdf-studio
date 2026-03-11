@@ -11,6 +11,7 @@
     "box": "Rectangle",
     "polygon": "Polygon",
     "cloud": "Cloud",
+    "cloudPolyline": "Cloud Polyline",
     "polyline": "Polyline",
     "textbox": "Text Box",
     "callout": "Callout",

@@ -1,6 +1,7 @@
 import { state, getActiveDocument } from '../core/state.js';
 import { openDialog } from '../bridge.js';
 import { redrawAnnotations, redrawContinuous } from './rendering.js';
+import { savePreferences } from '../core/preferences.js';
 
 // Scale calibration: pixels per unit
 // Per-document scale takes priority, then legacy global preference, then default (px)
@@ -16,6 +17,20 @@ export function getMeasureScale() {
     return { pixelsPerUnit: ms.pixelsPerUnit, unit: ms.unit || 'px' };
   }
   return { pixelsPerUnit: 1, unit: 'px' };
+}
+
+// Snap an endpoint so that the distance from (fromX,fromY) to the result
+// is rounded to the nearest N measured units (N from preferences).  Returns { x, y }.
+export function snapDistanceTo10(fromX, fromY, toX, toY) {
+  const dx = toX - fromX, dy = toY - fromY;
+  const pixelDist = Math.sqrt(dx * dx + dy * dy);
+  if (pixelDist === 0) return { x: toX, y: toY };
+  const step = state.preferences.measureCtrlSnap || 10;
+  const ms = getMeasureScale();
+  const measuredValue = pixelDist / ms.pixelsPerUnit;
+  const snappedValue = Math.max(Math.round(measuredValue / step) * step, step);
+  const ratio = (snappedValue * ms.pixelsPerUnit) / pixelDist;
+  return { x: fromX + dx * ratio, y: fromY + dy * ratio };
 }
 
 // Calculate distance between two points
@@ -101,6 +116,48 @@ export function formatMeasurement(measurement) {
 // Show scale calibration dialog, optionally with a reference pixel length
 export function showCalibrationDialog(referencePixelLength) {
   openDialog('calibration', { referencePixelLength: referencePixelLength || null });
+}
+
+// Set scale from a known line: given its pixel length and the real-world value + unit,
+// update the document scale for future measurements.
+// The source annotation's own measureScale/measureUnit are updated so the properties panel reflects the change.
+export function setScaleFromLine(pixelLength, realValue, unit, sourceAnnotation) {
+  if (!pixelLength || pixelLength <= 0 || !realValue || realValue <= 0) return;
+  const pixelsPerUnit = pixelLength / realValue;
+  const doc = getActiveDocument();
+  if (!doc) return;
+  doc.measureScale = { pixelsPerUnit, unit, method: 'quick-scale', scaleRatio: 0 };
+  saveDocumentScale();
+
+  // Update default preferences so future measurements use this scale/unit
+  const scaleVal = realValue / pixelLength;
+  state.preferences.measureDistDimScale = scaleVal;
+  state.preferences.measureDistDimUnit = unit;
+  state.preferences.measureAreaDimScale = scaleVal;
+  state.preferences.measureAreaDimUnit = unit;
+  state.preferences.measurePerimDimScale = scaleVal;
+  state.preferences.measurePerimDimUnit = unit;
+  savePreferences();
+
+  // Update the source annotation's own scale/unit properties
+  if (sourceAnnotation && sourceAnnotation.type === 'measureDistance') {
+    sourceAnnotation.measureScale = realValue / pixelLength;
+    sourceAnnotation.measureUnit = unit;
+    const prec = sourceAnnotation.measurePrecision !== undefined ? sourceAnnotation.measurePrecision : 2;
+    sourceAnnotation.measureText = `${realValue.toFixed(prec)} ${unit}`;
+
+    // Redraw canvas
+    if (state.viewMode === 'continuous') {
+      redrawContinuous();
+    } else {
+      redrawAnnotations();
+    }
+
+    // Refresh properties panel if this annotation is selected
+    if (state.selectedAnnotation === sourceAnnotation) {
+      import('../bridge.js').then(m => m.storeShowProperties(sourceAnnotation));
+    }
+  }
 }
 
 // Recalculate all measurement annotations after scale change

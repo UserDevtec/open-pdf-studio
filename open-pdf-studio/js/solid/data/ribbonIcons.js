@@ -78,6 +78,8 @@ export const polygonIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 
 
 export const cloudIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"/></svg>`;
 
+export const cloudPolylineIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 18 Q5 16 6 17 Q7 15 8 16 Q9 14 10 15 L12 8 Q13 6 14 7 Q15 5 16 6 L20 12 Q21 10 22 11 Q21 13 20 12 L16 18 Q15 16 14 17 Q13 15 12 16 L10 18 Q9 16 8 17 Q7 15 6 16 Q5 17 4 18Z"/></svg>`;
+
 // --- Comment tab: Text ---
 
 export const textAnnotIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>`;

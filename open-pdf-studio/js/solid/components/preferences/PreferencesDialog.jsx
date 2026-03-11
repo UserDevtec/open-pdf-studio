@@ -9,7 +9,6 @@ import { isMobile, isTauri, getUsername } from '../../../core/platform.js';
 
 import GeneralTab from './GeneralTab.jsx';
 import AnnotationsTab from './AnnotationsTab.jsx';
-import MarkupTab from './MarkupTab.jsx';
 import BehaviorTab from './BehaviorTab.jsx';
 import PageDisplayTab from './PageDisplayTab.jsx';
 import FileAssocTab from './FileAssocTab.jsx';
@@ -20,7 +19,6 @@ const DESKTOP_ONLY_TABS = ['fileassoc', 'vprinter'];
 const TAB_IDS = [
   { id: 'general', key: 'tabs.general' },
   { id: 'annotations', key: 'tabs.annotations' },
-  { id: 'markup', key: 'tabs.markup' },
   { id: 'behavior', key: 'tabs.behavior' },
   { id: 'pageDisplay', key: 'tabs.pageDisplay' },
   { id: 'fileassoc', key: 'tabs.fileAssociation' },
@@ -36,11 +34,6 @@ const TAB_ICONS = {
   annotations: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-    </svg>
-  ),
-  markup: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>
     </svg>
   ),
   behavior: (
@@ -173,9 +166,6 @@ export default function PreferencesDialog(props) {
             </Match>
             <Match when={activeTab() === 'annotations'}>
               <AnnotationsTab prefs={prefs} />
-            </Match>
-            <Match when={activeTab() === 'markup'}>
-              <MarkupTab prefs={prefs} />
             </Match>
             <Match when={activeTab() === 'behavior'}>
               <BehaviorTab prefs={prefs} />

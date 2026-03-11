@@ -5,39 +5,52 @@
   pointer-events: auto;
 }
 
-/* Properties Panel */
+/* Properties Panel Outer Wrapper (animates width) */
+.properties-panel-outer {
+  width: 300px;
+  min-width: 300px;
+  background: var(--theme-panel-bg);
+  border-left: 1px solid var(--theme-panel-border);
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: width 0.15s ease, min-width 0.15s ease;
+}
+
+.properties-panel-outer.collapsed {
+  width: 28px;
+  min-width: 28px;
+  background: var(--theme-panel-tab-bg);
+  cursor: pointer;
+}
+
+.properties-panel-outer.collapsed:hover {
+  background: var(--theme-hover);
+}
+
+/* Properties Panel Inner Content */
 .properties-panel {
-  width: 280px;
-  min-width: 280px;
+  width: 300px;
+  min-width: 300px;
   background: var(--theme-panel-bg);
   border-radius: 0;
-  border-left: 1px solid var(--theme-panel-border);
   padding: 0;
   display: none;
   overflow-y: scroll;
+  height: 100%;
 }
 
 .properties-panel.visible {
   display: block;
 }
 
-/* Collapsed Properties Panel - vertical tab strip */
-.properties-panel-collapsed {
-  width: 28px;
-  min-width: 28px;
-  background: var(--theme-panel-tab-bg);
-  border-left: 1px solid var(--theme-panel-border);
+/* Collapsed Properties Panel - vertical text content */
+.properties-panel-collapsed-content {
   display: flex;
   align-items: flex-start;
   justify-content: center;
   padding-top: 12px;
-  cursor: pointer;
-  flex-shrink: 0;
+  height: 100%;
   user-select: none;
-}
-
-.properties-panel-collapsed:hover {
-  background: var(--theme-hover);
 }
 
 .properties-panel-collapsed-text {
@@ -693,9 +706,4 @@
   cursor: not-allowed;
 }
 
-/* Properties panel width */
-.properties-panel {
-  width: 300px;
-  min-width: 300px;
-}
 

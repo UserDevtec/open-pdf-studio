@@ -4,7 +4,7 @@ import {
 } from '../stores/contextMenuStore.js';
 import {
   openPopupIcon, hidePopupIcon, resetPopupIcon, cutIcon, copyIcon, pasteIcon,
-  deleteIcon, flattenIcon, addReplyIcon, lockedIcon, markedIcon, printableIcon,
+  deleteIcon, flattenIcon, addReplyIcon, lockedIcon, unlockedIcon, markedIcon, printableIcon,
   statusIcon, reviewHistoryIcon, layerIcon, arrangeIcon, flipLineIcon,
   convertMeasurementIcon, convertPolylineIcon, convertPolygonIcon,
   styleToolsIcon, exportIcon, propertiesIcon, transformIcon, duplicateIcon,
@@ -31,6 +31,7 @@ import { setTool } from '../../tools/manager.js';
 import { alignAnnotations } from '../../annotations/smart-guides.js';
 import { getSelectedText, clearTextSelection } from '../../text/text-selection.js';
 import { showCalibrationDialog } from '../../annotations/measurement.js';
+import { openDialog } from '../stores/dialogStore.js';
 import { getSelectedPagesArray, formatPageRangeString, selectAllPages, clearPageSelection } from '../stores/panels/thumbnailStore.js';
 import { useTranslation } from '../../i18n/useTranslation.js';
 
@@ -190,7 +191,7 @@ function AnnotationMenuContent() {
 
       <Separator />
 
-      <MenuItem icon={lockedIcon} label={t('annotation.locked')} checkbox={true} checked={isLocked()} onClick={() => {
+      <MenuItem icon={isLocked() ? lockedIcon : unlockedIcon} label={t('annotation.locked')} checkbox={true} checked={isLocked()} onClick={() => {
         const a = ann();
         if (a) {
           a.locked = !a.locked;
@@ -319,6 +320,17 @@ function AnnotationMenuContent() {
             showCalibrationDialog(px);
           }
         }} />
+        <MenuItem icon={convertMeasurementIcon} label={t('annotation.setScale')} onClick={() => {
+          const a = ann();
+          if (a) {
+            const px = a.measurePixels || Math.sqrt(
+              (a.endX - a.startX) ** 2 + (a.endY - a.startY) ** 2
+            );
+            const annUnit = a.measureUnit || 'mm';
+            const currentText = a.measureText || '';
+            openDialog('scale', { pixelLength: px, currentText, currentUnit: annUnit, annotation: a });
+          }
+        }} />
         <Separator />
       </Show>
 
@@ -444,7 +456,7 @@ function PageMenuContent() {
 
       <MenuItem icon={pageCutIcon} label={tCommon('cut')} shortcut="Ctrl+X" disabled={true} />
       <MenuItem icon={pageCopyIcon} label={tCommon('copy')} shortcut="Ctrl+C" disabled={true} />
-      <MenuItem icon={pagePasteIcon} label={tCommon('paste')} shortcut="Ctrl+V" onClick={() => pasteFromClipboard()} disabled={!state.clipboardAnnotation && !navigator.clipboard} />
+      <MenuItem icon={pagePasteIcon} label={tCommon('paste')} shortcut="Ctrl+V" onClick={() => pasteFromClipboard()} />
 
       <Separator />
 

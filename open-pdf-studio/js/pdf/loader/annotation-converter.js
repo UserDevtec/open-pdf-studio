@@ -3,6 +3,7 @@ import { createAnnotation } from '../../annotations/factory.js';
 import { generateImageId } from '../../utils/helpers.js';
 import { colorArrayToHex } from '../../utils/colors.js';
 import { mapPdfFontName, mapBorderStyle } from './pdf-helpers.js';
+import { calculateDistance, calculateArea, calculatePerimeter, formatMeasurement } from '../../annotations/measurement.js';
 
 // Convert PDF annotation to our format
 export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageMap, annotColorMap) {
@@ -48,7 +49,24 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
 
   // Look up extra colors extracted via pdf-lib (IC entry, appearance stream colors)
   const rectKey = `${rect[0]},${rect[1]},${rect[2]},${rect[3]}`;
-  const extraColors = annotColorMap?.get(rectKey) || {};
+  let extraColors = annotColorMap?.get(rectKey);
+  // Fuzzy match fallback — pdf.js may expand Rect by borderWidth (up to several pts)
+  // when annotations lack an appearance stream, causing mismatch with pdf-lib's raw Rect
+  if (!extraColors && annotColorMap) {
+    let bestDist = Infinity;
+    for (const [k, v] of annotColorMap.entries()) {
+      const parts = k.split(',').map(Number);
+      if (parts.length === 4) {
+        const d = Math.abs(parts[0] - rect[0]) + Math.abs(parts[1] - rect[1]) +
+                  Math.abs(parts[2] - rect[2]) + Math.abs(parts[3] - rect[3]);
+        if (d < bestDist && d < 8) {
+          bestDist = d;
+          extraColors = v;
+        }
+      }
+    }
+  }
+  extraColors = extraColors || {};
 
   const baseProps = {
     page: pageNum,
@@ -121,40 +139,174 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
 
     case 'Square': {
       const sqRect = convertRect(annot.rect);
-      return createAnnotation({
+      let sqX = sqRect.x, sqY = sqRect.y, sqW = sqRect.width, sqH = sqRect.height;
+      let sqRotation = 0;
+      if (extraColors.rotation !== undefined && extraColors.rotation !== 0) {
+        sqRotation = Math.round(extraColors.rotation);
+      } else if (extraColors.matrixAngle !== undefined && Math.abs(extraColors.matrixAngle) > 1) {
+        sqRotation = -Math.round(extraColors.matrixAngle);
+        // Rect is the expanded axis-aligned bounding box; recover original size from BBox
+        if (extraColors.bboxWidth && extraColors.bboxHeight) {
+          const pdfRectW = Math.abs(rect[2] - rect[0]);
+          const vScale = pdfRectW > 0 ? sqRect.width / pdfRectW : 1;
+          sqW = extraColors.bboxWidth * vScale;
+          sqH = extraColors.bboxHeight * vScale;
+          const cx = sqRect.x + sqRect.width / 2;
+          const cy = sqRect.y + sqRect.height / 2;
+          sqX = cx - sqW / 2;
+          sqY = cy - sqH / 2;
+        }
+      }
+      const sqProps = {
         ...baseProps,
         type: 'box',
-        x: sqRect.x,
-        y: sqRect.y,
-        width: sqRect.width,
-        height: sqRect.height,
+        x: sqX,
+        y: sqY,
+        width: sqW,
+        height: sqH,
         color: colorArrayToHex(annot.color, '#000000'),
         strokeColor: colorArrayToHex(annot.color, '#000000'),
         fillColor: extraColors.ic || null,
         lineWidth: annot.borderStyle?.width || 2,
-        borderStyle: mapBorderStyle(annot)
-      });
+        borderStyle: mapBorderStyle(annot, extraColors)
+      };
+      if (sqRotation) sqProps.rotation = sqRotation;
+      return createAnnotation(sqProps);
     }
 
     case 'Circle': {
       const crRect = convertRect(annot.rect);
-      return createAnnotation({
+      let crX = crRect.x, crY = crRect.y, crW = crRect.width, crH = crRect.height;
+      let crRotation = 0;
+      if (extraColors.rotation !== undefined && extraColors.rotation !== 0) {
+        crRotation = Math.round(extraColors.rotation);
+      } else if (extraColors.matrixAngle !== undefined && Math.abs(extraColors.matrixAngle) > 1) {
+        crRotation = -Math.round(extraColors.matrixAngle);
+        if (extraColors.bboxWidth && extraColors.bboxHeight) {
+          const pdfRectW = Math.abs(rect[2] - rect[0]);
+          const vScale = pdfRectW > 0 ? crRect.width / pdfRectW : 1;
+          crW = extraColors.bboxWidth * vScale;
+          crH = extraColors.bboxHeight * vScale;
+          const cx = crRect.x + crRect.width / 2;
+          const cy = crRect.y + crRect.height / 2;
+          crX = cx - crW / 2;
+          crY = cy - crH / 2;
+        }
+      }
+      const crProps = {
         ...baseProps,
         type: 'circle',
-        x: crRect.x,
-        y: crRect.y,
-        width: crRect.width,
-        height: crRect.height,
+        x: crX,
+        y: crY,
+        width: crW,
+        height: crH,
         color: colorArrayToHex(annot.color, '#000000'),
         strokeColor: colorArrayToHex(annot.color, '#000000'),
         fillColor: extraColors.ic || null,
         lineWidth: annot.borderStyle?.width || 2,
-        borderStyle: mapBorderStyle(annot)
-      });
+        borderStyle: mapBorderStyle(annot, extraColors)
+      };
+      if (crRotation) crProps.rotation = crRotation;
+      return createAnnotation(crProps);
     }
 
     case 'Line':
       if (annot.lineCoordinates && annot.lineCoordinates.length >= 4) {
+        // Use original /L coords from pdf-lib (PDF.js normalizeRect destroys direction)
+        const lc = extraColors.lineCoords || annot.lineCoordinates;
+        const [lsx, lsy] = convertPoint(lc[0], lc[1]);
+        const [lex, ley] = convertPoint(lc[2], lc[3]);
+
+        // Check if this is a measurement annotation (use pdf.js IT + colorMap fallback)
+        const isMeasureDist = extraColors.opsSubtype === 'measureDistance' ||
+                              extraColors.intent === 'LineDimension' ||
+                              extraColors.hasMeasure ||
+                              annot.it === 'LineDimension';
+        if (isMeasureDist) {
+          const mdProps = {
+            ...baseProps,
+            type: 'measureDistance',
+            startX: lsx,
+            startY: lsy,
+            endX: lex,
+            endY: ley,
+            color: colorArrayToHex(annot.color, '#ff0000'),
+            strokeColor: colorArrayToHex(annot.color, '#ff0000'),
+            lineWidth: annot.borderStyle?.width || 1,
+          };
+          // Store per-annotation scale/unit/precision from PDF Measure dictionary
+          if (extraColors.measureScale) {
+            mdProps.measureScale = extraColors.measureScale;
+            mdProps.measureUnit = extraColors.measureUnit || 'mm';
+            if (extraColors.measurePrecision !== undefined) {
+              mdProps.measurePrecision = extraColors.measurePrecision;
+            }
+          }
+          // Get measurement text from Contents, or auto-calculate using annotation's own scale
+          let mdText = (annot.contentsObj && annot.contentsObj.str) || annot.contents || baseProps.subject || '';
+          if (!mdText) {
+            if (mdProps.measureScale) {
+              const prec = mdProps.measurePrecision || 2;
+              const pixelDist = Math.sqrt((lex - lsx) ** 2 + (ley - lsy) ** 2);
+              const scaledVal = pixelDist * mdProps.measureScale;
+              const unit = mdProps.measureUnit || 'mm';
+              mdText = `${scaledVal.toFixed(prec)} ${unit}`;
+            } else {
+              const dist = calculateDistance(lsx, lsy, lex, ley);
+              mdText = formatMeasurement(dist);
+            }
+          }
+          mdProps.measureText = mdText;
+          // Read line endings from PDF LE array
+          const mdLe = annot.lineEndings || [];
+          const mapMdHead = (h) => {
+            switch (h) {
+              case 'OpenArrow': return 'open';
+              case 'ClosedArrow': return 'closed';
+              case 'Diamond': return 'diamond';
+              case 'Circle': return 'circle';
+              case 'Square': return 'square';
+              case 'Slash': return 'slash';
+              case 'Butt': return 'butt';
+              case 'ROpenArrow': return 'openReversed';
+              case 'RClosedArrow': return 'closedReversed';
+              default: return 'closed';
+            }
+          };
+          if (mdLe.length >= 2) {
+            mdProps.startHead = mapMdHead(mdLe[0]);
+            mdProps.endHead = mapMdHead(mdLe[1]);
+          } else {
+            mdProps.startHead = 'closed';
+            mdProps.endHead = 'closed';
+          }
+          mdProps.headSize = extraColors.opsHeadSize || 12;
+          if (extraColors.opsPrecision != null) mdProps.measurePrecision = extraColors.opsPrecision;
+          // Compute dimension line position from PDF LL (leader length)
+          // Per PDF spec: /L = base points on measured object, /LL = perpendicular
+          // offset to the dimension line. Positive LL = counter-clockwise from /L direction.
+          // Our data model: startX/Y = dimension line, leaderX/Y = base object points.
+          const ll = extraColors.leaderLength;
+          if (ll && ll !== 0) {
+            const lineAngle = Math.atan2(lc[3] - lc[1], lc[2] - lc[0]);
+            const perpX = -Math.sin(lineAngle);
+            const perpY = Math.cos(lineAngle);
+            // Dimension line endpoints = /L offset by LL along perpendicular
+            const [dimX1, dimY1] = convertPoint(lc[0] + ll * perpX, lc[1] + ll * perpY);
+            const [dimX2, dimY2] = convertPoint(lc[2] + ll * perpX, lc[3] + ll * perpY);
+            // Swap: startX/Y = dimension line, leaderX/Y = /L base points
+            mdProps.leaderStartX = lsx;
+            mdProps.leaderStartY = lsy;
+            mdProps.leaderEndX = lex;
+            mdProps.leaderEndY = ley;
+            mdProps.startX = dimX1;
+            mdProps.startY = dimY1;
+            mdProps.endX = dimX2;
+            mdProps.endY = dimY2;
+          }
+          return createAnnotation(mdProps);
+        }
+
         // Check for line endings (arrow heads)
         const le = annot.lineEndings || [];
         const mapPdfHead = (h) => {
@@ -166,17 +318,14 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
             case 'Square': return 'square';
             case 'Slash': return 'slash';
             case 'Butt': return 'butt';
+            case 'ROpenArrow': return 'openReversed';
+            case 'RClosedArrow': return 'closedReversed';
             default: return 'none';
           }
         };
         const startHead = mapPdfHead(le[0]);
         const endHead = mapPdfHead(le[1]);
         const isArrow = startHead !== 'none' || endHead !== 'none';
-
-        // Use original /L coords from pdf-lib (PDF.js normalizeRect destroys direction)
-        const lc = extraColors.lineCoords || annot.lineCoordinates;
-        const [lsx, lsy] = convertPoint(lc[0], lc[1]);
-        const [lex, ley] = convertPoint(lc[2], lc[3]);
 
         return createAnnotation({
           ...baseProps,
@@ -189,7 +338,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           strokeColor: colorArrayToHex(annot.color, '#000000'),
           fillColor: extraColors.ic || undefined,
           lineWidth: annot.borderStyle?.width || 2,
-          borderStyle: mapBorderStyle(annot),
+          borderStyle: mapBorderStyle(annot, extraColors),
           startHead: startHead,
           endHead: endHead,
           headSize: 12
@@ -213,44 +362,139 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           color: colorArrayToHex(annot.color, '#000000'),
           strokeColor: colorArrayToHex(annot.color, '#000000'),
           lineWidth: annot.borderStyle?.width || 2,
-          borderStyle: mapBorderStyle(annot)
+          borderStyle: mapBorderStyle(annot, extraColors)
         });
       }
       break;
 
     case 'PolyLine':
       if (annot.vertices && annot.vertices.length >= 4) {
-        const points = [];
+        const plPoints = [];
         for (let i = 0; i < annot.vertices.length; i += 2) {
           const [plx, ply] = convertPoint(annot.vertices[i], annot.vertices[i + 1]);
-          points.push({ x: plx, y: ply });
+          plPoints.push({ x: plx, y: ply });
         }
+
+        // Check if this is a perimeter measurement (use pdf.js IT + colorMap fallback)
+        const isMeasurePerim = extraColors.opsSubtype === 'measurePerimeter' ||
+                               extraColors.intent === 'PolyLineDimension' ||
+                               extraColors.hasMeasure ||
+                               annot.it === 'PolyLineDimension';
+        if (isMeasurePerim) {
+          let mpText = (annot.contentsObj && annot.contentsObj.str) || annot.contents || baseProps.subject || '';
+          if (!mpText) {
+            const perim = calculatePerimeter(plPoints);
+            mpText = formatMeasurement(perim);
+          }
+          const mpProps = {
+            ...baseProps,
+            type: 'measurePerimeter',
+            points: plPoints,
+            color: colorArrayToHex(annot.color, '#ff0000'),
+            strokeColor: colorArrayToHex(annot.color, '#ff0000'),
+            lineWidth: annot.borderStyle?.width || 1,
+            borderStyle: mapBorderStyle(annot, extraColors),
+            measureText: mpText,
+          };
+          // Read line endings from PDF LE array
+          const mpLe = annot.lineEndings || [];
+          if (mpLe.length >= 2) {
+            const mapHead = (h) => {
+              switch (h) {
+                case 'OpenArrow': return 'open';
+                case 'ClosedArrow': return 'closed';
+                case 'Diamond': return 'diamond';
+                case 'Circle': return 'circle';
+                case 'Square': return 'square';
+                case 'Slash': return 'slash';
+                case 'Butt': return 'butt';
+                case 'ROpenArrow': return 'openReversed';
+                case 'RClosedArrow': return 'closedReversed';
+                default: return 'none';
+              }
+            };
+            mpProps.startHead = mapHead(mpLe[0]);
+            mpProps.endHead = mapHead(mpLe[1]);
+          }
+          mpProps.headSize = extraColors.opsHeadSize || 12;
+          if (extraColors.measureScale) {
+            mpProps.measureScale = extraColors.measureScale;
+            mpProps.measureUnit = extraColors.measureUnit || 'mm';
+            if (extraColors.measurePrecision !== undefined) {
+              mpProps.measurePrecision = extraColors.measurePrecision;
+            }
+          }
+          if (extraColors.opsPrecision != null) mpProps.measurePrecision = extraColors.opsPrecision;
+          return createAnnotation(mpProps);
+        }
+
         return createAnnotation({
           ...baseProps,
           type: 'polyline',
-          points: points,
+          points: plPoints,
           color: colorArrayToHex(annot.color, '#000000'),
           strokeColor: colorArrayToHex(annot.color, '#000000'),
           lineWidth: annot.borderStyle?.width || 2,
-          borderStyle: mapBorderStyle(annot)
+          borderStyle: mapBorderStyle(annot, extraColors)
         });
       }
       break;
 
     case 'Polygon':
       if (annot.vertices && annot.vertices.length >= 6) {
-        // Calculate bounding box in viewport coordinates
+        // Calculate bounding box and points in viewport coordinates
         let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        const polyPoints = [];
         for (let i = 0; i < annot.vertices.length; i += 2) {
           const [pvx, pvy] = convertPoint(annot.vertices[i], annot.vertices[i + 1]);
+          polyPoints.push({ x: pvx, y: pvy });
           minX = Math.min(minX, pvx);
           maxX = Math.max(maxX, pvx);
           minY = Math.min(minY, pvy);
           maxY = Math.max(maxY, pvy);
         }
-        return createAnnotation({
+
+        // Check if this is an area measurement (use pdf.js IT + colorMap fallback)
+        const isMeasureArea = extraColors.opsSubtype === 'measureArea' ||
+                              extraColors.intent === 'PolygonDimension' ||
+                              (extraColors.hasMeasure && !extraColors.opsSubtype) ||
+                              annot.it === 'PolygonDimension';
+        if (isMeasureArea) {
+          let maText = (annot.contentsObj && annot.contentsObj.str) || annot.contents || baseProps.subject || '';
+          if (!maText) {
+            const area = calculateArea(polyPoints);
+            maText = formatMeasurement(area);
+          }
+          const maProps = {
+            ...baseProps,
+            type: 'measureArea',
+            points: polyPoints,
+            color: colorArrayToHex(annot.color, '#ff0000'),
+            strokeColor: colorArrayToHex(annot.color, '#ff0000'),
+            fillColor: extraColors.ic || 'none',
+            lineWidth: annot.borderStyle?.width || 1,
+            borderStyle: mapBorderStyle(annot, extraColors),
+            measureText: maText,
+          };
+          if (extraColors.measureScale) {
+            maProps.measureScale = extraColors.measureScale;
+            maProps.measureUnit = extraColors.measureAreaUnit || extraColors.measureUnit || 'mm';
+            const areaPrecision = extraColors.measureAreaPrecision !== undefined
+              ? extraColors.measureAreaPrecision : extraColors.measurePrecision;
+            if (areaPrecision !== undefined) maProps.measurePrecision = areaPrecision;
+          }
+          if (extraColors.opsPrecision != null) maProps.measurePrecision = extraColors.opsPrecision;
+          return createAnnotation(maProps);
+        }
+
+        // Determine type from OPS_Subtype custom key
+        const polyType = extraColors.opsSubtype === 'cloudPolyline' ? 'cloudPolyline'
+                       : extraColors.opsSubtype === 'cloud' ? 'cloud'
+                       : 'polygon';
+
+        const polyProps = {
           ...baseProps,
-          type: 'polygon',
+          type: polyType,
           x: minX,
           y: minY,
           width: maxX - minX,
@@ -260,8 +504,15 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           strokeColor: colorArrayToHex(annot.color, '#000000'),
           fillColor: extraColors.ic || null,
           lineWidth: annot.borderStyle?.width || 2,
-          borderStyle: mapBorderStyle(annot)
-        });
+          borderStyle: mapBorderStyle(annot, extraColors)
+        };
+
+        // cloudPolyline and cloud need stored points for rendering
+        if (polyType === 'cloudPolyline' || polyType === 'cloud') {
+          polyProps.points = polyPoints;
+        }
+
+        return createAnnotation(polyProps);
       }
       break;
 
@@ -540,6 +791,13 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         img.src = dataUrl;
         state.imageCache.set(imageId, img);
 
+        let stRotation = 0;
+        if (extraColors.rotation !== undefined && extraColors.rotation !== 0) {
+          stRotation = Math.round(extraColors.rotation);
+        } else if (extraColors.matrixAngle !== undefined && Math.abs(extraColors.matrixAngle) > 1) {
+          stRotation = -Math.round(extraColors.matrixAngle);
+        }
+
         return createAnnotation({
           ...baseProps,
           type: 'image',
@@ -551,7 +809,8 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           imageData: dataUrl,
           originalWidth: w,
           originalHeight: h,
-          rotation: 0
+          lockAspectRatio: true,
+          rotation: stRotation
         });
       }
       break;

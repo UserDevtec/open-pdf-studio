@@ -5,9 +5,11 @@ import { updateAnnotationsList } from '../ui/panels/annotations-list.js';
 import { renderWatermarksBehind, renderWatermarksInFront } from '../watermark/watermark-renderer.js';
 
 // Import from sub-modules
-import { drawPolygonShape, drawCloudShape, buildPolygonPath, buildCloudPath, drawTextboxContent } from './rendering/shapes.js';
-import { drawArrowheadOnCanvas, applyBorderStyle } from './rendering/decorations.js';
+import { drawPolygonShape, drawCloudShape, buildPolygonPath, buildCloudPath, buildCloudPolylinePath, drawTextboxContent } from './rendering/shapes.js';
+import { drawArrowheadOnCanvas, applyBorderStyle, drawDimensionLineEnding } from './rendering/decorations.js';
+import { drawDimension, drawMeasureAreaShape, drawCentroidLabel, drawMeasurePerimeterShape } from './rendering/measurements.js';
 import { applyHatchFill } from './rendering/hatch-patterns.js';
+import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 import { drawSelectionHandles } from './rendering/selection.js';
 import { updateQuickAccessButtons, updateContextualTabs, drawGrid, snapToGrid } from './rendering/ui-state.js';
 import { drawCommentIcon } from './rendering/comment-icons.js';
@@ -118,20 +120,38 @@ export function drawAnnotation(ctx, annotation) {
 
       applyBorderStyle(offCtx, annotation.borderStyle);
 
+      // Shorten line so it stops at arrowhead base (not tip) to avoid overshoot
+      const aDx = annotation.endX - annotation.startX;
+      const aDy = annotation.endY - annotation.startY;
+      const aLen = Math.sqrt(aDx * aDx + aDy * aDy);
+      let lineStartX = annotation.startX, lineStartY = annotation.startY;
+      let lineEndX = annotation.endX, lineEndY = annotation.endY;
+      if (aLen > 0) {
+        const ux = aDx / aLen, uy = aDy / aLen;
+        if (endHead !== 'none') {
+          lineEndX -= ux * headSize;
+          lineEndY -= uy * headSize;
+        }
+        if (startHead !== 'none') {
+          lineStartX += ux * headSize;
+          lineStartY += uy * headSize;
+        }
+      }
+
       offCtx.beginPath();
-      offCtx.moveTo(annotation.startX, annotation.startY);
-      offCtx.lineTo(annotation.endX, annotation.endY);
+      offCtx.moveTo(lineStartX, lineStartY);
+      offCtx.lineTo(lineEndX, lineEndY);
       offCtx.stroke();
 
       offCtx.setLineDash([]);
 
       if (endHead !== 'none') {
-        const endAngle = Math.atan2(annotation.endY - annotation.startY, annotation.endX - annotation.startX);
+        const endAngle = Math.atan2(aDy, aDx);
         drawArrowheadOnCanvas(offCtx, annotation.endX, annotation.endY, endAngle, headSize, endHead);
       }
 
       if (startHead !== 'none') {
-        const startAngle = Math.atan2(annotation.startY - annotation.endY, annotation.startX - annotation.endX);
+        const startAngle = Math.atan2(-aDy, -aDx);
         drawArrowheadOnCanvas(offCtx, annotation.startX, annotation.startY, startAngle, headSize, startHead);
       }
 
@@ -288,6 +308,25 @@ export function drawAnnotation(ctx, annotation) {
       ctx.strokeStyle = strokeColor;
       drawCloudShape(ctx, annotation.x, annotation.y, annotation.width, annotation.height);
       ctx.restore();
+      break;
+
+    case 'cloudPolyline':
+      if (annotation.points && annotation.points.length >= 2) {
+        // Fill if fillColor is set
+        if (annotation.fillColor && annotation.fillColor !== 'none' && annotation.fillColor !== null) {
+          buildCloudPolylinePath(ctx, annotation.points, true);
+          ctx.fillStyle = annotation.fillColor;
+          ctx.fill();
+        }
+        // Hatch pattern fill
+        if (annotation.hatchPattern && annotation.hatchPattern !== 'none') {
+          buildCloudPolylinePath(ctx, annotation.points, true);
+          applyHatchFill(ctx, annotation);
+        }
+        ctx.strokeStyle = strokeColor;
+        buildCloudPolylinePath(ctx, annotation.points, true);
+        ctx.stroke();
+      }
       break;
 
     case 'comment': {
@@ -500,13 +539,7 @@ export function drawAnnotation(ctx, annotation) {
 
       // Draw arrowhead
       const angle = Math.atan2(arrowY - kneeY, arrowX - kneeX);
-      const arrowSize = 10;
-      ctx.beginPath();
-      ctx.moveTo(arrowX, arrowY);
-      ctx.lineTo(arrowX - arrowSize * Math.cos(angle - Math.PI / 6), arrowY - arrowSize * Math.sin(angle - Math.PI / 6));
-      ctx.moveTo(arrowX, arrowY);
-      ctx.lineTo(arrowX - arrowSize * Math.cos(angle + Math.PI / 6), arrowY - arrowSize * Math.sin(angle + Math.PI / 6));
-      ctx.stroke();
+      drawArrowheadOnCanvas(ctx, arrowX, arrowY, angle, 10, 'open');
 
       ctx.save();
       if (annotation.rotation || annotation.flipX || annotation.flipY) {
@@ -706,43 +739,18 @@ export function drawAnnotation(ctx, annotation) {
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
       ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(annotation.startX, annotation.startY);
-      ctx.lineTo(annotation.endX, annotation.endY);
-      ctx.stroke();
 
-      // Draw end markers
-      const mdLen = 8;
-      const mdAngle = Math.atan2(annotation.endY - annotation.startY, annotation.endX - annotation.startX);
-      const perpAngle = mdAngle + Math.PI / 2;
-      const px = Math.cos(perpAngle) * mdLen / 2;
-      const py = Math.sin(perpAngle) * mdLen / 2;
-
-      ctx.beginPath();
-      ctx.moveTo(annotation.startX - px, annotation.startY - py);
-      ctx.lineTo(annotation.startX + px, annotation.startY + py);
-      ctx.moveTo(annotation.endX - px, annotation.endY - py);
-      ctx.lineTo(annotation.endX + px, annotation.endY + py);
-      ctx.stroke();
-
-      // Draw measurement label along the line direction
-      if (annotation.measureText) {
-        const midX = (annotation.startX + annotation.endX) / 2;
-        const midY = (annotation.startY + annotation.endY) / 2;
-        let textAngle = Math.atan2(annotation.endY - annotation.startY, annotation.endX - annotation.startX);
-        // Keep text readable (not upside-down)
-        if (textAngle > Math.PI / 2) textAngle -= Math.PI;
-        else if (textAngle < -Math.PI / 2) textAngle += Math.PI;
-        ctx.save();
-        ctx.translate(midX, midY);
-        ctx.rotate(textAngle);
-        ctx.font = '11px Arial';
-        ctx.fillStyle = strokeColor;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(annotation.measureText, 0, -4);
-        ctx.restore();
-      }
+      drawDimension(ctx, {
+        startX: annotation.startX, startY: annotation.startY,
+        endX: annotation.endX, endY: annotation.endY,
+        leaderStartX: annotation.leaderStartX, leaderStartY: annotation.leaderStartY,
+        leaderEndX: annotation.leaderEndX, leaderEndY: annotation.leaderEndY,
+        startHead: annotation.startHead || 'closed',
+        endHead: annotation.endHead || 'closed',
+        headSize: annotation.headSize || 12,
+        color: strokeColor,
+        measureText: annotation.measureText
+      });
       break;
     }
 
@@ -751,30 +759,10 @@ export function drawAnnotation(ctx, annotation) {
       if (!annotation.points || annotation.points.length < 3) break;
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
-      ctx.fillStyle = (annotation.color || '#ff0000') + '20';
-      ctx.setLineDash([4, 2]);
 
-      ctx.beginPath();
-      ctx.moveTo(annotation.points[0].x, annotation.points[0].y);
-      for (let i = 1; i < annotation.points.length; i++) {
-        ctx.lineTo(annotation.points[i].x, annotation.points[i].y);
-      }
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      // Draw label at centroid
+      drawMeasureAreaShape(ctx, annotation.points, annotation.color || '#ff0000', annotation.lineWidth, annotation.fillColor, annotation.borderStyle);
       if (annotation.measureText) {
-        let cx = 0, cy = 0;
-        for (const p of annotation.points) { cx += p.x; cy += p.y; }
-        cx /= annotation.points.length;
-        cy /= annotation.points.length;
-        ctx.font = '11px Arial';
-        ctx.fillStyle = strokeColor;
-        ctx.textAlign = 'center';
-        ctx.fillText(annotation.measureText, cx, cy);
-        ctx.textAlign = 'left';
+        drawCentroidLabel(ctx, annotation.points, annotation.measureText, strokeColor);
       }
       break;
     }
@@ -816,30 +804,40 @@ export function drawAnnotation(ctx, annotation) {
       if (!annotation.points || annotation.points.length < 2) break;
       ctx.strokeStyle = strokeColor;
       ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
-      ctx.setLineDash([4, 2]);
 
-      ctx.beginPath();
-      ctx.moveTo(annotation.points[0].x, annotation.points[0].y);
-      for (let i = 1; i < annotation.points.length; i++) {
-        ctx.lineTo(annotation.points[i].x, annotation.points[i].y);
-      }
-      ctx.stroke();
-      ctx.setLineDash([]);
+      drawMeasurePerimeterShape(ctx, annotation.points, strokeColor, annotation.borderStyle);
 
-      // Draw vertices
-      for (const p of annotation.points) {
+      // Line endings at first and last points
+      const mpPts = annotation.points;
+      const mpHeadSize = annotation.headSize || 12;
+      const mpStartHead = annotation.startHead || 'none';
+      const mpEndHead = annotation.endHead || 'none';
+      if (mpStartHead !== 'none' && mpPts.length >= 2) {
+        const startAngle = Math.atan2(mpPts[0].y - mpPts[1].y, mpPts[0].x - mpPts[1].x);
         ctx.fillStyle = strokeColor;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-        ctx.fill();
+        drawDimensionLineEnding(ctx, mpPts[0].x, mpPts[0].y, startAngle, mpHeadSize, mpStartHead);
+      }
+      if (mpEndHead !== 'none' && mpPts.length >= 2) {
+        const last = mpPts[mpPts.length - 1];
+        const prev = mpPts[mpPts.length - 2];
+        const endAngle = Math.atan2(last.y - prev.y, last.x - prev.x);
+        ctx.fillStyle = strokeColor;
+        drawDimensionLineEnding(ctx, last.x, last.y, endAngle, mpHeadSize, mpEndHead);
       }
 
-      // Draw label near last point
-      if (annotation.measureText && annotation.points.length > 0) {
-        const lastPt = annotation.points[annotation.points.length - 1];
+      if (annotation.measureText && mpPts.length > 0) {
+        const lastPt = mpPts[mpPts.length - 1];
         ctx.font = '11px Arial';
         ctx.fillStyle = strokeColor;
         ctx.fillText(annotation.measureText, lastPt.x + 8, lastPt.y - 4);
+      }
+      break;
+    }
+
+    default: {
+      const typeHandler = getAnnotationType(annotation.type);
+      if (typeHandler && typeHandler.render) {
+        typeHandler.render(ctx, annotation);
       }
       break;
     }

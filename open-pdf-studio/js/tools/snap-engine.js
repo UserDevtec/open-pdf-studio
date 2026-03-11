@@ -27,8 +27,7 @@ function extractSnapPoints(ann, points, prefs) {
 
   switch (ann.type) {
     case 'line':
-    case 'arrow':
-    case 'measureDistance': {
+    case 'arrow': {
       const sx = ann.startX, sy = ann.startY, ex = ann.endX, ey = ann.endY;
       if (doEndpoints) {
         points.push({ x: sx, y: sy, type: 'endpoint', annotation: ann });
@@ -36,6 +35,21 @@ function extractSnapPoints(ann, points, prefs) {
       }
       if (doMidpoints) {
         points.push({ x: (sx + ex) / 2, y: (sy + ey) / 2, type: 'midpoint', annotation: ann });
+      }
+      break;
+    }
+
+    case 'measureDistance': {
+      // Only snap to extension line ends and dimension line ends
+      if (doEndpoints) {
+        points.push({ x: ann.startX, y: ann.startY, type: 'endpoint', annotation: ann });
+        points.push({ x: ann.endX, y: ann.endY, type: 'endpoint', annotation: ann });
+        if (ann.leaderStartX !== undefined) {
+          points.push({ x: ann.leaderStartX, y: ann.leaderStartY, type: 'endpoint', annotation: ann });
+        }
+        if (ann.leaderEndX !== undefined) {
+          points.push({ x: ann.leaderEndX, y: ann.leaderEndY, type: 'endpoint', annotation: ann });
+        }
       }
       break;
     }
@@ -208,8 +222,11 @@ function getEdgeSegments(ann) {
   switch (ann.type) {
     case 'line':
     case 'arrow':
-    case 'measureDistance':
       segments.push({ x1: ann.startX, y1: ann.startY, x2: ann.endX, y2: ann.endY });
+      break;
+
+    case 'measureDistance':
+      // No edge snapping for dimension annotations — only point snapping at endpoints
       break;
 
     case 'box':

@@ -2,7 +2,7 @@ export type AnnotationType =
   | 'highlight' | 'textHighlight' | 'textStrikethrough' | 'textUnderline'
   | 'draw' | 'line' | 'arrow' | 'box' | 'circle'
   | 'textbox' | 'callout' | 'comment' | 'stamp' | 'image' | 'signature'
-  | 'polygon' | 'cloud' | 'polyline' | 'text'
+  | 'polygon' | 'cloud' | 'cloudPolyline' | 'polyline' | 'text'
   | 'redaction'
   | 'measureDistance' | 'measureArea' | 'measurePerimeter';
 

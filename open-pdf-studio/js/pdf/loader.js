@@ -15,7 +15,7 @@ import { showMessage } from '../bridge.js';
 
 // Sub-module imports
 import { extractAnnotationColors } from './loader/color-extraction.js';
-import { extractStampImagesViaPdfJs } from './loader/image-extraction.js';
+import { extractStampImagesViaPdfJs, extractStampImages } from './loader/image-extraction.js';
 import { convertPdfAnnotation } from './loader/annotation-converter.js';
 
 
@@ -401,20 +401,26 @@ async function loadAnnotationsForSinglePage(doc, pageNum, waitForColors = false)
   let stampImageMap = null;
   let annotColorMap = null;
 
+  // Resolve pdf-lib doc early so both stamp images and colors can use it
+  let pdfLibDoc = doc._sharedPdfLibDoc || null;
+  if (!pdfLibDoc && waitForColors) {
+    pdfLibDoc = await getSharedPdfLibDoc(doc);
+  }
+
   if (stampAnnots.length > 0) {
-    stampImageMap = await extractStampImagesViaPdfJs(page, viewport, stampAnnots);
+    // Prefer pdf-lib extraction (preserves transparency) over PDF.js crop (bakes in page background)
+    if (pdfLibDoc) {
+      stampImageMap = await extractStampImages(pageNum, pdfLibDoc);
+    }
+    // Fallback to PDF.js rendering if pdf-lib didn't extract any images
+    if (!stampImageMap || stampImageMap.size === 0) {
+      stampImageMap = await extractStampImagesViaPdfJs(page, viewport, stampAnnots);
+    }
   }
 
   if (needsExtraData) {
-    if (waitForColors) {
-      // Background loader path: always wait for pdf-lib
-      const pdfLibDoc = await getSharedPdfLibDoc(doc);
-      if (pdfLibDoc) {
-        annotColorMap = await extractAnnotationColors(pageNum, pdfLibDoc);
-      }
-    } else if (doc._sharedPdfLibDoc) {
-      // On-demand path: pdf-lib already ready, use it
-      annotColorMap = await extractAnnotationColors(pageNum, doc._sharedPdfLibDoc);
+    if (pdfLibDoc) {
+      annotColorMap = await extractAnnotationColors(pageNum, pdfLibDoc);
     } else {
       // On-demand path: pdf-lib not ready, skip colors for now
       doc._pagesNeedingColorUpdate.add(pageNum);
@@ -496,18 +502,23 @@ export async function loadExistingAnnotations(doc) {
       let stampImageMap = null;
       let annotColorMap = null;
 
+      // Resolve pdf-lib doc for both stamp images (transparency) and colors
+      const pdfLibDoc = await getSharedPdfLibDoc(doc);
+      if (loadId !== doc._annotationLoadId || !state.documents.includes(doc)) return;
+
       if (stampAnnots.length > 0) {
-        stampImageMap = await extractStampImagesViaPdfJs(page, viewport, stampAnnots);
+        if (pdfLibDoc) {
+          stampImageMap = await extractStampImages(pageNum, pdfLibDoc);
+        }
+        if (!stampImageMap || stampImageMap.size === 0) {
+          stampImageMap = await extractStampImagesViaPdfJs(page, viewport, stampAnnots);
+        }
         if (loadId !== doc._annotationLoadId || !state.documents.includes(doc)) return;
       }
 
-      if (needsExtraData) {
-        const pdfLibDoc = await getSharedPdfLibDoc(doc);
+      if (needsExtraData && pdfLibDoc) {
+        annotColorMap = await extractAnnotationColors(pageNum, pdfLibDoc);
         if (loadId !== doc._annotationLoadId || !state.documents.includes(doc)) return;
-        if (pdfLibDoc) {
-          annotColorMap = await extractAnnotationColors(pageNum, pdfLibDoc);
-          if (loadId !== doc._annotationLoadId || !state.documents.includes(doc)) return;
-        }
       }
 
       for (const annot of annotations) {
@@ -545,7 +556,12 @@ export async function loadExistingAnnotations(doc) {
         let annotColorMap = null;
 
         if (stampAnnots.length > 0) {
-          stampImageMap = await extractStampImagesViaPdfJs(page, viewport, stampAnnots);
+          if (pdfLibDoc) {
+            stampImageMap = await extractStampImages(pageNum, pdfLibDoc);
+          }
+          if (!stampImageMap || stampImageMap.size === 0) {
+            stampImageMap = await extractStampImagesViaPdfJs(page, viewport, stampAnnots);
+          }
         }
         if (needsExtraData) {
           annotColorMap = await extractAnnotationColors(pageNum, pdfLibDoc);

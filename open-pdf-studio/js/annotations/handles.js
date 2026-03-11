@@ -85,8 +85,8 @@ export function getAnnotationHandles(annotation, scale = 1) {
       handles.push({ type: HANDLE_TYPES.BOTTOM, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y + annotation.height - hs/2 });
       handles.push({ type: HANDLE_TYPES.LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
       handles.push({ type: HANDLE_TYPES.RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
-      // Rotation handle (to the right of the shape)
-      handles.push({ type: HANDLE_TYPES.ROTATE, x: annotation.x + annotation.width + 25 / scale - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
+      // Rotation handle (above the shape)
+      handles.push({ type: HANDLE_TYPES.ROTATE, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y - 25 / scale - hs/2 });
       break;
 
     case 'callout':
@@ -126,7 +126,7 @@ export function getAnnotationHandles(annotation, scale = 1) {
       handles.push({ type: HANDLE_TYPES.LEFT, x: circX - hs/2, y: circY + circH/2 - hs/2 });
       handles.push({ type: HANDLE_TYPES.RIGHT, x: circX + circW - hs/2, y: circY + circH/2 - hs/2 });
       // Rotation handle (above the shape)
-      handles.push({ type: HANDLE_TYPES.ROTATE, x: circX + circW/2 - hs/2, y: circY - 25 - hs/2 });
+      handles.push({ type: HANDLE_TYPES.ROTATE, x: circX + circW/2 - hs/2, y: circY - 25 / scale - hs/2 });
       break;
 
     case 'line':
@@ -139,6 +139,19 @@ export function getAnnotationHandles(annotation, scale = 1) {
       // Arrow uses same endpoint handles as line
       handles.push({ type: HANDLE_TYPES.LINE_START, x: annotation.startX - hs/2, y: annotation.startY - hs/2 });
       handles.push({ type: HANDLE_TYPES.LINE_END, x: annotation.endX - hs/2, y: annotation.endY - hs/2 });
+      break;
+
+    case 'measureDistance':
+      // Dimension line endpoints
+      handles.push({ type: HANDLE_TYPES.LINE_START, x: annotation.startX - hs/2, y: annotation.startY - hs/2 });
+      handles.push({ type: HANDLE_TYPES.LINE_END, x: annotation.endX - hs/2, y: annotation.endY - hs/2 });
+      // Extension line tip handles (if extension lines exist)
+      if (annotation.leaderStartX !== undefined) {
+        handles.push({ type: HANDLE_TYPES.LEADER_START, x: annotation.leaderStartX - hs/2, y: annotation.leaderStartY - hs/2 });
+      }
+      if (annotation.leaderEndX !== undefined) {
+        handles.push({ type: HANDLE_TYPES.LEADER_END, x: annotation.leaderEndX - hs/2, y: annotation.leaderEndY - hs/2 });
+      }
       break;
 
     case 'comment':
@@ -173,6 +186,9 @@ export function getAnnotationHandles(annotation, scale = 1) {
       break;
 
     case 'polyline':
+    case 'cloudPolyline':
+    case 'measureArea':
+    case 'measurePerimeter':
       // Per-node handles for polyline
       if (annotation.points && annotation.points.length > 0) {
         annotation.points.forEach((p, i) => {
@@ -360,6 +376,8 @@ export function getCursorForHandle(handleType, rotation, annotation) {
   switch (handleType) {
     case HANDLE_TYPES.LINE_START:
     case HANDLE_TYPES.LINE_END:
+    case HANDLE_TYPES.LEADER_START:
+    case HANDLE_TYPES.LEADER_END:
       return 'crosshair';
     case HANDLE_TYPES.MOVE:
       return 'move';

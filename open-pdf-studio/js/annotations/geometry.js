@@ -1,6 +1,7 @@
 import { state } from '../core/state.js';
 import { annotationCtx } from '../ui/dom-elements.js';
 import { distanceToLine, isPointNearRect, isPointNearEllipse } from '../utils/math.js';
+import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 
 // Transform a point by inverse rotation around a center point
 // This converts screen coordinates to the annotation's local (unrotated) coordinate system
@@ -59,8 +60,21 @@ function getAnnotationCenterAndSize(ann) {
         width: cw,
         height: ch
       };
-    default:
+    default: {
+      const typeHandler = getAnnotationType(ann.type);
+      if (typeHandler && typeHandler.getBounds) {
+        const bounds = typeHandler.getBounds(ann);
+        if (bounds) {
+          return {
+            centerX: bounds.x + bounds.width / 2,
+            centerY: bounds.y + bounds.height / 2,
+            width: bounds.width,
+            height: bounds.height
+          };
+        }
+      }
       return null;
+    }
   }
 }
 
@@ -94,6 +108,16 @@ export function findAnnotationAt(x, y) {
           for (let i = 0; i < ann.points.length - 1; i++) {
             const segDist = distanceToLine(x, y, ann.points[i].x, ann.points[i].y, ann.points[i+1].x, ann.points[i+1].y);
             if (segDist < tol) return ann;
+          }
+        }
+        break;
+      case 'cloudPolyline':
+        // Check if point is near any segment of the closed cloud polyline
+        if (ann.points && ann.points.length >= 3) {
+          for (let i = 0; i < ann.points.length; i++) {
+            const j = (i + 1) % ann.points.length;
+            const cpDist = distanceToLine(x, y, ann.points[i].x, ann.points[i].y, ann.points[j].x, ann.points[j].y);
+            if (cpDist < tol + 12) return ann;
           }
         }
         break;
@@ -191,6 +215,13 @@ export function findAnnotationAt(x, y) {
       case 'measureDistance': {
         const d = distanceToLine(x, y, ann.startX, ann.startY, ann.endX, ann.endY);
         if (d < tol) return ann;
+        // Also check extension lines
+        if (ann.leaderStartX !== undefined) {
+          const ld1 = distanceToLine(x, y, ann.startX, ann.startY, ann.leaderStartX, ann.leaderStartY);
+          if (ld1 < tol) return ann;
+          const ld2 = distanceToLine(x, y, ann.endX, ann.endY, ann.leaderEndX, ann.leaderEndY);
+          if (ld2 < tol) return ann;
+        }
         break;
       }
       case 'measureArea':
@@ -224,6 +255,13 @@ export function findAnnotationAt(x, y) {
           if (x >= ann.x && x <= ann.x + ann.width && y >= ann.y && y <= ann.y + ann.height) return ann;
         }
         break;
+      default: {
+        const typeHandler = getAnnotationType(ann.type);
+        if (typeHandler && typeHandler.hitTest) {
+          if (typeHandler.hitTest(x, y, ann, tol)) return ann;
+        }
+        break;
+      }
     }
   }
   return null;
@@ -296,6 +334,7 @@ export function isPointInsideAnnotation(x, y, annotation) {
       return false;
 
     case 'polyline':
+    case 'cloudPolyline':
       if (annotation.points && annotation.points.length > 0) {
         const plMinX = Math.min(...annotation.points.map(p => p.x));
         const plMinY = Math.min(...annotation.points.map(p => p.y));
@@ -314,7 +353,12 @@ export function isPointInsideAnnotation(x, y, annotation) {
 
     case 'measureDistance': {
       const md = distanceToLine(x, y, annotation.startX, annotation.startY, annotation.endX, annotation.endY);
-      return md < 8;
+      if (md < 8) return true;
+      if (annotation.leaderStartX !== undefined) {
+        if (distanceToLine(x, y, annotation.startX, annotation.startY, annotation.leaderStartX, annotation.leaderStartY) < 8) return true;
+        if (distanceToLine(x, y, annotation.endX, annotation.endY, annotation.leaderEndX, annotation.leaderEndY) < 8) return true;
+      }
+      return false;
     }
 
     case 'measureArea':

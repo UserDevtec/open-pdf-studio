@@ -14,33 +14,22 @@ export function copyAnnotation(annotation) {
 }
 
 // Paste from clipboard (handles both images and annotations)
-export async function pasteFromClipboard() {
+// Triggers a native paste so the 'paste' event handler in keyboard-handlers.js
+// can read clipboardData without requiring the async Clipboard API permission.
+export function pasteFromClipboard() {
   if (!state.pdfDoc) return;
 
-  try {
-    // Try to read from system clipboard
-    const clipboardItems = await navigator.clipboard.read();
+  // Try triggering a native paste event which the handlePaste listener will pick up.
+  // This avoids navigator.clipboard.read() which requires explicit browser permission.
+  const didPaste = document.execCommand('paste');
 
-    for (const item of clipboardItems) {
-      // Check for image types
-      const imageTypes = item.types.filter(type => type.startsWith('image/'));
-
-      if (imageTypes.length > 0) {
-        const imageType = imageTypes[0];
-        const blob = await item.getType(imageType);
-        await pasteImageFromBlob(blob);
-        return;
-      }
+  if (!didPaste) {
+    // execCommand('paste') not supported — fall back to internal clipboard
+    if (state.clipboardAnnotations && state.clipboardAnnotations.length > 1) {
+      pasteAnnotations();
+    } else if (state.clipboardAnnotation) {
+      pasteAnnotation();
     }
-  } catch (err) {
-    // Clipboard API failed, check internal clipboard
-  }
-
-  // Fallback to internal clipboard for annotations
-  if (state.clipboardAnnotations && state.clipboardAnnotations.length > 1) {
-    pasteAnnotations();
-  } else if (state.clipboardAnnotation) {
-    pasteAnnotation();
   }
 }
 

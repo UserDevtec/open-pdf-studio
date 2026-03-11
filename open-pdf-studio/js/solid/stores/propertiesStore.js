@@ -58,6 +58,9 @@ const [annotProps, setAnnotProps] = createStore({
   endHead: 'open',
   headSize: 12,
   arrowLength: '',
+  measureScale: 0,
+  measureUnit: '',
+  measurePrecision: 2,
   replies: [],
   multiCount: 0,
 });
@@ -72,6 +75,7 @@ const [sectionVis, setSectionVis] = createStore({
   textFormat: false,
   paragraph: false,
   content: false,
+  measurement: false,
   image: false,
   actions: false,
   // Sub-group visibility
@@ -124,18 +128,20 @@ function computeSectionVisibility(type) {
   const isLineOrArrow = type === 'arrow' || type === 'line';
   const isTextMarkup = ['textHighlight', 'textStrikethrough', 'textUnderline'].includes(type);
   const hideLineWidth = ['highlight', 'comment', 'image', 'textHighlight'].includes(type);
-  const hasFillColor = ['highlight', 'box', 'circle', 'polygon', 'cloud', 'textbox', 'callout', 'arrow', 'line'].includes(type);
-  const hideColor = ['line', 'arrow', 'box', 'circle', 'draw', 'highlight', 'image', 'textbox', 'callout', 'polygon', 'cloud'].includes(type);
-  const hasBorderStyle = ['textbox', 'callout', 'arrow', 'line', 'box', 'circle', 'polygon', 'cloud', 'draw', 'polyline'].includes(type);
+  const hasFillColor = ['highlight', 'box', 'circle', 'polygon', 'cloud', 'textbox', 'callout', 'arrow', 'line', 'measureArea'].includes(type);
+  const hideColor = ['line', 'arrow', 'box', 'circle', 'draw', 'highlight', 'image', 'textbox', 'callout', 'polygon', 'cloud', 'measureDistance', 'measureArea', 'measurePerimeter'].includes(type);
+  const hasBorderStyle = ['textbox', 'callout', 'arrow', 'line', 'box', 'circle', 'polygon', 'cloud', 'draw', 'polyline', 'measureDistance', 'measureArea', 'measurePerimeter'].includes(type);
   const hasHatchPattern = ['box', 'circle', 'polygon', 'cloud'].includes(type);
   const hasRotation = ['box', 'circle', 'polygon', 'cloud', 'highlight', 'redaction', 'comment', 'stamp', 'signature'].includes(type);
+  const isMeasurement = ['measureDistance', 'measureArea', 'measurePerimeter'].includes(type);
 
   setSectionVis({
     general: true,
     replies: true,
     appearance: true,
-    lineEndings: isArrow,
+    lineEndings: isArrow || type === 'measureDistance' || type === 'measurePerimeter',
     dimensions: isLineOrArrow,
+    measurement: isMeasurement,
     textFormat: isTextbox,
     paragraph: isTextbox,
     content: isTextContent,
@@ -143,7 +149,7 @@ function computeSectionVisibility(type) {
     actions: true,
     iconGroup: type === 'comment',
     fillColorGroup: hasFillColor,
-    strokeColorGroup: isShape,
+    strokeColorGroup: isShape || type === 'measureDistance' || type === 'measureArea' || type === 'measurePerimeter',
     colorGroup: !hideColor || isTextMarkup,
     lineWidthGroup: !hideLineWidth,
     borderStyleGroup: hasBorderStyle,
@@ -199,12 +205,15 @@ export function storeShowProperties(annotation) {
     imageHeight: annotation.type === 'image' ? Math.round(annotation.height) : 0,
     imageRotation: annotation.type === 'image' ? Math.round(annotation.rotation || 0) : 0,
     lockAspectRatio: annotation.type === 'image' ? (annotation.lockAspectRatio || false) : false,
-    startHead: annotation.startHead || 'none',
-    endHead: annotation.endHead || 'open',
+    startHead: annotation.startHead || (annotation.type === 'measureDistance' ? 'closed' : 'none'),
+    endHead: annotation.endHead || (annotation.type === 'measureDistance' ? 'closed' : 'open'),
     headSize: annotation.headSize || 12,
     arrowLength: (annotation.type === 'arrow' || annotation.type === 'line')
       ? (Math.sqrt(Math.pow(annotation.endX - annotation.startX, 2) + Math.pow(annotation.endY - annotation.startY, 2))).toFixed(2) + ' px'
       : '',
+    measureScale: annotation.measureScale || 0,
+    measureUnit: annotation.measureUnit || '',
+    measurePrecision: annotation.measurePrecision !== undefined ? annotation.measurePrecision : 2,
     replies: annotation.replies || [],
     multiCount: 0,
   });
@@ -226,6 +235,7 @@ export function storeHideProperties() {
     appearance: false,
     lineEndings: false,
     dimensions: false,
+    measurement: false,
     textFormat: false,
     paragraph: false,
     content: false,
@@ -368,6 +378,7 @@ export function storeShowMultiSelection(selected) {
     appearance: true,
     lineEndings: allSameType && sharedType === 'arrow',
     dimensions: false,
+    measurement: false,
     textFormat: allMatch(t => textboxTypes.has(t)),
     paragraph: allMatch(t => textboxTypes.has(t)),
     content: false,
@@ -464,6 +475,7 @@ export function storeShowTextEditProperties(info) {
     appearance: false,
     lineEndings: false,
     dimensions: false,
+    measurement: false,
     textFormat: true,
     paragraph: false,
     content: false,
@@ -572,6 +584,25 @@ function applyPropToAnnotation(ann, key, value) {
       break;
     }
     case 'rotation': ann.rotation = Math.max(-360, Math.min(360, parseInt(value) || 0)); break;
+    case 'measureScale': ann.measureScale = parseFloat(value) || 0; break;
+    case 'measureUnit': ann.measureUnit = value; break;
+    case 'measurePrecision': ann.measurePrecision = parseInt(value); break;
+  }
+}
+
+// Recompute measurement text for a measurement annotation
+function recomputeMeasureText(ann) {
+  if (!ann || !ann.type?.startsWith('measure')) return;
+  if (ann.measureScale) {
+    const prec = ann.measurePrecision !== undefined ? ann.measurePrecision : 2;
+    const unit = ann.measureUnit || 'mm';
+    if (ann.type === 'measureDistance') {
+      const dx = ann.endX - ann.startX;
+      const dy = ann.endY - ann.startY;
+      const pixelDist = Math.sqrt(dx * dx + dy * dy);
+      const scaledVal = pixelDist * ann.measureScale;
+      ann.measureText = `${scaledVal.toFixed(prec)} ${unit}`;
+    }
   }
 }
 
@@ -696,6 +727,9 @@ export function updateAnnotProp(key, value) {
     case 'startHead': currentAnnotation.startHead = value; break;
     case 'endHead': currentAnnotation.endHead = value; break;
     case 'headSize': currentAnnotation.headSize = parseInt(value); break;
+    case 'measureScale': currentAnnotation.measureScale = parseFloat(value) || 0; recomputeMeasureText(currentAnnotation); break;
+    case 'measureUnit': currentAnnotation.measureUnit = value; recomputeMeasureText(currentAnnotation); break;
+    case 'measurePrecision': currentAnnotation.measurePrecision = parseInt(value); recomputeMeasureText(currentAnnotation); break;
   }
 
   // Update store

@@ -1,8 +1,11 @@
+import { For } from 'solid-js';
 import RibbonGroup from './RibbonGroup.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import ThemePicker from './ThemePicker.jsx';
 import { singlePageIcon, continuousIcon, navigationIcon, propertiesIcon, annotationsListIcon, toolPaletteIcon } from '../../data/ribbonIcons.js';
 import { toggleToolPalette, paletteVisible } from '../ToolPalette.jsx';
+import { getRegisteredPalettes } from '../../../plugins/palette-registry.js';
+import { toggleExtPalette, isExtPaletteVisible } from '../ExtensionToolPalette.jsx';
 import { setViewMode } from '../../../pdf/renderer.js';
 import { toggleLeftPanel } from '../../../ui/panels/left-panel.js';
 import { toggleAnnotationsListPanel } from '../../../ui/panels/annotations-list.js';
@@ -37,6 +40,16 @@ export default function ViewTab() {
             disabled={noPdf()} onClick={() => toggleAnnotationsListPanel()} />
           <RibbonButton id="ribbon-tool-palette" title={t('view.toolPalette')} icon={toolPaletteIcon} label={t('view.toolPaletteLabel')}
             active={paletteVisible()} onClick={toggleToolPalette} />
+          <For each={getRegisteredPalettes()}>
+            {(p) => {
+              const translated = p.translationKey ? t(p.translationKey) : null;
+              const label = (translated && translated !== p.translationKey) ? translated : p.label;
+              return (
+                <RibbonButton id={`ribbon-ext-palette-${p.id}`} title={label} icon={p.icon || toolPaletteIcon} label={label}
+                  active={isExtPaletteVisible(p.id)} onClick={() => toggleExtPalette(p.id)} />
+              );
+            }}
+          </For>
         </RibbonGroup>
 
         <RibbonGroup label={t('view.appearance')}>
