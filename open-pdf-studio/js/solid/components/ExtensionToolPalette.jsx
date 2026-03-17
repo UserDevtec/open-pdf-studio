@@ -6,6 +6,7 @@
  */
 
 import { createSignal, Show, For, onMount } from 'solid-js';
+
 import { state, noPdf } from '../../core/state.js';
 import { setTool } from '../../tools/manager.js';
 import { isPdfAReadOnly } from '../../pdf/loader.js';
@@ -13,6 +14,7 @@ import { useTranslation } from '../../i18n/useTranslation.js';
 import { savePreferences } from '../../core/preferences.js';
 import { registerPaletteDock, unregisterPaletteDock } from '../stores/paletteOrder.js';
 import { hasAnnotationType } from '../../plugins/annotation-type-registry.js';
+import { paletteIconSize, showPaletteCtxMenu } from './ToolPalette.jsx';
 
 const DOCK_SNAP = 60;
 
@@ -74,6 +76,7 @@ export function isExtPaletteVisible(id) {
 
 // --- Drag logic (per palette instance) ---
 function startExtDrag(id, e, fromDocked) {
+  if (e.button !== 0) return;
   e.preventDefault();
   const ps = paletteStates[id];
   if (!ps) return;
@@ -210,10 +213,13 @@ export function DockedExtPalette(props) {
 
   return (
     <Show when={shouldShow()}>
-      <div class={`tp-docked tp-docked-${side()}`}>
+      <div class={`tp-docked tp-docked-${side()}${paletteIconSize() === 'large' ? ' tp-large' : ''}`} onContextMenu={showPaletteCtxMenu}>
         <div class="tp-grip" onMouseDown={(e) => startExtDrag(id(), e, true)}>
           <GripIcon />
         </div>
+        <Show when={props.descriptor.logo}>
+          <div class="tp-logo" innerHTML={props.descriptor.logo} />
+        </Show>
         <div class="tp-docked-tools">
           <ExtToolList tools={props.descriptor.tools} />
         </div>
@@ -247,8 +253,9 @@ export function FloatingExtPalette(props) {
   return (
     <Show when={shouldShow()}>
       <div
-        class="tp-float"
+        class={`tp-float${paletteIconSize() === 'large' ? ' tp-large' : ''}`}
         style={`left:${ps().floatPos[0]().x}px; top:${ps().floatPos[0]().y}px`}
+        onContextMenu={showPaletteCtxMenu}
       >
         <div class="tp-float-header" onMouseDown={(e) => {
           if (e.target.closest('.tp-float-close')) return;
@@ -266,6 +273,9 @@ export function FloatingExtPalette(props) {
             </svg>
           </button>
         </div>
+        <Show when={props.descriptor.logo}>
+          <div class="tp-logo" innerHTML={props.descriptor.logo} />
+        </Show>
         <div class="tp-float-body">
           <ExtToolList tools={props.descriptor.tools} />
         </div>

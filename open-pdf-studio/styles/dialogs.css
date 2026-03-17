@@ -794,6 +794,175 @@
   margin: 0;
 }
 
+/* Extensions Dialog */
+.extensions-dialog {
+  width: 550px;
+  height: 450px;
+}
+
+.extensions-dialog .dialog-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: 100%;
+}
+
+.extensions-dialog .bs-export-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.extensions-dialog .bs-export-title {
+  display: none;
+}
+
+.extensions-dialog .ext-install-section {
+  flex-shrink: 0;
+}
+
+.extensions-dialog .ext-divider {
+  flex-shrink: 0;
+}
+
+.extensions-dialog .ext-section-title {
+  flex-shrink: 0;
+}
+
+.extensions-dialog .ext-message {
+  flex-shrink: 0;
+}
+
+.extensions-dialog .ext-empty {
+  flex-shrink: 0;
+}
+
+.extensions-dialog .ext-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* Confirm Dialog */
+.confirm-dialog {
+  width: 380px;
+}
+
+.confirm-dialog-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.confirm-dialog-icon {
+  flex-shrink: 0;
+}
+
+.confirm-dialog-message {
+  font-size: 13px;
+  color: var(--theme-text);
+  line-height: 1.5;
+  margin: 4px 0 0;
+}
+
+.confirm-dialog-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.confirm-dialog-checkbox input {
+  margin: 0;
+  cursor: pointer;
+}
+
+.confirm-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--theme-border);
+}
+
+.confirm-dialog-btn {
+  padding: 5px 20px;
+  font-size: 12px;
+  border: 1px solid var(--theme-border);
+  cursor: pointer;
+  background: var(--theme-surface);
+  color: var(--theme-text);
+}
+
+.confirm-dialog-btn:hover {
+  background: var(--theme-hover);
+}
+
+.confirm-dialog-btn-yes {
+  background: var(--theme-accent);
+  color: #fff;
+  border-color: var(--theme-accent);
+}
+
+.confirm-dialog-btn-yes:hover {
+  background: var(--theme-accent-hover);
+}
+
+/* Title Block Edit Dialog */
+.title-block-dialog {
+  width: 450px;
+}
+
+.title-block-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 0;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.title-block-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-block-field-label {
+  font-size: 12px;
+  color: var(--theme-text);
+  min-width: 100px;
+  text-align: right;
+}
+
+.title-block-field-input {
+  flex: 1;
+  padding: 3px 6px;
+  font-size: 12px;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-surface);
+  color: var(--theme-text);
+}
+
+.title-block-field-input:focus {
+  border-color: var(--theme-accent);
+  outline: none;
+}
+
+.title-block-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--theme-border);
+}
+
 /* About Dialog */
 .about-dialog {
   width: 480px;
@@ -3741,198 +3910,6 @@
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
 }
 
-/* ===== Tool Palette ===== */
-
-/* Shared tool button styles */
-.tp-btn {
-  width: 30px; height: 28px;
-  border: 1px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: var(--theme-ribbon-icon-stroke);
-  flex-shrink: 0;
-  margin: 1px 2px;
-}
-.tp-btn svg { width: 18px; height: 18px; }
-.tp-btn:hover:not(:disabled) {
-  background: var(--theme-ribbon-btn-hover);
-  border-color: var(--theme-ribbon-btn-hover-border);
-  color: var(--theme-ribbon-text-hover);
-}
-.tp-btn.active {
-  background: var(--theme-ribbon-btn-active-bg);
-  border-color: var(--theme-ribbon-btn-active-border);
-  color: var(--theme-ribbon-btn-active-text);
-}
-.tp-btn.active:hover:not(:disabled) {
-  background: var(--theme-ribbon-btn-active-bg);
-  border-color: var(--theme-ribbon-btn-active-border);
-  color: var(--theme-ribbon-btn-active-text);
-  filter: brightness(1.1);
-}
-.tp-btn:disabled { opacity: 0.3; cursor: default; }
-
-.tp-sep {
-  width: 22px; height: 1px;
-  background: var(--theme-border);
-  margin: 3px auto;
-  flex-shrink: 0;
-}
-/* --- Docked mode --- */
-.tp-docked {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  background: var(--theme-surface);
-  padding: 0 0 2px;
-  user-select: none;
-  overflow: hidden;
-}
-
-.tp-docked-tools {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.tp-docked-tools.two-col {
-  display: grid;
-  grid-template-columns: auto auto;
-  align-content: start;
-  justify-items: center;
-}
-
-.tp-docked-tools.two-col .tp-sep {
-  grid-column: 1 / -1;
-  width: 100%;
-}
-.tp-docked::-webkit-scrollbar { display: none; }
-.tp-docked-left { border-right: 1px solid var(--theme-border); }
-.tp-docked-right { border-left: 1px solid var(--theme-border); }
-
-.tp-grip {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 3px 0;
-  cursor: grab;
-  color: var(--theme-text-secondary);
-  border-bottom: 1px solid var(--theme-border);
-  margin-bottom: 2px;
-}
-.tp-grip:hover { background: var(--theme-hover); color: var(--theme-ribbon-icon-stroke); }
-.tp-grip:active { cursor: grabbing; }
-
-.tp-close {
-  width: 24px; height: 20px;
-  border: 1px solid transparent;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: var(--theme-text-secondary);
-  flex-shrink: 0;
-  margin: 2px;
-}
-.tp-close:hover { background: #e81123; color: #fff; }
-
-/* --- Floating mode --- */
-.tp-float {
-  position: fixed;
-  z-index: 950;
-  background: var(--theme-surface);
-  border: 1px solid var(--theme-border);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.22), 0 1px 4px rgba(0,0,0,0.12);
-  user-select: none;
-}
-.tp-float-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 3px 4px;
-  background: linear-gradient(to bottom, var(--theme-ribbon-bg-start), var(--theme-ribbon-bg-end));
-  border-bottom: 1px solid var(--theme-border);
-  cursor: default;
-}
-.tp-float-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--theme-text);
-  padding-left: 2px;
-}
-.tp-float-close {
-  width: 18px; height: 18px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  color: var(--theme-text-secondary);
-}
-.tp-float-close:hover { background: #e81123; color: #fff; }
-.tp-float-body {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  padding: 3px;
-  gap: 0;
-}
-.tp-float-body .tp-sep {
-  grid-column: 1 / -1;
-  width: 100%;
-}
-
-/* --- Dock target overlays (shown while dragging) --- */
-.tp-dock-target {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--theme-surface);
-  border: 1px solid var(--theme-border);
-  z-index: 998;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s, border-color 0.15s;
-}
-.tp-dock-target.visible { opacity: 1; }
-.tp-dock-target.active { border-color: var(--theme-accent); background: rgba(168,45,110,0.08); }
-.tp-dock-target-left { left: 6px; }
-.tp-dock-target-right { right: 6px; }
-.tp-dock-target-icon { color: var(--theme-text-secondary); display: flex; }
-.tp-dock-target.active .tp-dock-target-icon { color: var(--theme-accent); }
-
-/* --- Dock preview strips (highlight where palette will land) --- */
-.tp-dock-preview {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 34px;
-  background: var(--theme-accent);
-  opacity: 0;
-  z-index: 997;
-  pointer-events: none;
-  transition: opacity 0.15s;
-}
-.tp-dock-preview.active { opacity: 0.12; }
-.tp-dock-preview-left { left: 0; }
-.tp-dock-preview-right { right: 0; }
-
 /* Extensions Panel */
 .ext-install-section {
   margin-bottom: 16px;
@@ -4071,6 +4048,31 @@
 .ext-uninstall-btn:hover {
   color: #e81123;
   border-color: #e81123;
+}
+
+.ext-card-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.ext-reload-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--theme-app-menu-shortcut);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ext-reload-btn:hover {
+  color: #0078d4;
+  border-color: #0078d4;
 }
 
 .ext-message {

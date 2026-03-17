@@ -15,6 +15,7 @@ import ParagraphSection from './ParagraphSection.jsx';
 import ContentSection from './ContentSection.jsx';
 import ImageSection from './ImageSection.jsx';
 import ActionsSection from './ActionsSection.jsx';
+import CustomFieldsSection from './CustomFieldsSection.jsx';
 
 export default function PropertiesPanel() {
   const { t } = useTranslation('properties');
@@ -48,6 +49,7 @@ export default function PropertiesPanel() {
             <ParagraphSection />
             <ContentSection />
             <ImageSection />
+            <CustomFieldsSection />
             <ActionsSection />
           </div>
         </Show>

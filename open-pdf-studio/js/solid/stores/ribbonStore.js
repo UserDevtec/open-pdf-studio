@@ -33,5 +33,5 @@ export {
   contextualTabsVisible, setContextualTabsVisible,
   colorPickerValue, setColorPickerValue,
   lineWidthValue, setLineWidthValue,
-  currentTheme, setCurrentTheme,
+  currentTheme, setCurrentTheme
 };

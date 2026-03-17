@@ -29,7 +29,8 @@ export const stampTool = {
   name: 'stamp',
   cursor: 'crosshair',
 
-  onPointerDown(ctx) {
+  onPointerDown(ctx, e) {
+    if (e && e.button === 2) return;
     const { state } = ctx;
     if (state.toolOverrides?.stampSvg || state.toolOverrides?.stampImage) {
       ctx.placeOverrideStamp(ctx.x, ctx.y);

@@ -14,7 +14,7 @@ import AppMenu from './components/app-menu/AppMenu.jsx';
 import DialogHost from './components/DialogHost.jsx';
 import ContextMenu from './components/ContextMenu.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
-import { DockedToolPalette, FloatingToolPalette, DockTargets } from './components/ToolPalette.jsx';
+import { DockedToolPalette, FloatingToolPalette, DockTargets, PaletteContextMenu } from './components/ToolPalette.jsx';
 import { DockedExtPalette, FloatingExtPalette, ExtDockTargets } from './components/ExtensionToolPalette.jsx';
 import { getRegisteredPalettes } from '../plugins/palette-registry.js';
 import { leftOrder, rightOrder } from './stores/paletteOrder.js';
@@ -111,6 +111,7 @@ function DesktopApp() {
       <For each={extPalettes()}>
         {(p) => <FloatingExtPalette descriptor={p} />}
       </For>
+      <PaletteContextMenu />
       <LoadingOverlay />
     </>
   );

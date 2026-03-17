@@ -5,6 +5,7 @@ import { recordPropertyChange } from '../../core/undo-manager.js';
 import { redrawAnnotations, redrawContinuous } from '../../annotations/rendering.js';
 import { computeTextboxContentHeight } from '../../annotations/rendering/shapes.js';
 import { formatDate, getTypeDisplayName } from '../../utils/helpers.js';
+import { getAnnotationType } from '../../plugins/annotation-type-registry.js';
 import i18next from '../../i18n/config.js';
 
 // Panel visibility and collapsed state
@@ -78,6 +79,7 @@ const [sectionVis, setSectionVis] = createStore({
   measurement: false,
   image: false,
   actions: false,
+  customFields: false,
   // Sub-group visibility
   iconGroup: false,
   fillColorGroup: false,
@@ -107,6 +109,9 @@ const [docInfo, setDocInfo] = createStore({
   annotPage: '0',
 });
 
+// Custom fields from plugin annotation types
+const [customFieldsDef, setCustomFieldsDef] = createSignal([]);
+
 // Current annotation reference for write-back
 let currentAnnotation = null;
 
@@ -134,6 +139,13 @@ function computeSectionVisibility(type) {
   const hasHatchPattern = ['box', 'circle', 'polygon', 'cloud'].includes(type);
   const hasRotation = ['box', 'circle', 'polygon', 'cloud', 'highlight', 'redaction', 'comment', 'stamp', 'signature'].includes(type);
   const isMeasurement = ['measureDistance', 'measureArea', 'measurePerimeter'].includes(type);
+  const typeHandler = getAnnotationType(type);
+  const hasCustomFields = !!(typeHandler && typeHandler.editableFields && typeHandler.editableFields.length > 0);
+  if (hasCustomFields) {
+    setCustomFieldsDef(typeHandler.editableFields);
+  } else {
+    setCustomFieldsDef([]);
+  }
 
   setSectionVis({
     general: true,
@@ -147,6 +159,7 @@ function computeSectionVisibility(type) {
     content: isTextContent,
     image: isImage,
     actions: true,
+    customFields: hasCustomFields,
     iconGroup: type === 'comment',
     fillColorGroup: hasFillColor,
     strokeColorGroup: isShape || type === 'measureDistance' || type === 'measureArea' || type === 'measurePerimeter',
@@ -587,6 +600,7 @@ function applyPropToAnnotation(ann, key, value) {
     case 'measureScale': ann.measureScale = parseFloat(value) || 0; break;
     case 'measureUnit': ann.measureUnit = value; break;
     case 'measurePrecision': ann.measurePrecision = parseInt(value); break;
+    default: ann[key] = value; break;
   }
 }
 
@@ -730,10 +744,13 @@ export function updateAnnotProp(key, value) {
     case 'measureScale': currentAnnotation.measureScale = parseFloat(value) || 0; recomputeMeasureText(currentAnnotation); break;
     case 'measureUnit': currentAnnotation.measureUnit = value; recomputeMeasureText(currentAnnotation); break;
     case 'measurePrecision': currentAnnotation.measurePrecision = parseInt(value); recomputeMeasureText(currentAnnotation); break;
+    default: currentAnnotation[key] = value; break;
   }
 
-  // Update store
-  setAnnotProps(key, value);
+  // Update store (skip custom fields — they read directly from annotation)
+  if (!key.startsWith('tb')) {
+    setAnnotProps(key, value);
+  }
 
   redraw();
 }
@@ -817,4 +834,5 @@ export {
   annotProps, setAnnotProps,
   sectionVis, setSectionVis,
   docInfo,
+  customFieldsDef,
 };

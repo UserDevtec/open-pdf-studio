@@ -26,6 +26,9 @@ import FeedbackDialog from './dialogs/FeedbackDialog.jsx';
 import MessageDialog from './dialogs/MessageDialog.jsx';
 import AboutDialog from './dialogs/AboutDialog.jsx';
 import ShortcutsDialog from './dialogs/ShortcutsDialog.jsx';
+import ExtensionsDialog from './dialogs/ExtensionsDialog.jsx';
+import ConfirmDialog from './dialogs/ConfirmDialog.jsx';
+import TitleBlockDialog from './dialogs/TitleBlockDialog.jsx';
 import TextEditOverlay from './TextEditOverlay.jsx';
 import PdfTextEditOverlay from './PdfTextEditOverlay.jsx';
 import StickyNotePopupHost from './StickyNotePopup.jsx';
@@ -57,6 +60,9 @@ const DIALOG_MAP = {
   'message': MessageDialog,
   'about': AboutDialog,
   'shortcuts': ShortcutsDialog,
+  'extensions': ExtensionsDialog,
+  'confirm': ConfirmDialog,
+  'title-block-edit': TitleBlockDialog,
 };
 
 export default function DialogHost() {

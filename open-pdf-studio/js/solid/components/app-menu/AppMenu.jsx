@@ -4,7 +4,6 @@ import { openDialog } from '../../stores/dialogStore.js';
 import ImportPanel from './ImportPanel.jsx';
 import ExportPanel from './ExportPanel.jsx';
 import OpenPanel from './OpenPanel.jsx';
-import ExtensionsPanel from './ExtensionsPanel.jsx';
 import { openPDFFile } from '../../../pdf/loader.js';
 import { savePDF, savePDFAs } from '../../../pdf/saver.js';
 import { showPreferencesDialog } from '../../../core/preferences.js';
@@ -109,7 +108,7 @@ export default function AppMenu() {
             <MenuItem icon={ICONS.import} label={t('import')} active={getActivePanel() === 'import'} onClick={() => setActivePanel('import')} />
             <MenuItem icon={ICONS.export} label={t('export')} active={getActivePanel() === 'export'} onClick={() => setActivePanel('export')} />
             <Divider />
-            <MenuItem icon={ICONS.extensions} label={t('extensions')} active={getActivePanel() === 'extensions'} onClick={() => setActivePanel('extensions')} />
+            <MenuItem icon={ICONS.extensions} label={t('extensions')} onClick={() => { closeAppMenu(); openDialog('extensions'); }} />
             <Divider />
             <MenuItem icon={ICONS.docProperties} label={t('docProperties')} shortcut="Ctrl+D" onClick={() => actionAndClose(showDocPropertiesDialog)} />
             <Divider />
@@ -130,9 +129,6 @@ export default function AppMenu() {
             </Match>
             <Match when={getActivePanel() === 'export'}>
               <ExportPanel />
-            </Match>
-            <Match when={getActivePanel() === 'extensions'}>
-              <ExtensionsPanel />
             </Match>
           </Switch>
         </div>

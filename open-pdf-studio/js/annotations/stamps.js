@@ -122,8 +122,24 @@ export async function placeOverrideStamp(x, y) {
   }
 
   const aspect = img.naturalWidth / img.naturalHeight;
-  const stampHeight = overrides.stampHeight || 80;
-  const stampWidth = overrides.stampWidth || Math.round(stampHeight * aspect);
+  let stampHeight, stampWidth, stampX, stampY;
+
+  if (overrides.stampFillPage) {
+    // Fill the page with margin
+    const canvas = document.getElementById('annotation-canvas') || document.getElementById('pdf-canvas');
+    const pageW = canvas ? canvas.width / state.scale : 600;
+    const pageH = canvas ? canvas.height / state.scale : 800;
+    const margin = overrides.stampPageMargin || 20;
+    stampWidth = Math.round(pageW - margin * 2);
+    stampHeight = Math.round(pageH - margin * 2);
+    stampX = margin;
+    stampY = margin;
+  } else {
+    stampHeight = overrides.stampHeight || 80;
+    stampWidth = overrides.stampWidth || Math.round(stampHeight * aspect);
+    stampX = x - stampWidth / 2;
+    stampY = y - stampHeight / 2;
+  }
 
   const imageId = 'stamp_' + Date.now();
   state.imageCache.set(imageId, img);
@@ -131,12 +147,13 @@ export async function placeOverrideStamp(x, y) {
   const ann = createAnnotation({
     type: 'stamp',
     page: state.currentPage,
-    x: x - stampWidth / 2,
-    y: y - stampHeight / 2,
+    x: stampX,
+    y: stampY,
     width: stampWidth,
     height: stampHeight,
     stampName: overrides.stampName || 'Custom',
     stampText: '',
+    stampSvgBuilder: overrides.stampSvgBuilder || null,
     imageId: imageId,
     imageData: dataUrl,
     originalWidth: img.naturalWidth,
@@ -146,6 +163,11 @@ export async function placeOverrideStamp(x, y) {
     rotation: 0,
     lockAspectRatio: overrides.lockAspectRatio !== false
   });
+
+  // Copy custom fields (e.g., tb* for title blocks)
+  for (const key of Object.keys(overrides)) {
+    if (key.startsWith('tb')) ann[key] = overrides[key];
+  }
 
   state.annotations.push(ann);
   recordAdd(ann);
@@ -159,6 +181,23 @@ export async function placeOverrideStamp(x, y) {
   else redrawAnnotations();
 
   updateStatusMessage(`${overrides.stampName || 'Stamp'} placed`);
+}
+
+/**
+ * Re-rasterize a stamp annotation from a new SVG string and update its image.
+ */
+export async function updateStampImage(ann, svgString) {
+  const result = await rasterizeSvg(svgString);
+  if (!result) return;
+  const imageId = 'stamp_' + Date.now();
+  state.imageCache.set(imageId, result.img);
+  ann.imageId = imageId;
+  ann.imageData = result.dataUrl;
+  ann.originalWidth = result.img.naturalWidth;
+  ann.originalHeight = result.img.naturalHeight;
+  ann.modifiedAt = new Date().toISOString();
+  if (state.viewMode === 'continuous') redrawContinuous();
+  else redrawAnnotations();
 }
 
 // Load custom stamp from image file

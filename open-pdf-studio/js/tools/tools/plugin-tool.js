@@ -7,6 +7,7 @@ export const pluginClickTool = {
   cursor: 'crosshair',
 
   onPointerDown(ctx, e) {
+    if (e && e.button === 2) return;
     const { x, y, state } = ctx;
     const typeHandler = ctx.getAnnotationType(state.currentTool);
     if (typeHandler && typeHandler.create) {

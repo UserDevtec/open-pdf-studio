@@ -130,18 +130,14 @@ export async function handleKeydown(e) {
       // Single locked check
       if (selected.length === 1 && selected[0].locked) return;
 
-      // Confirmation dialog (async for Tauri)
-      if (state.preferences.confirmBeforeDelete) {
-        let confirmed = false;
+      // Confirmation dialog
+      {
+        const { showConfirm } = await import('../ui/chrome/confirm-dialog.js');
         const msg = selected.length > 1
           ? `Delete ${selected.length} annotations?`
           : 'Delete this annotation?';
         const title = selected.length > 1 ? 'Delete Annotations' : 'Delete Annotation';
-        if (window.__TAURI__?.dialog?.ask) {
-          confirmed = await window.__TAURI__.dialog.ask(msg, { title, kind: 'warning' });
-        } else {
-          confirmed = confirm(msg);
-        }
+        const confirmed = await showConfirm({ title, message: msg, preferenceKey: 'confirmBeforeDelete' });
         if (!confirmed) return;
       }
 

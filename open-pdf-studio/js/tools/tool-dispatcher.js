@@ -216,6 +216,24 @@ export function handleDblClick(e) {
       state.selectedAnnotations = [clicked];
       showProperties(clicked);
       openStickyPopup(clicked);
+    } else if (clicked.type === 'stamp' && clicked.stampSvgBuilder) {
+      state.isDrawing = false;
+      state.selectedAnnotations = [clicked];
+      import('../bridge.js').then(m => {
+        m.openDialog('title-block-edit', {
+          annotation: clicked,
+          rebuildAndUpdate: async (ann) => {
+            const { updateStampImage } = await import('../annotations/stamps.js');
+            const fields = {};
+            for (const key of Object.keys(ann)) {
+              if (key.startsWith('tb')) fields[key] = ann[key];
+            }
+            if (typeof ann.stampSvgBuilder === 'function') {
+              await updateStampImage(ann, ann.stampSvgBuilder(fields));
+            }
+          }
+        });
+      });
     }
   }
 }

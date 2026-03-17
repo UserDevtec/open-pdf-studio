@@ -98,12 +98,12 @@ export default function AnnotationsPanel() {
   const deleteSelected = async () => {
     const ann = state.selectedAnnotation;
     if (!ann) return;
-    let confirmed = false;
-    if (window.__TAURI__?.dialog?.ask) {
-      confirmed = await window.__TAURI__.dialog.ask(t('deleteAnnotation.confirmSingle'), { title: t('deleteAnnotation.title'), kind: 'warning' });
-    } else {
-      confirmed = confirm(t('deleteAnnotation.confirmSingle'));
-    }
+    const { showConfirm } = await import('../../../../ui/chrome/confirm-dialog.js');
+    const confirmed = await showConfirm({
+      title: t('deleteAnnotation.title'),
+      message: t('deleteAnnotation.confirmSingle'),
+      preferenceKey: 'confirmBeforeDelete'
+    });
     if (confirmed) {
       import('../../../../core/undo-manager.js').then(({ recordDelete }) => {
         const idx = state.annotations.indexOf(ann);

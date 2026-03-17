@@ -85,6 +85,31 @@ export function isPluginLoaded(pluginId) {
 }
 
 /**
+ * Reinstall a plugin from a new .oppx file: unload, install from file, re-activate.
+ */
+export async function reinstallPlugin(pluginId, filePath) {
+  unloadPlugin(pluginId);
+  try {
+    const { invoke } = await import('@tauri-apps/api/core');
+    const manifest = await invoke('install_plugin', { path: filePath });
+    const pluginCode = await invoke('read_plugin_file', {
+      pluginId: manifest.id,
+      filePath: 'index.js'
+    });
+    const blob = new Blob([pluginCode], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    const pluginModule = await import(/* @vite-ignore */ url);
+    URL.revokeObjectURL(url);
+    loadPlugin({ manifest, ...pluginModule });
+    console.log(`[plugin-manager] Reinstalled plugin: ${manifest.name} v${manifest.version}`);
+    return manifest;
+  } catch (err) {
+    console.error(`[plugin-manager] Failed to reinstall plugin "${pluginId}":`, err);
+    throw err;
+  }
+}
+
+/**
  * Install a plugin from a .oppx file path (Tauri command).
  * Returns the manifest on success.
  */

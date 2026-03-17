@@ -206,12 +206,22 @@ export function findAnnotationAt(x, y) {
       case 'image':
       case 'stamp':
       case 'signature':
-      case 'redaction':
-        // Transform click point by inverse rotation if annotation is rotated
+      case 'redaction': {
         const imgCenter = { x: ann.x + ann.width / 2, y: ann.y + ann.height / 2 };
         const imgLocal = transformPointByInverseRotation(x, y, imgCenter.x, imgCenter.y, ann.rotation);
-        if (imgLocal.x >= ann.x && imgLocal.x <= ann.x + ann.width && imgLocal.y >= ann.y && imgLocal.y <= ann.y + ann.height) return ann;
-        break;
+        const inBounds = imgLocal.x >= ann.x && imgLocal.x <= ann.x + ann.width && imgLocal.y >= ann.y && imgLocal.y <= ann.y + ann.height;
+        if (!inBounds) break;
+        if (ann.stampName === 'TitleBlock') {
+          const bt = 6;
+          const tt = ann.y + ann.height * 0.846;
+          if (imgLocal.y >= tt) return ann;
+          if (imgLocal.x <= ann.x + bt || imgLocal.x >= ann.x + ann.width - bt) return ann;
+          if (imgLocal.y <= ann.y + bt || imgLocal.y >= ann.y + ann.height - bt) return ann;
+          if (Math.abs(imgLocal.y - tt) < bt) return ann;
+          break;
+        }
+        return ann;
+      }
       case 'measureDistance': {
         const d = distanceToLine(x, y, ann.startX, ann.startY, ann.endX, ann.endY);
         if (d < tol) return ann;
@@ -347,9 +357,25 @@ export function isPointInsideAnnotation(x, y, annotation) {
     case 'image':
     case 'stamp':
     case 'signature':
-    case 'redaction':
-      return localX >= annotation.x && localX <= annotation.x + annotation.width &&
-             localY >= annotation.y && localY <= annotation.y + annotation.height;
+    case 'redaction': {
+      const inRect = localX >= annotation.x && localX <= annotation.x + annotation.width &&
+                     localY >= annotation.y && localY <= annotation.y + annotation.height;
+      if (!inRect) return false;
+      // Title block: only hit-test the border and bottom table area
+      if (annotation.stampName === 'TitleBlock') {
+        const bTol = 6;
+        const tableTop = annotation.y + annotation.height * 0.846;
+        // In table area
+        if (localY >= tableTop) return true;
+        // On outer border edges
+        if (localX <= annotation.x + bTol || localX >= annotation.x + annotation.width - bTol) return true;
+        if (localY <= annotation.y + bTol || localY >= annotation.y + annotation.height - bTol) return true;
+        // On inner content border
+        if (Math.abs(localY - tableTop) < bTol) return true;
+        return false;
+      }
+      return true;
+    }
 
     case 'measureDistance': {
       const md = distanceToLine(x, y, annotation.startX, annotation.startY, annotation.endX, annotation.endY);

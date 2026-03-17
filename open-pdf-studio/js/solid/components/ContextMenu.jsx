@@ -1,4 +1,5 @@
 import { createEffect, onMount, onCleanup, Show, Switch, Match, For } from 'solid-js';
+import { showConfirm } from '../../ui/chrome/confirm-dialog.js';
 import {
   visible, menuType, position, targetAnnotation, multiSelectCount, targetPage, hideMenu
 } from '../stores/contextMenuStore.js';
@@ -158,12 +159,11 @@ function AnnotationMenuContent() {
 
       <MenuItem icon={deleteIcon} label={tCommon('delete')} shortcut="Delete" disabled={isLocked()} onClick={async () => {
         const a = ann();
-        let confirmed = false;
-        if (window.__TAURI__?.dialog?.ask) {
-          confirmed = await window.__TAURI__.dialog.ask(t('deleteAnnotation.confirmSingle'), { title: t('deleteAnnotation.title'), kind: 'warning' });
-        } else {
-          confirmed = confirm(t('deleteAnnotation.confirmSingle'));
-        }
+        const confirmed = await showConfirm({
+          title: t('deleteAnnotation.title'),
+          message: t('deleteAnnotation.confirmSingle'),
+          preferenceKey: 'confirmBeforeDelete'
+        });
         if (confirmed) {
           const idx = state.annotations.indexOf(a);
           recordDelete(a, idx);
@@ -407,12 +407,11 @@ function MultiAnnotationMenuContent() {
       <Separator />
 
       <MenuItem icon={deleteIcon} label={t('multiSelect.deleteAnnotations', { count: count() })} onClick={async () => {
-        let confirmed = false;
-        if (window.__TAURI__?.dialog?.ask) {
-          confirmed = await window.__TAURI__.dialog.ask(t('multiSelect.deleteConfirm', { count: count() }), { title: t('multiSelect.deleteTitle'), kind: 'warning' });
-        } else {
-          confirmed = confirm(t('multiSelect.deleteConfirm', { count: count() }));
-        }
+        const confirmed = await showConfirm({
+          title: t('multiSelect.deleteTitle'),
+          message: t('multiSelect.deleteConfirm', { count: count() }),
+          preferenceKey: 'confirmBeforeDelete'
+        });
         if (confirmed) {
           recordBulkDelete(state.selectedAnnotations);
           const toDelete = new Set(state.selectedAnnotations);

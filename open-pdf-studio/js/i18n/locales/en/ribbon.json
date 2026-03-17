@@ -5,7 +5,7 @@
     "comment": "Comment",
     "view": "View",
     "organize": "Organize",
-    "help": "Help",
+    "help": "Settings",
     "format": "Format",
     "arrange": "Arrange"
   },
@@ -145,18 +145,22 @@
     "manage": "Manage"
   },
   "help": {
+    "settings": "Settings",
+    "preferencesTitle": "Preferences",
+    "preferences": "Preferences",
+    "extensionsTitle": "Manage Extensions",
+    "extensions": "Extensions",
     "information": "Information",
     "aboutTitle": "About Open PDF Studio",
     "about": "About",
     "keyboardShortcutsTitle": "Keyboard Shortcuts (F1)",
     "shortcuts": "Shortcuts",
     "keyboardShortcutsContent": "Keyboard Shortcuts:\n\nFILE:\nCtrl+N - New Document\nCtrl+O - Open PDF\nCtrl+S - Save\nCtrl+P - Print\nCtrl+W - Close\n\nEDIT:\nCtrl+Z - Undo\nCtrl+Y / Ctrl+Shift+Z - Redo\nDelete - Delete selected annotation\nCtrl+Shift+C - Clear page annotations\n\nVIEW:\nCtrl++ - Zoom In\nCtrl+- - Zoom Out\nCtrl+0 - Actual Size\nCtrl+1 - Fit Width\nCtrl+2 - Fit Page\nCtrl+5 - Thin Lines\n\nTOOLS:\nV - Select Tool\n1 - Highlight\n2 - Freehand\n3 - Line\n4 - Rectangle\n5 - Ellipse\nT - Text Box\nN - Note",
-    "updates": "Updates",
+    "help": "Help",
     "checkForUpdates": "Check for Updates",
     "updatesLabel": "Updates",
-    "fileAssociation": "File Association",
     "setDefaultPdf": "Set Default PDF Application",
-    "fileAssociations": "File Associations"
+    "fileAssociations": "File Assoc."
   },
   "format": {
     "styleRed": "Red",

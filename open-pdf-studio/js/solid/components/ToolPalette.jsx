@@ -1,4 +1,4 @@
-import { createSignal, Show, For } from 'solid-js';
+import { createSignal, Show, For, onMount } from 'solid-js';
 import { state, noPdf } from '../../core/state.js';
 import { setTool } from '../../tools/manager.js';
 import { isPdfAReadOnly } from '../../pdf/loader.js';
@@ -23,7 +23,16 @@ const [floatPos, setFloatPos] = createSignal({ x: 200, y: 150 });
 const [isDragging, setIsDragging] = createSignal(false);
 const [dockPreview, setDockPreview] = createSignal(null); // null | 'left' | 'right'
 
-export { paletteVisible, paletteMode };
+// Tool palette icon size: 'small' (default) or 'large'
+const storedPaletteIconSize = localStorage.getItem('paletteIconSize') || 'small';
+const [paletteIconSize, setPaletteIconSizeRaw] = createSignal(storedPaletteIconSize);
+
+function setPaletteIconSize(size) {
+  setPaletteIconSizeRaw(size);
+  localStorage.setItem('paletteIconSize', size);
+}
+
+export { paletteVisible, paletteMode, paletteIconSize, showPaletteCtxMenu, PaletteContextMenu };
 
 function savePaletteState() {
   state.preferences.toolPaletteVisible = paletteVisible();
@@ -87,6 +96,7 @@ const tools = [
 
 // --- Shared drag logic ---
 function startDrag(e, fromDocked) {
+  if (e.button !== 0) return;
   e.preventDefault();
   const mainViewEl = document.querySelector('.main-view');
   if (!mainViewEl) return;
@@ -149,6 +159,58 @@ function startDrag(e, fromDocked) {
   document.addEventListener('mouseup', onUp);
 }
 
+// --- Context menu for icon size toggle ---
+const [paletteCtxMenu, setPaletteCtxMenu] = createSignal(null);
+
+function showPaletteCtxMenu(e) {
+  e.preventDefault();
+  setPaletteCtxMenu({ x: e.clientX, y: e.clientY });
+}
+
+// Global mousedown/keydown listeners for the palette context menu (registered once)
+let _ctxListenersRegistered = false;
+function ensureCtxListeners() {
+  if (_ctxListenersRegistered) return;
+  _ctxListenersRegistered = true;
+  document.addEventListener('mousedown', (e) => {
+    if (!paletteCtxMenu()) return;
+    if (e.target.closest('.tp-ctx-menu')) return;
+    setPaletteCtxMenu(null);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setPaletteCtxMenu(null);
+  });
+}
+
+function PaletteContextMenu() {
+  onMount(ensureCtxListeners);
+
+  return (
+    <Show when={paletteCtxMenu()}>
+      <div
+        class="tp-ctx-menu"
+        style={{ left: `${paletteCtxMenu().x}px`, top: `${paletteCtxMenu().y}px` }}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        <div
+          class={`tp-ctx-menu-item${paletteIconSize() === 'small' ? ' checked' : ''}`}
+          onClick={() => { setPaletteIconSize('small'); setPaletteCtxMenu(null); }}
+        >
+          <span class="tp-ctx-check">{paletteIconSize() === 'small' ? '\u2713' : ''}</span>
+          <span>Small Icons</span>
+        </div>
+        <div
+          class={`tp-ctx-menu-item${paletteIconSize() === 'large' ? ' checked' : ''}`}
+          onClick={() => { setPaletteIconSize('large'); setPaletteCtxMenu(null); }}
+        >
+          <span class="tp-ctx-check">{paletteIconSize() === 'large' ? '\u2713' : ''}</span>
+          <span>Large Icons</span>
+        </div>
+      </div>
+    </Show>
+  );
+}
+
 // --- Components ---
 
 function ToolBtn(props) {
@@ -185,8 +247,9 @@ function ToolList() {
   );
 }
 
-// Height needed for all tools in a single column (20 btns × 30px + 5 seps × 7px)
-const SINGLE_COL_HEIGHT = 635;
+// Height needed for all tools in a single column
+const SINGLE_COL_HEIGHT_SMALL = 635;  // 20 btns × 30px + 5 seps × 7px
+const SINGLE_COL_HEIGHT_LARGE = 935;  // 20 btns × 44px + 5 seps × 7px
 
 // Docked strip — sits in the flex layout
 export function DockedToolPalette(props) {
@@ -199,18 +262,19 @@ export function DockedToolPalette(props) {
     if (observer) { observer.disconnect(); observer = null; }
     if (!el) return;
     observer = new ResizeObserver(() => {
-      // Available height for tools = palette height - grip - close button
       const available = el.clientHeight - 46;
-      setTwoCol(available < SINGLE_COL_HEIGHT);
+      const threshold = paletteIconSize() === 'large' ? SINGLE_COL_HEIGHT_LARGE : SINGLE_COL_HEIGHT_SMALL;
+      setTwoCol(available < threshold);
     });
     observer.observe(el);
     const available = el.clientHeight - 46;
-    setTwoCol(available < SINGLE_COL_HEIGHT);
+    const threshold = paletteIconSize() === 'large' ? SINGLE_COL_HEIGHT_LARGE : SINGLE_COL_HEIGHT_SMALL;
+    setTwoCol(available < threshold);
   }
 
   return (
     <Show when={shouldShow()}>
-      <div class={`tp-docked tp-docked-${side()}`} ref={bindRef}>
+      <div class={`tp-docked tp-docked-${side()}${paletteIconSize() === 'large' ? ' tp-large' : ''}`} ref={bindRef} onContextMenu={showPaletteCtxMenu}>
         <div class="tp-grip" onMouseDown={(e) => startDrag(e, true)}>
           <svg width="10" height="16" viewBox="0 0 10 16">
             <circle cx="3" cy="2" r="1.2" fill="currentColor"/><circle cx="7" cy="2" r="1.2" fill="currentColor"/>
@@ -243,8 +307,9 @@ export function FloatingToolPalette() {
     <Show when={shouldShow()}>
       <div
         ref={paletteRef}
-        class="tp-float"
+        class={`tp-float${paletteIconSize() === 'large' ? ' tp-large' : ''}`}
         style={`left:${floatPos().x}px; top:${floatPos().y}px`}
+        onContextMenu={showPaletteCtxMenu}
       >
         <div class="tp-float-header" onMouseDown={(e) => {
           if (e.target.closest('.tp-float-close')) return;
