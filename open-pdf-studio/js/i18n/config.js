@@ -489,6 +489,7 @@ i18next
     ns,
     defaultNS: 'common',
     fallbackLng: 'en',
+    showSupportNotice: false,
     interpolation: {
       escapeValue: false
     },

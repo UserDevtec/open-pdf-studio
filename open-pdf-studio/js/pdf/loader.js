@@ -47,6 +47,7 @@ export async function reloadDocumentFromBytes(doc, bytes) {
     cMapPacked: true,
     standardFontDataUrl: '/pdfjs/web/standard_fonts/',
     isEvalSupported: false,
+    verbosity: 0,
   }).promise;
 
   doc.modified = true;
@@ -169,6 +170,7 @@ export async function loadPDF(filePath, docIndex, preloadedData = null) {
       cMapPacked: true,
       standardFontDataUrl: '/pdfjs/web/standard_fonts/',
       isEvalSupported: false,
+      verbosity: 0,
     }).promise;
     if (isClosed()) return;
 
@@ -323,6 +325,7 @@ export async function createBlankPDF(widthPt, heightPt, numPages) {
       cMapPacked: true,
       standardFontDataUrl: '/pdfjs/web/standard_fonts/',
       isEvalSupported: false,
+      verbosity: 0,
     }).promise;
 
     // Reset annotation storage and state

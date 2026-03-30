@@ -1,4 +1,4 @@
-import { createSignal, createEffect } from 'solid-js';
+import { createSignal, createEffect, createRoot } from 'solid-js';
 
 const [activeTab, setActiveTab] = createSignal('home');
 const [contextualTabsVisible, setContextualTabsVisible] = createSignal(false);
@@ -7,13 +7,15 @@ const [lineWidthValue, setLineWidthValue] = createSignal(3);
 const [currentTheme, setCurrentTheme] = createSignal('dark');
 
 // Fall back to 'home' when contextual tabs hide while a contextual tab is active
-createEffect(() => {
-  if (!contextualTabsVisible()) {
-    const current = activeTab();
-    if (current === 'format' || current === 'arrange') {
-      setActiveTab('home');
+createRoot(() => {
+  createEffect(() => {
+    if (!contextualTabsVisible()) {
+      const current = activeTab();
+      if (current === 'format' || current === 'arrange') {
+        setActiveTab('home');
+      }
     }
-  }
+  });
 });
 
 export function switchToTab(name) {

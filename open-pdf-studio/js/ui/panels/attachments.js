@@ -285,6 +285,7 @@ async function reloadDocumentFromBytes(activeDoc, bytes) {
     cMapPacked: true,
     standardFontDataUrl: '/pdfjs/web/standard_fonts/',
     isEvalSupported: false,
+    verbosity: 0,
   }).promise;
   activeDoc.pdfDoc = newDoc;
 }

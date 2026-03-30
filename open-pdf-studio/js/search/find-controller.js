@@ -475,6 +475,7 @@ async function replaceInPdfContent(doc, result, replaceText) {
       cMapPacked: true,
       standardFontDataUrl: '/pdfjs/web/standard_fonts/',
       isEvalSupported: false,
+      verbosity: 0,
     }).promise;
     doc._sharedPdfLibDoc = null;
     doc._sharedPdfLibDocPromise = null;

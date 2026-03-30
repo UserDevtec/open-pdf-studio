@@ -33,7 +33,6 @@ export function loadPlugin(pluginModule) {
       pluginModule.activate(api);
     }
     loadedPlugins.set(manifest.id, { manifest, api, module: pluginModule });
-    console.log(`[plugin-manager] Loaded plugin: ${manifest.name} v${manifest.version}`);
     return true;
   } catch (err) {
     console.error(`[plugin-manager] Failed to activate plugin "${manifest.id}":`, err);

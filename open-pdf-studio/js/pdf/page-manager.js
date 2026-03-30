@@ -187,6 +187,7 @@ export async function reloadFromBytes(newBytes, annotations, rotations, targetPa
     cMapPacked: true,
     standardFontDataUrl: '/pdfjs/web/standard_fonts/',
     isEvalSupported: false,
+    verbosity: 0,
   }).promise;
 
   // Restore annotations and rotations
