@@ -522,11 +522,131 @@ export async function actualSize() {
 }
 
 // Rotate the current page by a delta (±90)
+// ─── Annotation coordinate transforms for page rotation ─────────────────────
+
+function rotatePoint(px, py, normDelta, oldW, oldH) {
+  switch (normDelta) {
+    case 90:  return { x: oldH - py, y: px };
+    case 270: return { x: py, y: oldW - px };
+    case 180: return { x: oldW - px, y: oldH - py };
+    default:  return { x: px, y: py };
+  }
+}
+
+function rotateRect(x, y, w, h, normDelta, oldW, oldH) {
+  switch (normDelta) {
+    case 90:  return { x: oldH - y - h, y: x, width: h, height: w };
+    case 270: return { x: y, y: oldW - x - w, width: h, height: w };
+    case 180: return { x: oldW - x - w, y: oldH - y - h, width: w, height: h };
+    default:  return { x, y, width: w, height: h };
+  }
+}
+
+function recalcBoundsFromPoints(ann, pts) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of pts) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+  ann.x = minX; ann.y = minY;
+  ann.width = maxX - minX; ann.height = maxY - minY;
+}
+
+function rotateAnnotation(ann, normDelta, oldW, oldH) {
+  if (normDelta === 0) return;
+  let boundsHandled = false;
+
+  // Path-based (draw/freehand)
+  if (ann.path && ann.path.length > 0) {
+    ann.path = ann.path.map(p => rotatePoint(p.x, p.y, normDelta, oldW, oldH));
+    recalcBoundsFromPoints(ann, ann.path);
+    boundsHandled = true;
+  }
+
+  // Points-based (polygon, polyline, cloud, measureArea, measurePerimeter)
+  if (ann.points && ann.points.length > 0) {
+    ann.points = ann.points.map(p => rotatePoint(p.x, p.y, normDelta, oldW, oldH));
+    recalcBoundsFromPoints(ann, ann.points);
+    boundsHandled = true;
+  }
+
+  // Line endpoints (line, arrow, measureDistance)
+  if (ann.startX != null && ann.startY != null && ann.endX != null && ann.endY != null) {
+    const s = rotatePoint(ann.startX, ann.startY, normDelta, oldW, oldH);
+    const e = rotatePoint(ann.endX, ann.endY, normDelta, oldW, oldH);
+    ann.startX = s.x; ann.startY = s.y;
+    ann.endX = e.x; ann.endY = e.y;
+    ann.x = Math.min(s.x, e.x); ann.y = Math.min(s.y, e.y);
+    ann.width = Math.abs(e.x - s.x); ann.height = Math.abs(e.y - s.y);
+    boundsHandled = true;
+  }
+
+  // Callout arrow/knee points
+  if (ann.arrowX != null && ann.arrowY != null) {
+    const a = rotatePoint(ann.arrowX, ann.arrowY, normDelta, oldW, oldH);
+    ann.arrowX = a.x; ann.arrowY = a.y;
+  }
+  if (ann.kneeX != null && ann.kneeY != null) {
+    const k = rotatePoint(ann.kneeX, ann.kneeY, normDelta, oldW, oldH);
+    ann.kneeX = k.x; ann.kneeY = k.y;
+  }
+
+  // Text markup rects (textHighlight, textStrikethrough, textUnderline)
+  if (ann.rects && ann.rects.length > 0) {
+    ann.rects = ann.rects.map(r => rotateRect(r.x, r.y, r.width, r.height, normDelta, oldW, oldH));
+    // Recalculate overall bounding box from rects
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const r of ann.rects) {
+      if (r.x < minX) minX = r.x;
+      if (r.y < minY) minY = r.y;
+      if (r.x + r.width > maxX) maxX = r.x + r.width;
+      if (r.y + r.height > maxY) maxY = r.y + r.height;
+    }
+    ann.x = minX; ann.y = minY;
+    ann.width = maxX - minX; ann.height = maxY - minY;
+    boundsHandled = true;
+  }
+
+  // Bounding box for rect-only annotations (box, circle, highlight, textbox, image, stamp, etc.)
+  if (!boundsHandled && ann.x != null && ann.y != null) {
+    if (ann.width != null && ann.height != null) {
+      const nr = rotateRect(ann.x, ann.y, ann.width, ann.height, normDelta, oldW, oldH);
+      ann.x = nr.x; ann.y = nr.y; ann.width = nr.width; ann.height = nr.height;
+    } else {
+      const p = rotatePoint(ann.x, ann.y, normDelta, oldW, oldH);
+      ann.x = p.x; ann.y = p.y;
+    }
+  }
+}
+
+function rotateAnnotationsForPage(pageNum, normDelta, oldW, oldH) {
+  const doc = getActiveDocument();
+  if (!doc) return;
+  const annotations = doc.annotations;
+  if (!annotations || annotations.length === 0) return;
+  for (const ann of annotations) {
+    if (ann.page === pageNum) {
+      rotateAnnotation(ann, normDelta, oldW, oldH);
+    }
+  }
+}
+
 export async function rotatePage(delta, targetPage) {
   const doc = getActiveDocument();
   if (!doc?.pdfDoc) return;
   const pageNum = targetPage || doc.currentPage;
   const current = getPageRotation(pageNum);
+
+  // Get old viewport dimensions (at current rotation) for annotation transform
+  const page = await doc.pdfDoc.getPage(pageNum);
+  const oldViewport = page.getViewport({ scale: 1, rotation: (page.rotate + current) % 360 });
+  const normDelta = ((delta % 360) + 360) % 360;
+
+  // Transform annotation coordinates to match new rotation
+  rotateAnnotationsForPage(pageNum, normDelta, oldViewport.width, oldViewport.height);
+
   setPageRotation(pageNum, current + delta);
 
   // Mark document as modified
