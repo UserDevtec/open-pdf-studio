@@ -785,35 +785,50 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         }
       }
 
+      let stRotation = 0;
+      if (extraColors.rotation !== undefined && extraColors.rotation !== 0) {
+        stRotation = Math.round(extraColors.rotation);
+      } else if (extraColors.matrixAngle !== undefined && Math.abs(extraColors.matrixAngle) > 1) {
+        stRotation = -Math.round(extraColors.matrixAngle);
+      }
+
+      // Reverse-map PDF standard names back to app stamp names
+      const pdfToAppName = {
+        'Approved': 'Approved', 'NotApproved': 'Rejected', 'Draft': 'Draft',
+        'Confidential': 'Confidential', 'Final': 'Final', 'ForComment': 'For Review',
+        'Expired': 'Void', 'AsIs': 'As Is', 'Experimental': 'Revised'
+      };
+      const pdfName = extraColors.stampPdfName || '';
+      const appStampName = extraColors.stampName || pdfToAppName[pdfName] || pdfName || 'Draft';
+      const stampText = annot.subject || annot.contentsObj?.str || annot.contents || appStampName.toUpperCase();
+      const stampColor = baseProps.color || '#ef4444';
+
+      const stampProps = {
+        ...baseProps,
+        type: 'stamp',
+        x, y, width: w, height: h,
+        stampName: appStampName,
+        stampText: stampText,
+        stampColor: stampColor,
+        color: stampColor,
+        strokeColor: stampColor,
+        rotation: stRotation
+      };
+
+      // Attach AP stream image if available
       if (dataUrl) {
         const imageId = generateImageId();
         const img = new Image();
         img.src = dataUrl;
         state.imageCache.set(imageId, img);
-
-        let stRotation = 0;
-        if (extraColors.rotation !== undefined && extraColors.rotation !== 0) {
-          stRotation = Math.round(extraColors.rotation);
-        } else if (extraColors.matrixAngle !== undefined && Math.abs(extraColors.matrixAngle) > 1) {
-          stRotation = -Math.round(extraColors.matrixAngle);
-        }
-
-        return createAnnotation({
-          ...baseProps,
-          type: 'image',
-          x: x,
-          y: y,
-          width: w,
-          height: h,
-          imageId: imageId,
-          imageData: dataUrl,
-          originalWidth: w,
-          originalHeight: h,
-          lockAspectRatio: true,
-          rotation: stRotation
-        });
+        stampProps.imageId = imageId;
+        stampProps.imageData = dataUrl;
+        stampProps.originalWidth = w;
+        stampProps.originalHeight = h;
+        stampProps.lockAspectRatio = true;
       }
-      break;
+
+      return createAnnotation(stampProps);
     }
   }
 

@@ -583,7 +583,17 @@ function rotateAnnotation(ann, normDelta, oldW, oldH) {
     boundsHandled = true;
   }
 
-  // Callout arrow/knee points
+  // MeasureDistance leader lines
+  if (ann.leaderStartX != null && ann.leaderStartY != null) {
+    const ls = rotatePoint(ann.leaderStartX, ann.leaderStartY, normDelta, oldW, oldH);
+    ann.leaderStartX = ls.x; ann.leaderStartY = ls.y;
+  }
+  if (ann.leaderEndX != null && ann.leaderEndY != null) {
+    const le = rotatePoint(ann.leaderEndX, ann.leaderEndY, normDelta, oldW, oldH);
+    ann.leaderEndX = le.x; ann.leaderEndY = le.y;
+  }
+
+  // Callout arrow/knee/armOrigin points
   if (ann.arrowX != null && ann.arrowY != null) {
     const a = rotatePoint(ann.arrowX, ann.arrowY, normDelta, oldW, oldH);
     ann.arrowX = a.x; ann.arrowY = a.y;
@@ -592,11 +602,14 @@ function rotateAnnotation(ann, normDelta, oldW, oldH) {
     const k = rotatePoint(ann.kneeX, ann.kneeY, normDelta, oldW, oldH);
     ann.kneeX = k.x; ann.kneeY = k.y;
   }
+  if (ann.armOriginX != null && ann.armOriginY != null) {
+    const ao = rotatePoint(ann.armOriginX, ann.armOriginY, normDelta, oldW, oldH);
+    ann.armOriginX = ao.x; ann.armOriginY = ao.y;
+  }
 
   // Text markup rects (textHighlight, textStrikethrough, textUnderline)
   if (ann.rects && ann.rects.length > 0) {
     ann.rects = ann.rects.map(r => rotateRect(r.x, r.y, r.width, r.height, normDelta, oldW, oldH));
-    // Recalculate overall bounding box from rects
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const r of ann.rects) {
       if (r.x < minX) minX = r.x;
@@ -609,7 +622,19 @@ function rotateAnnotation(ann, normDelta, oldW, oldH) {
     boundsHandled = true;
   }
 
-  // Bounding box for rect-only annotations (box, circle, highlight, textbox, image, stamp, etc.)
+  // Visual-content annotations: rotate center, keep w/h, add rotation property
+  const visualTypes = new Set(['text', 'textbox', 'callout', 'stamp', 'image', 'signature']);
+  if (!boundsHandled && visualTypes.has(ann.type) && ann.x != null && ann.y != null && ann.width != null && ann.height != null) {
+    const cx = ann.x + ann.width / 2;
+    const cy = ann.y + ann.height / 2;
+    const rc = rotatePoint(cx, cy, normDelta, oldW, oldH);
+    ann.x = rc.x - ann.width / 2;
+    ann.y = rc.y - ann.height / 2;
+    ann.rotation = ((ann.rotation || 0) + normDelta) % 360;
+    boundsHandled = true;
+  }
+
+  // Bounding box for rect-only annotations (box, circle, highlight, etc.)
   if (!boundsHandled && ann.x != null && ann.y != null) {
     if (ann.width != null && ann.height != null) {
       const nr = rotateRect(ann.x, ann.y, ann.width, ann.height, normDelta, oldW, oldH);

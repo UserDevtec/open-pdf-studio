@@ -39,6 +39,22 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         }
       }
 
+      // Read stamp-specific entries (PDF.js doesn't expose /Name for stamps)
+      if (subtypeName === '/Stamp') {
+        const nameRaw = annotDict.get(PDFName.of('Name'));
+        if (nameRaw) {
+          const n = context.lookup(nameRaw) || nameRaw;
+          const nameStr = n.toString().replace('/', '');
+          if (nameStr) colors.stampPdfName = nameStr;
+        }
+        const opsNameRaw = annotDict.get(PDFName.of('OPS_StampName'));
+        if (opsNameRaw) {
+          const on = context.lookup(opsNameRaw) || opsNameRaw;
+          if (on && typeof on.value === 'string') colors.stampName = on.value;
+          else if (on && typeof on.decodeText === 'function') colors.stampName = on.decodeText();
+        }
+      }
+
       // Read /OPS_Rotation (our custom rotation key) for ALL annotation types
       const opsRotRaw = annotDict.get(PDFName.of('OPS_Rotation'));
       if (opsRotRaw) {

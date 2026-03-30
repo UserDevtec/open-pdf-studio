@@ -810,22 +810,63 @@ export async function savePDF(saveAsPath = null) {
             const x2 = convertX(ann.x + ann.width);
             const y2 = convertY(ann.y);
 
+            // Map app stamp names to PDF spec standard names (ISO 32000-1 Table 181)
+            const stdStampNames = {
+              'Approved': 'Approved', 'Rejected': 'NotApproved', 'Not Approved': 'NotApproved',
+              'Draft': 'Draft', 'Confidential': 'Confidential', 'Final': 'Final',
+              'For Review': 'ForComment', 'Void': 'Expired', 'As Is': 'AsIs', 'Revised': 'Experimental'
+            };
+            const pdfStampName = stdStampNames[ann.stampName] || ann.stampName || 'Draft';
+
             const stampDictObj = {
               Type: 'Annot',
               Subtype: 'Stamp',
               Rect: [x1, y1, x2, y2],
-              Name: ann.stampName || 'Draft',
-              Contents: PDFString.of(ann.stampText || ann.subject || ''),
+              Name: pdfStampName,
+              Subj: PDFString.of(ann.stampName || pdfStampName),
               C: colorArr,
               CA: opacity,
               T: PDFString.of(ann.author || 'User'),
               M: PDFString.of(new Date().toISOString()),
+              NM: PDFString.of('stamp_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6)),
               F: computeAnnotFlags(ann)
             };
+            stampDictObj.IT = PDFName.of('Stamp');
 
             if (ann.rotation) stampDictObj.OPS_Rotation = ann.rotation;
+            if (ann.stampName) stampDictObj.OPS_StampName = PDFString.of(ann.stampName);
 
             annotDict = context.obj(stampDictObj);
+
+            // Generate AP stream for text-only stamps
+            if (!ann.imageData && ann.stampText) {
+              const w = ann.width;
+              const h = ann.height;
+              const [sr, sg, sb] = hexToRgb(ann.stampColor || ann.color || '#ef4444');
+              const fontSize = Math.min(h * 0.45, 22);
+              const textW = ann.stampText.length * fontSize * 0.58;
+              const textX = (w - textW) / 2;
+              const textY = (h - fontSize) / 2.4;
+              const escaped = ann.stampText.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+              const k = 0.5522847498;
+              const r = Math.min(w, h) * 0.15;
+              const rrect = (rx, ry, rw, rh, cr) => {
+                const kr = cr * k;
+                return `${rx+cr} ${ry} m ${rx+rw-cr} ${ry} l ${rx+rw-cr+kr} ${ry} ${rx+rw} ${ry+cr-kr} ${rx+rw} ${ry+cr} c ` +
+                  `${rx+rw} ${ry+rh-cr} l ${rx+rw} ${ry+rh-cr+kr} ${rx+rw-cr+kr} ${ry+rh} ${rx+rw-cr} ${ry+rh} c ` +
+                  `${rx+cr} ${ry+rh} l ${rx+cr-kr} ${ry+rh} ${rx} ${ry+rh-cr+kr} ${rx} ${ry+rh-cr} c ` +
+                  `${rx} ${ry+cr} l ${rx} ${ry+cr-kr} ${rx+cr-kr} ${ry} ${rx+cr} ${ry} c h\n`;
+              };
+              let s = `q\n2 w ${sr} ${sg} ${sb} RG\n${rrect(0, 0, w, h, r)}S\n`;
+              s += `BT\n/F1 ${fontSize} Tf\n${sr} ${sg} ${sb} rg\n${textX} ${textY} Td\n(${escaped}) Tj\nET\nQ\n`;
+              const fontDict = context.obj({ Type: 'Font', Subtype: 'Type1', BaseFont: 'Helvetica-Bold', Encoding: 'WinAnsiEncoding' });
+              const apStream = context.stream(s, {
+                Type: 'XObject', Subtype: 'Form', BBox: [0, 0, w, h],
+                Resources: context.obj({ Font: context.obj({ F1: fontDict }) })
+              });
+              const apStreamRef = context.register(apStream);
+              annotDict.set(PDFName.of('AP'), context.obj({ N: apStreamRef }));
+            }
 
             // Embed image data if present (e.g. north arrow, custom stamps)
             if (ann.imageData) {
