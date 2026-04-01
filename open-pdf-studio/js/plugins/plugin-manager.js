@@ -127,6 +127,7 @@ export async function installPluginFromFile(filePath) {
  * Get list of installed plugins from the plugins directory.
  */
 export async function getInstalledPlugins() {
+  if (!window.__TAURI__) return [];
   try {
     const { invoke } = await import('@tauri-apps/api/core');
     return await invoke('list_plugins');
