@@ -95,7 +95,8 @@
     "viewportTitle": "Set Viewport Scale",
     "dynamicScaling": "Auto-scale markups",
     "schedule": "TAKE-OFF",
-    "openSchedule": "Open Take-Off",
+    "openSchedule": "Take-Off",
+    "takeOff": "Take-Off",
     "placeSchedule": "Place Take-Off",
     "autoDetect": "Auto-detect",
     "autoDetectTitle": "Detect scale from title block text",
@@ -361,6 +362,6 @@
     "amberNavy": "Amber Navy",
     "highContrast": "High Contrast",
     "label": "Theme",
-    "deepForge": "Deep Forge"
+    "warmEmber": "Warm Ember"
   }
 }

@@ -3,10 +3,9 @@ import Dialog from '../Dialog.jsx';
 import PrefSelect from '../preferences/PrefSelect.jsx';
 import { closeDialog } from '../../stores/dialogStore.js';
 import { getActiveDocument } from '../../../core/state.js';
-import { syncDocScale } from '../../../annotations/scale-bar.js';
-import { recalculateAllMeasurements } from '../../../annotations/measurement.js';
-import { execute } from '../../../core/undo-manager.js';
+import { recordAdd } from '../../../core/undo-manager.js';
 import { redrawAnnotations, redrawContinuous } from '../../../annotations/rendering.js';
+import { recalculateAllMeasurements } from '../../../annotations/measurement.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
 
 const PRESET_SCALES = [
@@ -74,24 +73,14 @@ export default function ViewportScaleDialog(props) {
       unit = customUnit();
     }
 
-    // Calculate sensible totalUnits and bar width
-    const barWidth = Math.min(data.regionWidth * 0.6, 300);
-    const barRealLength = barWidth / pixelsPerUnit;
-    const niceSteps = [1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
-    const totalUnits = niceSteps.find(n => n >= barRealLength * 0.5) || Math.round(barRealLength);
-    const divisions = Math.min(10, totalUnits);
-    const finalBarWidth = totalUnits * pixelsPerUnit;
-
-    // Update the existing annotation
+    // Update the viewport annotation
     ann.pixelsPerUnit = pixelsPerUnit;
     ann.unit = unit;
     ann.scaleRatio = scaleRatio;
-    ann.totalUnits = totalUnits;
-    ann.divisions = divisions;
-    ann.width = finalBarWidth;
-    ann.viewportName = viewportName() || scaleRatio || 'Viewport';
+    ann.name = viewportName() || scaleRatio || 'Viewport';
 
-    redraw();
+    recordAdd(ann);
+    recalculateAllMeasurements();
     closeDialog('viewport-scale');
   }
 
@@ -189,7 +178,7 @@ export default function ViewportScaleDialog(props) {
         </Show>
 
         <div style="font-size:10px;color:var(--theme-text-secondary,#888);margin-top:8px;padding:6px 8px;background:var(--theme-bg,#f5f5f5);border:1px solid var(--theme-border,#e0e0e0)">
-          Viewport region: {Math.round(data.regionWidth || 0)} x {Math.round(data.regionHeight || 0)} px
+          Viewport: {Math.round(findAnnotation(data.annotationId)?.width || 0)} x {Math.round(findAnnotation(data.annotationId)?.height || 0)} px
           <br/>
           Measurements inside this area will use the viewport's scale.
         </div>

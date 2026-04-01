@@ -75,6 +75,14 @@ export function getAnnotationBounds(ann: Annotation): AnnotationBounds | null {
       const mdly = Math.min(...mdYs);
       return { x: mdlx, y: mdly, width: Math.max(...mdXs) - mdlx, height: Math.max(...mdYs) - mdly };
     }
+    case 'measureAngle': {
+      if (!(ann as any).point1 || !(ann as any).vertex || !(ann as any).point2) return null;
+      const maXs = [(ann as any).point1.x, (ann as any).vertex.x, (ann as any).point2.x];
+      const maYs = [(ann as any).point1.y, (ann as any).vertex.y, (ann as any).point2.y];
+      const malx = Math.min(...maXs);
+      const maly = Math.min(...maYs);
+      return { x: malx, y: maly, width: Math.max(...maXs) - malx, height: Math.max(...maYs) - maly };
+    }
     case 'text':
       return { x: ann.x!, y: ann.y! - (ann.fontSize || 16), width: 100, height: ann.fontSize || 16 };
     case 'comment':
@@ -90,6 +98,7 @@ export function getAnnotationBounds(ann: Annotation): AnnotationBounds | null {
     case 'stamp':
     case 'signature':
     case 'redaction':
+    case 'viewport':
     case 'scaleBar':
     case 'scheduleTable':
       return { x: ann.x!, y: ann.y!, width: ann.width!, height: ann.height! };

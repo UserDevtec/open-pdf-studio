@@ -47,9 +47,7 @@ export default function MeasurementsPanel() {
   const viewports = createMemo(() => {
     const doc = getActiveDocument();
     if (!doc) return [];
-    return (doc.annotations || []).filter(a =>
-      a.type === 'scaleBar' && a.regionWidth > 0 && a.regionHeight > 0
-    );
+    return (doc.annotations || []).filter(a => a.type === 'viewport');
   });
 
   // ── Measurements ──
@@ -147,7 +145,7 @@ export default function MeasurementsPanel() {
             <div class="measurements-item" onClick={() => navigateTo(vp)}>
               <div class="measurements-item-icon" style={{ color: '#0066cc' }}>&#9634;</div>
               <div class="measurements-item-info">
-                <div class="measurements-item-name">{vp.viewportName || vp.scaleRatio || 'Viewport'}</div>
+                <div class="measurements-item-name">{vp.name || vp.scaleRatio || 'Viewport'}</div>
                 <div class="measurements-item-detail">
                   {vp.scaleRatio || `1px = ${(1/vp.pixelsPerUnit).toFixed(4)} ${vp.unit}`}
                   {' \u2022 Page ' + vp.page}

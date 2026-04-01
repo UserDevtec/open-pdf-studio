@@ -242,6 +242,10 @@ export function storeShowProperties(annotation) {
     scaleBarTotalUnits: annotation.totalUnits || 5000,
     scaleBarDivisions: annotation.divisions || 5,
     scaleBarHeight: annotation.height || 14,
+    viewportName: annotation.name,
+    viewportScaleRatio: annotation.scaleRatio || '',
+    viewportUnit: annotation.unit || 'mm',
+    annotationType: annotation.type,
     replies: annotation.replies || [],
     multiCount: 0,
   });
@@ -624,6 +628,26 @@ function applyPropToAnnotation(ann, key, value) {
     case 'scaleBarTotalUnits': ann.totalUnits = parseFloat(value) || 1; break;
     case 'scaleBarDivisions': ann.divisions = Math.max(1, Math.min(20, parseInt(value) || 5)); break;
     case 'scaleBarHeight': ann.height = Math.max(4, parseInt(value) || 14); break;
+    case 'viewportName': ann.name = value; break;
+    case 'viewportScaleRatio': {
+      const ratio = parseInt(value);
+      if (ratio > 0) {
+        ann.scaleRatio = `1:${ratio}`;
+        ann.pixelsPerUnit = 72 / (25.4 * ratio);
+        ann.unit = 'mm';
+      }
+      break;
+    }
+    case 'viewportUnit': {
+      const vuToMm = { mm: 1, cm: 10, m: 1000, in: 25.4, ft: 304.8 };
+      const oldU = ann.unit || 'mm';
+      const newU = value;
+      if (oldU !== newU) {
+        ann.pixelsPerUnit = ann.pixelsPerUnit * (vuToMm[newU] || 1) / (vuToMm[oldU] || 1);
+      }
+      ann.unit = newU;
+      break;
+    }
     default: ann[key] = value; break;
   }
 }
@@ -823,6 +847,32 @@ export function updateAnnotProp(key, value) {
         syncDocScale(currentAnnotation);
         recalculateAllMeasurements();
       }
+      break;
+    }
+    case 'viewportName': currentAnnotation.name = value; break;
+    case 'viewportScaleRatio': {
+      const vpRatio = parseInt(value);
+      if (vpRatio > 0) {
+        currentAnnotation.scaleRatio = `1:${vpRatio}`;
+        currentAnnotation.pixelsPerUnit = 72 / (25.4 * vpRatio);
+        currentAnnotation.unit = 'mm';
+        currentAnnotation.name = currentAnnotation.name || `1:${vpRatio}`;
+        setAnnotProps('viewportScaleRatio', `1:${vpRatio}`);
+        setAnnotProps('viewportUnit', 'mm');
+        recalculateAllMeasurements();
+      }
+      break;
+    }
+    case 'viewportUnit': {
+      const vpUnitToMm = { mm: 1, cm: 10, m: 1000, in: 25.4, ft: 304.8 };
+      const vpOldUnit = currentAnnotation.unit || 'mm';
+      const vpNewUnit = value;
+      if (vpOldUnit !== vpNewUnit) {
+        currentAnnotation.pixelsPerUnit = currentAnnotation.pixelsPerUnit * (vpUnitToMm[vpNewUnit] || 1) / (vpUnitToMm[vpOldUnit] || 1);
+      }
+      currentAnnotation.unit = vpNewUnit;
+      currentAnnotation.scaleRatio = '';
+      recalculateAllMeasurements();
       break;
     }
     default: currentAnnotation[key] = value; break;

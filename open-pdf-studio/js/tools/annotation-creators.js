@@ -240,23 +240,16 @@ export function buildAnnotationProps(tool, startX, startY, endX, endY, e) {
     case 'viewport': {
       const b = bbox(startX, startY, endX, endY);
       return {
-        type: 'scaleBar',
+        type: 'viewport',
         page: getActiveDocument()?.currentPage || 1,
-        x: b.x, y: b.y + b.height - 14,
-        width: Math.min(b.width * 0.6, 300),
-        height: 14,
-        divisions: 5,
-        totalUnits: 5000,
-        unit: 'mm',
+        ...b,
+        name: 'Viewport',
+        scaleRatio: '1:100',
         pixelsPerUnit: 0.02835,
-        color: '#000000',
-        lineWidth: 1,
-        opacity: 1,
-        regionX: b.x,
-        regionY: b.y,
-        regionWidth: b.width,
-        regionHeight: b.height,
-        viewportName: 'Viewport',
+        unit: 'mm',
+        color: '#0066cc',
+        lineWidth: 1.5,
+        opacity: 0.6,
       };
     }
 
@@ -352,7 +345,8 @@ export function createMeasurePerimeterAnnotation(points) {
     headSize: mPrefs.measurePerimHeadSize || 12,
   };
   const currentPage = getActiveDocument()?.currentPage || 1;
-  if (mPrefs.measurePerimDimScale && typeof mPrefs.measurePerimDimScale === 'number') {
+  const hasScaleSource = getActiveDocument()?.annotations?.some(a => a.type === 'scaleBar' || a.type === 'viewport');
+  if (!hasScaleSource && mPrefs.measurePerimDimScale && typeof mPrefs.measurePerimDimScale === 'number') {
     perimProps.measureScale = mPrefs.measurePerimDimScale;
     perimProps.measureUnit = mPrefs.measurePerimDimUnit || 'mm';
     perimProps.measurePrecision = mPrefs.measurePerimDimPrecision ?? 2;

@@ -18,7 +18,7 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Get version
         id: get-version
@@ -32,7 +32,7 @@ jobs:
           echo "version_number=${VERSION#v}" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -67,9 +67,16 @@ jobs:
           # Update version in snapcraft.yaml
           sed -i "s/^version: .*/version: '${{ steps.get-version.outputs.version_number }}'/" snap/snapcraft.yaml
 
+      - name: Install Snapcraft
+        run: sudo snap install snapcraft --classic
+
       - name: Build snap
-        uses: snapcore/action-build@v1
         id: snapcraft
+        run: |
+          snapcraft
+          SNAP_FILE=$(ls *.snap | head -1)
+          echo "snap=$SNAP_FILE" >> $GITHUB_OUTPUT
+          echo "Built snap: $SNAP_FILE"
 
       - name: Upload snap to GitHub release
         run: |

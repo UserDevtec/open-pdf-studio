@@ -285,6 +285,13 @@ export async function loadPDF(filePath, docIndex, preloadedData = null) {
     await loadExistingAnnotations(doc);
     if (isClosed()) return;
 
+    // Sync doc.measureScale from any loaded scaleBar annotations
+    const loadedScaleBar = doc.annotations.find(a => a.type === 'scaleBar');
+    if (loadedScaleBar) {
+      const { syncDocScale } = await import('../annotations/scale-bar.js');
+      syncDocScale(loadedScaleBar);
+    }
+
     // Redraw annotations on the current page now that they're loaded (including color updates)
     if (isActive() && doc.pdfDoc) {
       const { redrawAnnotations } = await import('../annotations/rendering.js');

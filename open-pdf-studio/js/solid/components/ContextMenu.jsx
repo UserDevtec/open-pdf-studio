@@ -159,6 +159,20 @@ function AnnotationMenuContent() {
 
       <Separator />
 
+      <Show when={ann()?.type === 'viewport'}>
+        <Separator />
+        <MenuItem label={t('annotation.editViewportScale') || 'Edit Viewport Scale'} onClick={() => {
+          const a = ann();
+          if (a) {
+            import('../stores/dialogStore.js').then(m => m.openDialog('viewport-scale', {
+              annotationId: a.id,
+              pageNum: a.page,
+            }));
+          }
+        }} />
+        <Separator />
+      </Show>
+
       <MenuItem icon={deleteIcon} label={tCommon('delete')} shortcut="Delete" disabled={isLocked()} onClick={async () => {
         const a = ann();
         const confirmed = await showConfirm({

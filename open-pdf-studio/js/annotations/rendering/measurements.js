@@ -177,17 +177,39 @@ export function drawCentroidLabel(ctx, points, text, color, annotation) {
   const lx = (annotation && annotation.labelX != null) ? annotation.labelX : cx;
   const ly = (annotation && annotation.labelY != null) ? annotation.labelY : cy;
 
-  ctx.font = '11px Arial';
-  ctx.fillStyle = color;
-  ctx.textAlign = 'center';
+  const hasName = annotation && annotation.measureName;
+  const nameFont = 'bold 12px Arial';
+  const valueFont = '11px Arial';
+  const pad = 3;
 
-  // Draw optional measureName above the measurement text
-  if (annotation && annotation.measureName) {
-    ctx.font = 'bold 12px Arial';
+  // Measure text widths to compute background size
+  ctx.font = valueFont;
+  const valueWidth = ctx.measureText(text).width;
+  let nameWidth = 0;
+  if (hasName) {
+    ctx.font = nameFont;
+    nameWidth = ctx.measureText(annotation.measureName).width;
+  }
+  const bgWidth = Math.max(nameWidth, valueWidth) + pad * 2;
+  const lineHeight = hasName ? 14 : 0;
+  const bgHeight = 13 + lineHeight + pad * 2;
+  const bgX = lx - bgWidth / 2;
+  const bgY = ly - 11 - lineHeight - pad;
+
+  // Draw white background
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+  ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+
+  // Draw text
+  ctx.textAlign = 'center';
+  ctx.fillStyle = color;
+
+  if (hasName) {
+    ctx.font = nameFont;
     ctx.fillText(annotation.measureName, lx, ly - 14);
-    ctx.font = '11px Arial';
   }
 
+  ctx.font = valueFont;
   ctx.fillText(text, lx, ly);
   ctx.textAlign = 'left';
 }

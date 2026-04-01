@@ -156,6 +156,14 @@ export function getAnnotationHandles(annotation, scale = 1) {
       }
       break;
 
+    case 'measureAngle':
+      if (annotation.point1 && annotation.vertex && annotation.point2) {
+        handles.push({ type: HANDLE_TYPES.POLYLINE_NODE, x: annotation.point1.x - hs/2, y: annotation.point1.y - hs/2, nodeIndex: 0 });
+        handles.push({ type: HANDLE_TYPES.POLYLINE_NODE, x: annotation.vertex.x - hs/2, y: annotation.vertex.y - hs/2, nodeIndex: 1 });
+        handles.push({ type: HANDLE_TYPES.POLYLINE_NODE, x: annotation.point2.x - hs/2, y: annotation.point2.y - hs/2, nodeIndex: 2 });
+      }
+      break;
+
     case 'comment':
       // No resize/rotation handles — sticky note icon is fixed size, move only
       break;
@@ -222,22 +230,32 @@ export function getAnnotationHandles(annotation, scale = 1) {
       }
       break;
 
+    case 'viewport':
+      // Viewport: corner + edge handles, no rotation
+      handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: annotation.x - hs/2, y: annotation.y - hs/2 });
+      handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y - hs/2 });
+      handles.push({ type: HANDLE_TYPES.BOTTOM_LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height - hs/2 });
+      handles.push({ type: HANDLE_TYPES.BOTTOM_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y + annotation.height - hs/2 });
+      handles.push({ type: HANDLE_TYPES.TOP, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y - hs/2 });
+      handles.push({ type: HANDLE_TYPES.BOTTOM, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y + annotation.height - hs/2 });
+      handles.push({ type: HANDLE_TYPES.LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
+      handles.push({ type: HANDLE_TYPES.RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
+      break;
+
     case 'image':
     case 'stamp':
     case 'signature':
     case 'scaleBar':
     case 'scheduleTable':
-      // Corner handles for resize
+      // Corner + edge + rotation handles
       handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: annotation.x - hs/2, y: annotation.y - hs/2 });
       handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y - hs/2 });
       handles.push({ type: HANDLE_TYPES.BOTTOM_LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height - hs/2 });
       handles.push({ type: HANDLE_TYPES.BOTTOM_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y + annotation.height - hs/2 });
-      // Edge handles
       handles.push({ type: HANDLE_TYPES.TOP, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y - hs/2 });
       handles.push({ type: HANDLE_TYPES.BOTTOM, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y + annotation.height - hs/2 });
       handles.push({ type: HANDLE_TYPES.LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
       handles.push({ type: HANDLE_TYPES.RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
-      // Rotation handle (above the image)
       handles.push({ type: HANDLE_TYPES.ROTATE, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y - 25 / scale - hs/2 });
       break;
 
@@ -266,12 +284,9 @@ export function getAnnotationHandles(annotation, scale = 1) {
     const center = getAnnotationCenter(annotation);
     if (center) {
       for (const handle of handles) {
-        // Calculate handle center (add hs/2 because handle.x/y is top-left corner)
         const handleCenterX = handle.x + hs / 2;
         const handleCenterY = handle.y + hs / 2;
-        // Rotate the handle center around the annotation center
         const rotated = rotatePoint(handleCenterX, handleCenterY, center.x, center.y, annotation.rotation);
-        // Update handle position (convert back to top-left corner)
         handle.x = rotated.x - hs / 2;
         handle.y = rotated.y - hs / 2;
       }

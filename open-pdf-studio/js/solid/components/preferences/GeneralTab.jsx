@@ -19,7 +19,7 @@ export default function GeneralTab(props) {
     { value: 'dark', label: tRibbon('theme.dark') },
     { value: 'blue', label: tRibbon('theme.blue') },
     { value: 'amber-navy', label: tRibbon('theme.amberNavy') },
-    { value: 'deep-forge', label: tRibbon('theme.deepForge') },
+    { value: 'warm-ember', label: tRibbon('theme.warmEmber') },
     { value: 'highContrast', label: tRibbon('theme.highContrast') },
   ];
 

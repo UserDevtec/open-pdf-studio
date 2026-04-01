@@ -233,18 +233,6 @@ export function formatMeasurement(measurement) {
   let val = applyRounding(measurement.value, measurement.unit);
   let unit = measurement.unit || 'mm';
 
-  // Auto-convert mm distances >= 1000 to meters for readability
-  if (unit === 'mm' && Math.abs(val) >= 1000) {
-    val = val / 1000;
-    unit = 'm';
-  }
-
-  // Auto-convert mm² to m² for readability (1 m² = 1,000,000 mm²)
-  if (unit === 'mm\u00B2') {
-    val = val / 1000000;
-    unit = 'm\u00B2';
-  }
-
   const suffix = unit === 'px' ? '' : ` ${unit}`;
   const rounding = state.preferences.measureRounding;
   if (rounding && rounding !== 'none' && unit !== 'px') {
@@ -254,9 +242,12 @@ export function formatMeasurement(measurement) {
   }
   // Default formatting per unit
   if (unit === 'mm') return `${Math.round(val)}${suffix}`;
+  if (unit === 'mm\u00B2') return `${Math.round(val)}${suffix}`;
+  if (unit === 'cm\u00B2') return `${val.toFixed(1)}${suffix}`;
   if (unit === 'm\u00B2') return `${val.toFixed(2)}${suffix}`;
   if (unit === 'cm') return `${val.toFixed(1)}${suffix}`;
   if (unit === 'm') return `${val.toFixed(2)}${suffix}`;
+  if (unit === 'ft\u00B2' || unit === 'in\u00B2') return `${val.toFixed(2)}${suffix}`;
   if (unit === 'ft' || unit === 'in') return `${val.toFixed(2)}${suffix}`;
   if (unit === '°') return `${val.toFixed(1)}${suffix}`;
   if (val < 0.01) return `0${suffix}`;

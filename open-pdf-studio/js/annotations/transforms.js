@@ -408,6 +408,16 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
           }
         }
 
+        // Snap to alignment with the other leader point
+        const dimAlignTol = 3 / (state.documents?.[state.activeDocumentIndex]?.scale || 1.5);
+        if (handleType === HANDLE_TYPES.LEADER_START) {
+          if (Math.abs(newLSY - newLEY) < dimAlignTol) newLSY = newLEY;
+          if (Math.abs(newLSX - newLEX) < dimAlignTol) newLSX = newLEX;
+        } else {
+          if (Math.abs(newLEY - newLSY) < dimAlignTol) newLEY = newLSY;
+          if (Math.abs(newLEX - newLSX) < dimAlignTol) newLEX = newLSX;
+        }
+
         annotation.leaderStartX = newLSX;
         annotation.leaderStartY = newLSY;
         annotation.leaderEndX = newLEX;
@@ -451,6 +461,41 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
         annotation.startY = originalAnn.startY + pDot * pY;
         annotation.endX = originalAnn.endX + pDot * pX;
         annotation.endY = originalAnn.endY + pDot * pY;
+      }
+      break;
+    }
+
+    case 'measureAngle': {
+      // Node drag for angle measurement
+      if (typeof handleType === 'string' && handleType.startsWith('polyline_node_')) {
+        const angleNodeIdx = parseInt(handleType.split('_').pop(), 10);
+        const anglePoints = [
+          { ...originalAnn.point1 },
+          { ...originalAnn.vertex },
+          { ...originalAnn.point2 },
+        ];
+        if (angleNodeIdx >= 0 && angleNodeIdx < 3) {
+          anglePoints[angleNodeIdx].x += deltaX;
+          anglePoints[angleNodeIdx].y += deltaY;
+          // Snap to sibling vertex alignment
+          const angAlignTol = 3 / (state.documents?.[state.activeDocumentIndex]?.scale || 1.5);
+          for (let ai = 0; ai < 3; ai++) {
+            if (ai === angleNodeIdx) continue;
+            if (Math.abs(anglePoints[angleNodeIdx].y - anglePoints[ai].y) < angAlignTol) anglePoints[angleNodeIdx].y = anglePoints[ai].y;
+            if (Math.abs(anglePoints[angleNodeIdx].x - anglePoints[ai].x) < angAlignTol) anglePoints[angleNodeIdx].x = anglePoints[ai].x;
+          }
+        }
+        annotation.point1 = anglePoints[0];
+        annotation.vertex = anglePoints[1];
+        annotation.point2 = anglePoints[2];
+        // Recalculate angle
+        const a1 = Math.atan2(annotation.point1.y - annotation.vertex.y, annotation.point1.x - annotation.vertex.x);
+        const a2 = Math.atan2(annotation.point2.y - annotation.vertex.y, annotation.point2.x - annotation.vertex.x);
+        let angleDeg = (a2 - a1) * (180 / Math.PI);
+        if (angleDeg < 0) angleDeg += 360;
+        if (angleDeg > 180) angleDeg = 360 - angleDeg;
+        annotation.measureValue = angleDeg;
+        annotation.measureText = angleDeg.toFixed(1) + '\u00B0';
       }
       break;
     }
@@ -571,6 +616,14 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
                     nx = s.x; ny = s.y;
                   }
                 }
+                // Snap to sibling vertex alignment (horizontal/vertical)
+                const alignTol = 3 / (state.documents?.[state.activeDocumentIndex]?.scale || 1.5);
+                for (let si = 0; si < originalAnn.points.length; si++) {
+                  if (si === i) continue;
+                  const sp = originalAnn.points[si];
+                  if (Math.abs(ny - sp.y) < alignTol) ny = sp.y;
+                  if (Math.abs(nx - sp.x) < alignTol) nx = sp.x;
+                }
                 return { x: nx, y: ny };
               }
               return { x: p.x, y: p.y };
@@ -592,6 +645,34 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
         }
       }
       break;
+
+    case 'viewport': {
+      // Viewport: standard rectangle resize, minimum 40x40
+      switch (handleType) {
+        case HANDLE_TYPES.TOP_LEFT:
+          annotation.x = originalAnn.x + deltaX; annotation.y = originalAnn.y + deltaY;
+          annotation.width = originalAnn.width - deltaX; annotation.height = originalAnn.height - deltaY; break;
+        case HANDLE_TYPES.TOP_RIGHT:
+          annotation.y = originalAnn.y + deltaY;
+          annotation.width = originalAnn.width + deltaX; annotation.height = originalAnn.height - deltaY; break;
+        case HANDLE_TYPES.BOTTOM_LEFT:
+          annotation.x = originalAnn.x + deltaX;
+          annotation.width = originalAnn.width - deltaX; annotation.height = originalAnn.height + deltaY; break;
+        case HANDLE_TYPES.BOTTOM_RIGHT:
+          annotation.width = originalAnn.width + deltaX; annotation.height = originalAnn.height + deltaY; break;
+        case HANDLE_TYPES.TOP:
+          annotation.y = originalAnn.y + deltaY; annotation.height = originalAnn.height - deltaY; break;
+        case HANDLE_TYPES.BOTTOM:
+          annotation.height = originalAnn.height + deltaY; break;
+        case HANDLE_TYPES.LEFT:
+          annotation.x = originalAnn.x + deltaX; annotation.width = originalAnn.width - deltaX; break;
+        case HANDLE_TYPES.RIGHT:
+          annotation.width = originalAnn.width + deltaX; break;
+      }
+      if (annotation.width < 40) annotation.width = 40;
+      if (annotation.height < 40) annotation.height = 40;
+      break;
+    }
 
     case 'image':
     case 'stamp':
@@ -711,6 +792,7 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
         // Ensure minimum size
         if (annotation.width < 20) annotation.width = 20;
         if (annotation.height < 20) annotation.height = 20;
+
       }
       break;
     }
@@ -813,6 +895,12 @@ export function applyMove(annotation, deltaX, deltaY) {
       }
       break;
 
+    case 'measureAngle':
+      if (annotation.point1) { annotation.point1.x += deltaX; annotation.point1.y += deltaY; }
+      if (annotation.vertex) { annotation.vertex.x += deltaX; annotation.vertex.y += deltaY; }
+      if (annotation.point2) { annotation.point2.x += deltaX; annotation.point2.y += deltaY; }
+      break;
+
     case 'comment':
     case 'text':
       annotation.x += deltaX;
@@ -854,6 +942,7 @@ export function applyMove(annotation, deltaX, deltaY) {
     case 'image':
     case 'stamp':
     case 'signature':
+    case 'viewport':
     case 'scaleBar':
     case 'scheduleTable':
       annotation.x += deltaX;

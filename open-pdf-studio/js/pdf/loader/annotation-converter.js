@@ -138,6 +138,66 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
     }
 
     case 'Square': {
+      // Check for scheduleTable custom type
+      if (extraColors.opsSubtype === 'scheduleTable') {
+        const stRect = convertRect(annot.rect);
+        let scheduleData = [];
+        try {
+          if (extraColors.opsScheduleData) scheduleData = JSON.parse(extraColors.opsScheduleData);
+        } catch (e) { /* ignore parse errors */ }
+        return createAnnotation({
+          ...baseProps,
+          type: 'scheduleTable',
+          x: stRect.x,
+          y: stRect.y,
+          width: stRect.width,
+          height: stRect.height,
+          scheduleData,
+          groupByMode: extraColors.opsGroupBy || 'type',
+          color: '#000000',
+          lineWidth: 0.5,
+          opacity: 1,
+        });
+      }
+      // Check for viewport or scaleBar custom types
+      if (extraColors.opsSubtype === 'viewport') {
+        const vpRect = convertRect(annot.rect);
+        return createAnnotation({
+          ...baseProps,
+          type: 'viewport',
+          x: vpRect.x,
+          y: vpRect.y,
+          width: vpRect.width,
+          height: vpRect.height,
+          name: annot.contentsObj?.str || 'Viewport',
+          color: colorArrayToHex(annot.color, '#0066cc'),
+          lineWidth: extraColors.opsLineWidth || 1.5,
+          opacity: annot.opacity ?? 0.6,
+          pixelsPerUnit: extraColors.opsPixelsPerUnit || (72 / (25.4 * 100)),
+          unit: extraColors.opsUnit || 'mm',
+          scaleRatio: extraColors.opsScaleRatio || '1:100',
+        });
+      }
+      if (extraColors.opsSubtype === 'scaleBar') {
+        const sbRect = convertRect(annot.rect);
+        return createAnnotation({
+          ...baseProps,
+          type: 'scaleBar',
+          x: sbRect.x,
+          y: sbRect.y,
+          width: sbRect.width,
+          height: sbRect.height,
+          color: colorArrayToHex(annot.color, '#000000'),
+          lineWidth: extraColors.opsLineWidth || 1,
+          opacity: annot.opacity ?? 1,
+          pixelsPerUnit: extraColors.opsPixelsPerUnit || 1,
+          unit: extraColors.opsUnit || 'mm',
+          divisions: extraColors.opsDivisions || 5,
+          totalUnits: extraColors.opsTotalUnits || 5000,
+          rotation: extraColors.rotation || 0,
+        });
+      }
+
       const sqRect = convertRect(annot.rect);
       let sqX = sqRect.x, sqY = sqRect.y, sqW = sqRect.width, sqH = sqRect.height;
       let sqRotation = 0;
@@ -373,6 +433,29 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         for (let i = 0; i < annot.vertices.length; i += 2) {
           const [plx, ply] = convertPoint(annot.vertices[i], annot.vertices[i + 1]);
           plPoints.push({ x: plx, y: ply });
+        }
+
+        // Check if this is an angle measurement
+        if (extraColors.opsSubtype === 'measureAngle' && plPoints.length >= 3) {
+          const point1 = plPoints[0];
+          const vertex = plPoints[1];
+          const point2 = plPoints[2];
+          const a1 = Math.atan2(point1.y - vertex.y, point1.x - vertex.x);
+          const a2 = Math.atan2(point2.y - vertex.y, point2.x - vertex.x);
+          let angleDeg = (a2 - a1) * (180 / Math.PI);
+          if (angleDeg < 0) angleDeg += 360;
+          if (angleDeg > 180) angleDeg = 360 - angleDeg;
+          return createAnnotation({
+            ...baseProps,
+            type: 'measureAngle',
+            point1, vertex, point2,
+            arcRadius: extraColors.opsArcRadius || 30,
+            measureValue: angleDeg,
+            measureText: angleDeg.toFixed(1) + '\u00B0',
+            color: colorArrayToHex(annot.color, '#ff0000'),
+            strokeColor: colorArrayToHex(annot.color, '#ff0000'),
+            lineWidth: annot.borderStyle?.width || 1,
+          });
         }
 
         // Check if this is a perimeter measurement (use pdf.js IT + colorMap fallback)

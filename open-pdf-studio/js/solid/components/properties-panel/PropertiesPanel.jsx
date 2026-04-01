@@ -46,6 +46,44 @@ export default function PropertiesPanel() {
             <LineEndingsSection />
             <DimensionsSection />
             <MeasurementSection />
+            <Show when={annotProps.annotationType === 'viewport'}>
+              <CollapsibleSection title="Viewport" name="viewport" id="prop-viewport-section">
+                <div class="property-group">
+                  <label>Name</label>
+                  <input type="text"
+                    value={annotProps.viewportName || ''}
+                    disabled={annotProps.locked === true || annotProps.locked === 'mixed'}
+                    onChange={(e) => updateAnnotProp('viewportName', e.target.value)}
+                  />
+                </div>
+                <div class="property-group">
+                  <label>Scale</label>
+                  <select
+                    value={annotProps.viewportScaleRatio ? annotProps.viewportScaleRatio.replace('1:', '') : '100'}
+                    disabled={annotProps.locked === true || annotProps.locked === 'mixed'}
+                    onChange={(e) => updateAnnotProp('viewportScaleRatio', e.target.value)}
+                  >
+                    {[10,20,25,50,75,100,125,150,200,250,300,400,500,750,1000,1250,2000,2500,5000].map(r =>
+                      <option value={r}>1:{r}</option>
+                    )}
+                  </select>
+                </div>
+                <div class="property-group">
+                  <label>Unit</label>
+                  <select
+                    value={annotProps.viewportUnit || 'mm'}
+                    disabled={annotProps.locked === true || annotProps.locked === 'mixed'}
+                    onChange={(e) => updateAnnotProp('viewportUnit', e.target.value)}
+                  >
+                    <option value="mm">mm</option>
+                    <option value="cm">cm</option>
+                    <option value="m">m</option>
+                    <option value="in">in</option>
+                    <option value="ft">ft</option>
+                  </select>
+                </div>
+              </CollapsibleSection>
+            </Show>
             <Show when={sectionVis.scaleBar}>
               <CollapsibleSection title={t('scaleBar.title')} name="scaleBar" id="prop-scalebar-section">
                 <div class="property-group">

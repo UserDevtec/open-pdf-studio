@@ -997,6 +997,114 @@ export async function savePDF(saveAsPath = null) {
             break;
           }
 
+          case 'viewport': {
+            const vpx1 = convertX(ann.x);
+            const vpy1 = convertY(ann.y + ann.height);
+            const vpx2 = convertX(ann.x + ann.width);
+            const vpy2 = convertY(ann.y);
+            const vpDict = {
+              Type: 'Annot',
+              Subtype: 'Square',
+              Rect: [vpx1, vpy1, vpx2, vpy2],
+              C: hexToColorArray(ann.color || '#0066cc'),
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of(ann.name || 'Viewport'),
+              M: PDFString.of(new Date().toISOString()),
+              OPS_Subtype: PDFString.of('viewport'),
+              F: computeAnnotFlags(ann)
+            };
+            if (ann.pixelsPerUnit) vpDict.OPS_PixelsPerUnit = ann.pixelsPerUnit;
+            if (ann.unit) vpDict.OPS_Unit = PDFString.of(ann.unit);
+            if (ann.scaleRatio) vpDict.OPS_ScaleRatio = PDFString.of(ann.scaleRatio);
+            if (ann.lineWidth) vpDict.OPS_LineWidth = ann.lineWidth;
+            annotDict = context.obj(vpDict);
+            annotDict.set(PDFName.of('BS'), buildBorderStyle(context, ann.lineWidth || 1.5, 'dashed'));
+            break;
+          }
+
+          case 'scaleBar': {
+            const sbx1 = convertX(ann.x);
+            const sby1 = convertY(ann.y + ann.height);
+            const sbx2 = convertX(ann.x + ann.width);
+            const sby2 = convertY(ann.y);
+            const sbDict = {
+              Type: 'Annot',
+              Subtype: 'Square',
+              Rect: [sbx1, sby1, sbx2, sby2],
+              C: hexToColorArray(ann.color || '#000000'),
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of('Scale Bar'),
+              M: PDFString.of(new Date().toISOString()),
+              OPS_Subtype: PDFString.of('scaleBar'),
+              F: computeAnnotFlags(ann)
+            };
+            if (ann.pixelsPerUnit) sbDict.OPS_PixelsPerUnit = ann.pixelsPerUnit;
+            if (ann.unit) sbDict.OPS_Unit = PDFString.of(ann.unit);
+            if (ann.divisions) sbDict.OPS_Divisions = ann.divisions;
+            if (ann.totalUnits) sbDict.OPS_TotalUnits = ann.totalUnits;
+            if (ann.lineWidth) sbDict.OPS_LineWidth = ann.lineWidth;
+            if (ann.rotation) sbDict.OPS_Rotation = ann.rotation;
+            annotDict = context.obj(sbDict);
+            break;
+          }
+
+          case 'scheduleTable': {
+            const stx1 = convertX(ann.x);
+            const sty1 = convertY(ann.y + ann.height);
+            const stx2 = convertX(ann.x + ann.width);
+            const sty2 = convertY(ann.y);
+            const stDict = {
+              Type: 'Annot',
+              Subtype: 'Square',
+              Rect: [stx1, sty1, stx2, sty2],
+              C: [0, 0, 0],
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of('Schedule Table'),
+              M: PDFString.of(new Date().toISOString()),
+              OPS_Subtype: PDFString.of('scheduleTable'),
+              F: computeAnnotFlags(ann)
+            };
+            if (ann.scheduleData) {
+              stDict.OPS_ScheduleData = PDFString.of(JSON.stringify(ann.scheduleData));
+            }
+            if (ann.groupByMode) {
+              stDict.OPS_GroupBy = PDFString.of(ann.groupByMode);
+            }
+            annotDict = context.obj(stDict);
+            break;
+          }
+
+          case 'measureAngle': {
+            if (!ann.point1 || !ann.vertex || !ann.point2) continue;
+            const ap1x = convertX(ann.point1.x), ap1y = convertY(ann.point1.y);
+            const avx = convertX(ann.vertex.x), avy = convertY(ann.vertex.y);
+            const ap2x = convertX(ann.point2.x), ap2y = convertY(ann.point2.y);
+            const aMinX = Math.min(ap1x, avx, ap2x) - 5;
+            const aMinY = Math.min(ap1y, avy, ap2y) - 5;
+            const aMaxX = Math.max(ap1x, avx, ap2x) + 5;
+            const aMaxY = Math.max(ap1y, avy, ap2y) + 5;
+            const maDict = {
+              Type: 'Annot',
+              Subtype: 'PolyLine',
+              Rect: [aMinX, aMinY, aMaxX, aMaxY],
+              Vertices: [ap1x, ap1y, avx, avy, ap2x, ap2y],
+              C: hexToColorArray(ann.strokeColor || '#ff0000'),
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of(ann.measureText || ''),
+              M: PDFString.of(new Date().toISOString()),
+              OPS_Subtype: PDFString.of('measureAngle'),
+              F: computeAnnotFlags(ann)
+            };
+            if (ann.arcRadius && ann.arcRadius !== 30) maDict.OPS_ArcRadius = ann.arcRadius;
+            annotDict = context.obj(maDict);
+            annotDict.set(PDFName.of('BS'), buildBorderStyle(context, borderWidth, ann.borderStyle));
+            break;
+          }
+
           case 'measureDistance': {
             const mapDimHead = (h) => {
               switch (h) {

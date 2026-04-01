@@ -34,6 +34,7 @@ function getAnnotationCenterAndSize(ann) {
     case 'stamp':
     case 'signature':
     case 'redaction':
+    case 'viewport':
     case 'scaleBar':
     case 'scheduleTable':
       return {
@@ -212,6 +213,18 @@ export function findAnnotationAt(x, y) {
       case 'stamp':
       case 'signature':
       case 'redaction':
+      case 'viewport': {
+        // Viewport: hit test on boundary edges and name label
+        const edgeTol = 6;
+        const nearLeft = Math.abs(x - ann.x) < edgeTol && y >= ann.y - edgeTol && y <= ann.y + ann.height + edgeTol;
+        const nearRight = Math.abs(x - (ann.x + ann.width)) < edgeTol && y >= ann.y - edgeTol && y <= ann.y + ann.height + edgeTol;
+        const nearTop = Math.abs(y - ann.y) < edgeTol && x >= ann.x - edgeTol && x <= ann.x + ann.width + edgeTol;
+        const nearBottom = Math.abs(y - (ann.y + ann.height)) < edgeTol && x >= ann.x - edgeTol && x <= ann.x + ann.width + edgeTol;
+        if (nearLeft || nearRight || nearTop || nearBottom) return ann;
+        // Label area above top-left
+        if (x >= ann.x && x <= ann.x + 120 && y >= ann.y - 16 && y <= ann.y) return ann;
+        break;
+      }
       case 'scaleBar':
       case 'scheduleTable': {
         const imgCenter = { x: ann.x + ann.width / 2, y: ann.y + ann.height / 2 };
@@ -267,6 +280,35 @@ export function findAnnotationAt(x, y) {
                 const hd = distanceToLine(x, y, hole[hole.length-1].x, hole[hole.length-1].y, hole[0].x, hole[0].y);
                 if (hd < tol) return ann;
               }
+            }
+          }
+        }
+        break;
+      case 'measureAngle':
+        if (ann.point1 && ann.vertex && ann.point2) {
+          // Check proximity to the two rays
+          const d1 = distanceToLine(x, y, ann.point1.x, ann.point1.y, ann.vertex.x, ann.vertex.y);
+          if (d1 < tol) return ann;
+          const d2 = distanceToLine(x, y, ann.vertex.x, ann.vertex.y, ann.point2.x, ann.point2.y);
+          if (d2 < tol) return ann;
+          // Check proximity to the arc
+          const arcR = ann.arcRadius || 30;
+          const dx = x - ann.vertex.x;
+          const dy = y - ann.vertex.y;
+          const distFromVertex = Math.sqrt(dx * dx + dy * dy);
+          if (Math.abs(distFromVertex - arcR) < tol) {
+            // Check the point is within the angle sweep
+            const a1 = Math.atan2(ann.point1.y - ann.vertex.y, ann.point1.x - ann.vertex.x);
+            const a2 = Math.atan2(ann.point2.y - ann.vertex.y, ann.point2.x - ann.vertex.x);
+            const ap = Math.atan2(dy, dx);
+            let sweep = a2 - a1;
+            if (sweep < 0) sweep += 2 * Math.PI;
+            let test = ap - a1;
+            if (test < 0) test += 2 * Math.PI;
+            if (sweep > Math.PI) {
+              if (test > sweep) return ann;
+            } else {
+              if (test < sweep) return ann;
             }
           }
         }
@@ -375,6 +417,7 @@ export function isPointInsideAnnotation(x, y, annotation) {
       }
       return false;
 
+    case 'viewport':
     case 'image':
     case 'stamp':
     case 'signature':

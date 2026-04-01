@@ -1,45 +1,56 @@
-/* ===== Schedule / Takeoff Panel ===== */
+/* ===== Schedule / Take-Off Panel (modeless dialog) ===== */
 
-.schedule-panel {
+.schedule-modeless {
   position: fixed;
-  right: 0;
-  bottom: 32px;
-  width: 420px;
-  max-height: 50vh;
-  background: var(--theme-surface, #fff);
-  border: 1px solid var(--theme-border, #ccc);
-  border-right: none;
-  box-shadow: -2px 0 12px rgba(0,0,0,0.15);
+  right: 20px;
+  bottom: 52px;
+  left: auto;
+  top: auto;
+  transform: none;
+  width: 440px;
+  max-height: 55vh;
   z-index: 900;
   display: flex;
   flex-direction: column;
   font-size: 11px;
   color: var(--theme-text, #333);
+  resize: both;
+  overflow: hidden;
 }
 
-.schedule-header {
+/* Header action buttons (PDF, CSV, Tmpl) */
+.schedule-header-btn {
+  height: 100%;
+  padding: 0 8px;
+  font-size: 10px;
+  font-weight: 600;
+  background: transparent;
+  color: var(--theme-text-secondary, #666);
+  border: none;
+  cursor: default;
+}
+.schedule-header-btn:hover {
+  background: var(--theme-hover, rgba(0,0,0,0.06));
+  color: var(--theme-text, #333);
+}
+
+/* Templates */
+.schedule-templates {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--theme-border, #ddd);
+  background: var(--theme-bg, #fafafa);
+}
+.schedule-template-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
-  background: var(--theme-bg, #f5f5f5);
-  border-bottom: 1px solid var(--theme-border, #ddd);
-  flex-shrink: 0;
+  padding: 2px 0;
 }
-
-.schedule-title {
-  font-weight: 600;
-  font-size: 12px;
+.schedule-template-name {
+  cursor: default;
+  color: var(--theme-accent, #0066cc);
 }
-
-.schedule-close {
-  width: 18px; height: 18px;
-  border: none; background: transparent;
-  cursor: default; display: flex;
-  align-items: center; justify-content: center;
-  color: var(--theme-text-secondary, #666);
-}
-.schedule-close:hover { background: #e81123; color: #fff; }
+.schedule-template-name:hover { text-decoration: underline; }
 
 .schedule-btn-sm {
   height: 20px;
@@ -65,24 +76,6 @@
   justify-content: center;
 }
 .schedule-btn-xs:hover { color: #e81123; }
-
-/* Templates */
-.schedule-templates {
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--theme-border, #ddd);
-  background: var(--theme-bg, #fafafa);
-}
-.schedule-template-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px 0;
-}
-.schedule-template-name {
-  cursor: default;
-  color: var(--theme-accent, #0066cc);
-}
-.schedule-template-name:hover { text-decoration: underline; }
 
 /* Filters */
 .schedule-filters {

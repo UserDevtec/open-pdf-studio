@@ -9,7 +9,7 @@ import { startTextEditing, finishTextEditing } from './text-editing.js';
 import { openStickyPopup } from '../bridge.js';
 import { findAnnotationAt } from '../annotations/geometry.js';
 import { startPan, startContinuousPan, handlePanEnd, handleMiddleButtonPanEnd } from './pan-handler.js';
-import { performSnap, drawSnapIndicator } from './snap-engine.js';
+import { performSnap, drawSnapIndicator, drawAlignmentGuides } from './snap-engine.js';
 import { recordAdd, recordModify, recordBulkModify } from '../core/undo-manager.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { isPdfAReadOnly } from '../pdf/loader.js';
@@ -62,6 +62,7 @@ export function handlePointerDown(e) {
   state.lastSnapResult = startSnap.snapped ? startSnap : null;
   state.dragStartX = coords.x;
   state.dragStartY = coords.y;
+  state._dragExitedDeadzone = false;
 
   // Set continuous mode context
   if (getActiveDocument()?.viewMode === 'continuous') {
@@ -296,6 +297,13 @@ function _handleResize(ctx, e, coords) {
           ox = orig.points[nodeIdx].x;
           oy = orig.points[nodeIdx].y;
         }
+      } else if (orig.type === 'measureAngle' && orig.point1 && orig.vertex && orig.point2) {
+        const maNodeIdx = parseInt(h.split('_').pop(), 10);
+        const maPts = [orig.point1, orig.vertex, orig.point2];
+        if (!isNaN(maNodeIdx) && maNodeIdx < 3) {
+          ox = maPts[maNodeIdx].x;
+          oy = maPts[maNodeIdx].y;
+        }
       }
     }
     // Label move handle
@@ -347,11 +355,57 @@ function _handleResize(ctx, e, coords) {
     drawSnapIndicator(canvasCtx, state.lastSnapResult, resizeScale);
     canvasCtx.restore();
   }
+
+  // Draw alignment guides for polyline/polygon node dragging
+  const h = state.activeHandle;
+  if (typeof h === 'string' && h.startsWith('polyline_node_') && !h.includes('hole') && ann.points) {
+    const nodeIdx = parseInt(h.split('_').pop(), 10);
+    if (!isNaN(nodeIdx) && nodeIdx < ann.points.length) {
+      canvasCtx.save();
+      canvasCtx.scale(resizeScale, resizeScale);
+      drawAlignmentGuides(canvasCtx, ann, nodeIdx, resizeScale);
+      canvasCtx.restore();
+    }
+  }
+
+  // Draw alignment guides for measureDistance leader handle dragging
+  if (ann.type === 'measureDistance' && (h === 'leader_start' || h === 'leader_end')) {
+    const dimPts = { points: [
+      { x: ann.leaderStartX, y: ann.leaderStartY },
+      { x: ann.leaderEndX, y: ann.leaderEndY },
+    ]};
+    const dragIdx = h === 'leader_start' ? 0 : 1;
+    canvasCtx.save();
+    canvasCtx.scale(resizeScale, resizeScale);
+    drawAlignmentGuides(canvasCtx, dimPts, dragIdx, resizeScale);
+    canvasCtx.restore();
+  }
+
+  // Draw alignment guides for measureAngle node dragging
+  if (ann.type === 'measureAngle' && typeof h === 'string' && h.startsWith('polyline_node_') && ann.point1 && ann.vertex && ann.point2) {
+    const angleIdx = parseInt(h.split('_').pop(), 10);
+    if (!isNaN(angleIdx) && angleIdx < 3) {
+      const anglePts = { points: [ann.point1, ann.vertex, ann.point2] };
+      canvasCtx.save();
+      canvasCtx.scale(resizeScale, resizeScale);
+      drawAlignmentGuides(canvasCtx, anglePts, angleIdx, resizeScale);
+      canvasCtx.restore();
+    }
+  }
 }
 
 function _handleDrag(ctx, e, coords) {
   const deltaX = coords.x - state.dragStartX;
   const deltaY = coords.y - state.dragStartY;
+
+  // Deadzone: don't start moving until cursor exceeds 3 screen-pixels from click point
+  const dragScale = getActiveDocument()?.scale || 1.5;
+  const deadzone = 3 / dragScale;
+  if (!state._dragExitedDeadzone) {
+    if (Math.abs(deltaX) < deadzone && Math.abs(deltaY) < deadzone) return;
+    state._dragExitedDeadzone = true;
+  }
+
   const _dDoc = getActiveDocument();
   const _dSel = _dDoc ? _dDoc.selectedAnnotations : [];
 
@@ -463,6 +517,7 @@ function _finishDragResize(ctx, e, coords) {
   state.isDragging = false;
   state.isResizing = false;
   state.activeHandle = null;
+  state._dragExitedDeadzone = false;
   state.originalAnnotation = null;
   state.originalAnnotations = [];
   state._ctrlDragCopy = false;

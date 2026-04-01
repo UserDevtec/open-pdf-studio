@@ -176,10 +176,10 @@ export type Annotation = AnnotationBase & {
   pixelsPerUnit?: number;
   divisions?: number;
   totalUnits?: number;
-  regionX?: number;
-  regionY?: number;
-  regionWidth?: number;
-  regionHeight?: number;
+
+  // Viewport
+  name?: string;
+  scaleRatio?: string;
 };
 
 export interface AnnotationBounds {

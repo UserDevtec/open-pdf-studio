@@ -57,10 +57,14 @@ const scheduleEntries = createMemo(() => {
 });
 
 function getDefaultUnit(a) {
-  if (a.measureUnit) return a.measureUnit;
+  if (a.measureUnit && a.measureUnit !== 'px') return a.measureUnit;
   if (a.unit) return a.unit;
-  if (a.type === 'measureArea') return 'm²';
   if (a.type === 'measureAngle') return '°';
+  // Extract unit from measureText (e.g., "2681 mm" → "mm", "15.60 m²" → "m²")
+  if (a.measureText) {
+    const match = a.measureText.match(/[\d.]+\s*(.+)$/);
+    if (match && match[1].trim()) return match[1].trim();
+  }
   return 'px';
 }
 

@@ -20,6 +20,8 @@ export async function loadPreferences() {
     }
 
     if (loaded) {
+      // Migrate renamed themes
+      if (loaded.theme === 'deep-forge') loaded.theme = 'warm-ember';
       // Merge with defaults to ensure all keys exist
       state.preferences = { ...DEFAULT_PREFERENCES, ...loaded };
     }

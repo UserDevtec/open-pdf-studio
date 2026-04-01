@@ -861,6 +861,39 @@ export function drawAnnotation(ctx, annotation) {
       break;
     }
 
+    case 'viewport': {
+      // Viewport: dashed boundary rectangle with name label
+      const vpX = annotation.x, vpY = annotation.y;
+      const vpW = annotation.width, vpH = annotation.height;
+      const vpColor = annotation.color || '#0066cc';
+
+      ctx.save();
+      ctx.setLineDash([6, 3]);
+      ctx.strokeStyle = vpColor;
+      ctx.lineWidth = annotation.lineWidth || 1.5;
+      ctx.globalAlpha = annotation.opacity || 0.6;
+      ctx.strokeRect(vpX, vpY, vpW, vpH);
+      ctx.setLineDash([]);
+
+      // Name label (top-left corner)
+      const vpLabel = annotation.name || annotation.scaleRatio || '';
+      if (vpLabel) {
+        ctx.globalAlpha = 0.85;
+        ctx.font = 'bold 9px sans-serif';
+        const labelWidth = ctx.measureText(vpLabel).width + 8;
+        ctx.fillStyle = vpColor;
+        ctx.fillRect(vpX, vpY - 14, labelWidth, 14);
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(vpLabel, vpX + 4, vpY - 7);
+      }
+
+      ctx.globalAlpha = 1;
+      ctx.restore();
+      break;
+    }
+
     case 'scaleBar': {
       const sbX = annotation.x;
       const sbY = annotation.y;
@@ -946,35 +979,6 @@ export function drawAnnotation(ctx, annotation) {
       ctx.textAlign = 'left';
       ctx.fillText(_sbDisplayUnit, sbX + sbW + 4, sbY + sbH + 5);
 
-      // Viewport region rectangle (dashed blue border + label)
-      if (annotation.regionWidth > 0 && annotation.regionHeight > 0) {
-        const rx = annotation.regionX, ry = annotation.regionY;
-        const rw = annotation.regionWidth, rh = annotation.regionHeight;
-
-        // Dashed border
-        ctx.setLineDash([6, 3]);
-        ctx.strokeStyle = '#0066cc';
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = 0.6;
-        ctx.strokeRect(rx, ry, rw, rh);
-        ctx.setLineDash([]);
-
-        // Viewport label (top-left corner)
-        const vpLabel = annotation.viewportName || annotation.scaleRatio || '';
-        if (vpLabel) {
-          ctx.globalAlpha = 0.85;
-          ctx.font = 'bold 9px sans-serif';
-          const labelWidth = ctx.measureText(vpLabel).width + 8;
-          ctx.fillStyle = '#0066cc';
-          ctx.fillRect(rx, ry - 14, labelWidth, 14);
-          ctx.fillStyle = '#ffffff';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(vpLabel, rx + 4, ry - 7);
-        }
-
-        ctx.globalAlpha = 1;
-      }
 
       ctx.restore();
       break;
@@ -986,47 +990,67 @@ export function drawAnnotation(ctx, annotation) {
       if (data.length === 0) break;
       const tx = annotation.x;
       const ty = annotation.y;
-      const tw = annotation.width || 350;
-      const rowH = 16;
-      const headerH = 20;
-      const cols = [0, 0.25, 0.45, 0.7, 0.85]; // fractional column positions
+      const tw = annotation.width || 400;
+      const rowH = 18;
+      const headerH = 22;
+      const pad = 8;
+      const cols = [0, 0.22, 0.42, 0.65, 0.82]; // fractional column positions
 
       ctx.save();
-      ctx.font = '9px sans-serif';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'left';
+
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(tx, ty, tw, headerH + data.length * rowH);
 
       // Header background
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(tx, ty, tw, headerH);
-      ctx.strokeStyle = '#000';
+      ctx.strokeStyle = '#999';
       ctx.lineWidth = 0.5;
       ctx.strokeRect(tx, ty, tw, headerH);
 
       // Header text
-      ctx.fillStyle = '#000';
+      ctx.fillStyle = '#333';
       ctx.textBaseline = 'middle';
+      ctx.font = 'bold 10px sans-serif';
       const headers = ['Label', 'Subject', 'Value', 'Unit', 'Pg'];
       for (let i = 0; i < headers.length; i++) {
-        ctx.fillText(headers[i], tx + cols[i] * tw + 4, ty + headerH / 2);
+        ctx.fillText(headers[i], tx + cols[i] * tw + pad, ty + headerH / 2);
       }
 
       // Data rows
+      ctx.font = '10px sans-serif';
       for (let r = 0; r < data.length; r++) {
         const ry = ty + headerH + r * rowH;
-        ctx.strokeStyle = '#ccc';
-        ctx.strokeRect(tx, ry, tw, rowH);
+        // Alternating row background
+        if (r % 2 === 1) {
+          ctx.fillStyle = '#f8f8f8';
+          ctx.fillRect(tx, ry, tw, rowH);
+        }
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(tx, ry + rowH);
+        ctx.lineTo(tx + tw, ry + rowH);
+        ctx.stroke();
         ctx.fillStyle = '#000';
         const d = data[r];
-        ctx.fillText(d.label || d.type || '', tx + cols[0] * tw + 4, ry + rowH / 2);
-        ctx.fillText(d.subject || '', tx + cols[1] * tw + 4, ry + rowH / 2);
-        ctx.fillText(d.text || String(d.value || ''), tx + cols[2] * tw + 4, ry + rowH / 2);
-        ctx.fillText(d.unit || '', tx + cols[3] * tw + 4, ry + rowH / 2);
-        ctx.fillText(String(d.page || ''), tx + cols[4] * tw + 4, ry + rowH / 2);
+        ctx.fillText(d.label || d.type || '', tx + cols[0] * tw + pad, ry + rowH / 2);
+        ctx.fillText(d.subject || '', tx + cols[1] * tw + pad, ry + rowH / 2);
+        ctx.fillText(d.text || String(d.value || ''), tx + cols[2] * tw + pad, ry + rowH / 2);
+        ctx.fillText(d.unit || '', tx + cols[3] * tw + pad, ry + rowH / 2);
+        ctx.fillText(String(d.page || ''), tx + cols[4] * tw + pad, ry + rowH / 2);
       }
 
       // Outer border
-      ctx.strokeStyle = '#000';
+      ctx.strokeStyle = '#999';
       ctx.lineWidth = 1;
       ctx.strokeRect(tx, ty, tw, headerH + data.length * rowH);
+
+      // Update annotation dimensions for accurate selection
+      annotation.height = headerH + data.length * rowH;
 
       ctx.restore();
       break;

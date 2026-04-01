@@ -38,10 +38,6 @@ export function createScaleBar(x, y) {
     unit,
     divisions,
     totalUnits,
-    regionX: 0,
-    regionY: 0,
-    regionWidth: 0,
-    regionHeight: 0,
     color: '#000000',
     lineWidth: 1,
     opacity: 1,
@@ -60,46 +56,29 @@ export function getScaleForPoint(pageNum, x, y) {
   const doc = getActiveDocument();
   if (!doc) return doc?.measureScale || null;
 
-  // Collect all scaleBar annotations
+  // Check viewport annotations first (they define per-region scales)
+  const viewports = (doc.annotations || []).filter(a => a.type === 'viewport' && a.page === pageNum);
+  for (const vp of viewports) {
+    if (x >= vp.x && x <= vp.x + vp.width && y >= vp.y && y <= vp.y + vp.height) {
+      return { pixelsPerUnit: vp.pixelsPerUnit, unit: vp.unit, method: 'viewport' };
+    }
+  }
+
+  // Then check scaleBar annotations (document/page level scale)
   const scaleBars = (doc.annotations || []).filter(a => a.type === 'scaleBar');
 
   if (scaleBars.length === 0) {
     return doc.measureScale || null;
   }
 
-  if (scaleBars.length === 1) {
-    // Single scale bar → applies to entire document
-    const sb = scaleBars[0];
-    return { pixelsPerUnit: sb.pixelsPerUnit, unit: sb.unit, method: 'scaleBar' };
-  }
-
-  // Multiple scale bars — check same page first
+  // Prefer scale bar on same page
   const samePage = scaleBars.filter(sb => sb.page === pageNum);
-
-  if (samePage.length === 0) {
-    // No scale bar on this page — check if any other page has one
-    // Use the first one found (or doc.measureScale)
-    return doc.measureScale || { pixelsPerUnit: scaleBars[0].pixelsPerUnit, unit: scaleBars[0].unit, method: 'scaleBar' };
+  if (samePage.length > 0) {
+    return { pixelsPerUnit: samePage[0].pixelsPerUnit, unit: samePage[0].unit, method: 'scaleBar' };
   }
 
-  if (samePage.length === 1) {
-    // One scale bar on this page → applies to entire page
-    const sb = samePage[0];
-    return { pixelsPerUnit: sb.pixelsPerUnit, unit: sb.unit, method: 'scaleBar' };
-  }
-
-  // Multiple scale bars on same page → check regions
-  for (const sb of samePage) {
-    if (sb.regionWidth > 0 && sb.regionHeight > 0) {
-      if (x >= sb.regionX && x <= sb.regionX + sb.regionWidth &&
-          y >= sb.regionY && y <= sb.regionY + sb.regionHeight) {
-        return { pixelsPerUnit: sb.pixelsPerUnit, unit: sb.unit, method: 'scaleBar' };
-      }
-    }
-  }
-
-  // No region match — use the first one on this page
-  return { pixelsPerUnit: samePage[0].pixelsPerUnit, unit: samePage[0].unit, method: 'scaleBar' };
+  // Fallback to any scale bar or document scale
+  return doc.measureScale || { pixelsPerUnit: scaleBars[0].pixelsPerUnit, unit: scaleBars[0].unit, method: 'scaleBar' };
 }
 
 /**

@@ -461,6 +461,63 @@ export function drawSnapIndicator(ctx, snapResult, scale) {
   ctx.restore();
 }
 
+// Draw alignment guide lines when dragging a polyline/polygon vertex.
+// Shows horizontal/vertical guides from sibling vertices that align with the dragged node.
+// ctx should already be scaled to PDF space.
+export function drawAlignmentGuides(ctx, annotation, draggedNodeIdx, scale) {
+  if (!annotation.points || annotation.points.length < 2) return;
+  if (draggedNodeIdx < 0 || draggedNodeIdx >= annotation.points.length) return;
+
+  const dragged = annotation.points[draggedNodeIdx];
+  const alignTol = 3 / scale;
+  const guideExtent = 50000;
+  const lw = 0.5 / scale;
+  const dashLen = 4 / scale;
+  const dotR = 2.5 / scale;
+
+  ctx.save();
+  ctx.strokeStyle = '#00bcd4';
+  ctx.fillStyle = '#00bcd4';
+  ctx.lineWidth = lw;
+  ctx.setLineDash([dashLen, dashLen]);
+
+  for (let i = 0; i < annotation.points.length; i++) {
+    if (i === draggedNodeIdx) continue;
+    const pt = annotation.points[i];
+
+    // Horizontal alignment
+    if (Math.abs(dragged.y - pt.y) < alignTol) {
+      ctx.beginPath();
+      ctx.moveTo(dragged.x - guideExtent, pt.y);
+      ctx.lineTo(dragged.x + guideExtent, pt.y);
+      ctx.stroke();
+      // Small dot at the source vertex
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, dotR, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.setLineDash([dashLen, dashLen]);
+    }
+
+    // Vertical alignment
+    if (Math.abs(dragged.x - pt.x) < alignTol) {
+      ctx.beginPath();
+      ctx.moveTo(pt.x, dragged.y - guideExtent);
+      ctx.lineTo(pt.x, dragged.y + guideExtent);
+      ctx.stroke();
+      // Small dot at the source vertex
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, dotR, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.setLineDash([dashLen, dashLen]);
+    }
+  }
+
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
 // Find nearest point on PDF vector edge segments within radius.
 function nearestPointOnPdfEdge(cursorX, cursorY, currentPage, snapRadius) {
   const prefs = state.preferences;

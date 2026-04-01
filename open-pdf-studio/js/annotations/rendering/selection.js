@@ -113,22 +113,91 @@ export function drawSelectionHandles(ctx, annotation) {
   }
 
   // Draw selection border (dashed outline around the annotation)
-  const bounds = getAnnotationBounds(annotation);
-  if (bounds) {
+  // For measureAngle, draw the two rays and arc
+  const isMeasureAngle = annotation.type === 'measureAngle' && annotation.point1 && annotation.vertex && annotation.point2;
+  // For measureDistance, draw the dimension line shape instead of bounding rect
+  const isMeasureDist = annotation.type === 'measureDistance';
+  // For point-based annotations, draw the polygon/polyline outline instead of bounding rect
+  const isPointBased = (annotation.type === 'measureArea' || annotation.type === 'measurePerimeter' ||
+    annotation.type === 'polyline' || annotation.type === 'cloudPolyline') && annotation.points && annotation.points.length >= 2;
+  if (isMeasureAngle) {
     ctx.save();
-    if (annotation.rotation) {
-      const bcx = bounds.x + bounds.width / 2;
-      const bcy = bounds.y + bounds.height / 2;
-      ctx.translate(bcx, bcy);
-      ctx.rotate(annotation.rotation * Math.PI / 180);
-      ctx.translate(-bcx, -bcy);
-    }
     ctx.strokeStyle = '#0066cc';
     ctx.lineWidth = 1 / sc;
     ctx.setLineDash([3 / sc, 3 / sc]);
-    ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+    ctx.beginPath();
+    ctx.moveTo(annotation.point1.x, annotation.point1.y);
+    ctx.lineTo(annotation.vertex.x, annotation.vertex.y);
+    ctx.lineTo(annotation.point2.x, annotation.point2.y);
+    ctx.stroke();
     ctx.setLineDash([]);
     ctx.restore();
+  } else if (isMeasureDist) {
+    ctx.save();
+    ctx.strokeStyle = '#0066cc';
+    ctx.lineWidth = 1 / sc;
+    ctx.setLineDash([3 / sc, 3 / sc]);
+    ctx.beginPath();
+    // Leader lines (base points to dimension line)
+    const hasLeaders = annotation.leaderStartX !== undefined;
+    if (hasLeaders) {
+      ctx.moveTo(annotation.leaderStartX, annotation.leaderStartY);
+      ctx.lineTo(annotation.startX, annotation.startY);
+      ctx.moveTo(annotation.leaderEndX, annotation.leaderEndY);
+      ctx.lineTo(annotation.endX, annotation.endY);
+    }
+    // Dimension line
+    ctx.moveTo(annotation.startX, annotation.startY);
+    ctx.lineTo(annotation.endX, annotation.endY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  } else if (isPointBased) {
+    ctx.save();
+    ctx.strokeStyle = '#0066cc';
+    ctx.lineWidth = 1 / sc;
+    ctx.setLineDash([3 / sc, 3 / sc]);
+    ctx.beginPath();
+    ctx.moveTo(annotation.points[0].x, annotation.points[0].y);
+    for (let i = 1; i < annotation.points.length; i++) {
+      ctx.lineTo(annotation.points[i].x, annotation.points[i].y);
+    }
+    if (annotation.type === 'measureArea') ctx.closePath();
+    ctx.stroke();
+    // Draw hole outlines
+    if (annotation.type === 'measureArea' && annotation.holes) {
+      for (const hole of annotation.holes) {
+        if (hole && hole.length >= 3) {
+          ctx.beginPath();
+          ctx.moveTo(hole[0].x, hole[0].y);
+          for (let i = 1; i < hole.length; i++) {
+            ctx.lineTo(hole[i].x, hole[i].y);
+          }
+          ctx.closePath();
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+  } else {
+    const bounds = getAnnotationBounds(annotation);
+    if (bounds) {
+      ctx.save();
+      if (annotation.rotation) {
+        const bcx = bounds.x + bounds.width / 2;
+        const bcy = bounds.y + bounds.height / 2;
+        ctx.translate(bcx, bcy);
+        ctx.rotate(annotation.rotation * Math.PI / 180);
+        ctx.translate(-bcx, -bcy);
+      }
+      ctx.strokeStyle = '#0066cc';
+      ctx.lineWidth = 1 / sc;
+      ctx.setLineDash([3 / sc, 3 / sc]);
+      ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
   }
 
   // Draw resize/move handles (scale-independent size)

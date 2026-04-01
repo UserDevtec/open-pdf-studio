@@ -1,12 +1,10 @@
 /**
  * Viewport tool — draw a rectangular region with its own scale.
- * Creates the scaleBar annotation immediately so the viewport boundary
- * stays visible while the scale dialog is open.
+ * Creates a 'viewport' annotation (separate type from scaleBar).
  * Uses the standard shape preview pipeline via buildAnnotationProps('viewport').
  */
 import { getActiveDocument } from '../../core/state.js';
 import { createAnnotation } from '../../annotations/factory.js';
-import { recordAdd } from '../../core/undo-manager.js';
 import { redrawAnnotations, redrawContinuous } from '../../annotations/rendering.js';
 import { openDialog } from '../../bridge.js';
 
@@ -48,48 +46,31 @@ export const viewportTool = {
 
     const doc = getActiveDocument();
     if (!doc) return false;
-
     const pageNum = doc.currentPage || 1;
-    const barWidth = Math.min(w * 0.6, 300);
-    const barHeight = 14;
 
-    // Create annotation immediately with default scale (1:100)
+    // Create viewport annotation immediately (visible while dialog is open)
     const ann = createAnnotation({
-      type: 'scaleBar',
+      type: 'viewport',
       page: pageNum,
-      x: x1 + 10,
-      y: y1 + h - barHeight - 20,
-      width: barWidth,
-      height: barHeight,
-      rotation: 0,
-      pixelsPerUnit: 0.02835,
-      unit: 'mm',
-      divisions: 5,
-      totalUnits: 5000,
-      regionX: x1,
-      regionY: y1,
-      regionWidth: w,
-      regionHeight: h,
-      viewportName: 'Viewport',
+      x: x1,
+      y: y1,
+      width: w,
+      height: h,
+      name: 'Viewport',
       scaleRatio: '1:100',
-      color: '#000000',
-      lineWidth: 1,
-      opacity: 1,
+      pixelsPerUnit: 72 / (25.4 * 100),
+      unit: 'mm',
+      color: '#0066cc',
+      lineWidth: 1.5,
+      opacity: 0.6,
     });
 
     doc.annotations.push(ann);
-    recordAdd(ann);
+    // Don't recordAdd yet — dialog will record on Apply, or remove on Cancel
     redraw();
 
-    // Open dialog to set scale — pass annotation ID so dialog updates it
-    openDialog('viewport-scale', {
-      annotationId: ann.id,
-      regionX: x1,
-      regionY: y1,
-      regionWidth: w,
-      regionHeight: h,
-      pageNum,
-    });
+    // Open dialog to set scale
+    openDialog('viewport-scale', { annotationId: ann.id, pageNum });
 
     return true;
   },

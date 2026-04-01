@@ -37,11 +37,23 @@ export const measureDistanceTool = {
       state.isDrawingDimension = true;
     } else if (state.dimPoints.length === 1) {
       // Click 2: second measurement point
-      const dx = dimX - state.dimPoints[0].x;
-      const dy = dimY - state.dimPoints[0].y;
+      let pt2X = dimX, pt2Y = dimY;
+      // Apply Shift+angle snap (same logic as preview)
+      const prefs = state.preferences;
+      if (!snap.snapped && e.shiftKey && prefs.enableAngleSnap) {
+        const last = state.dimPoints[0];
+        const adx = dimX - last.x, ady = dimY - last.y;
+        const alen = Math.sqrt(adx * adx + ady * ady);
+        const aangle = Math.atan2(ady, adx) * (180 / Math.PI);
+        const asnapped = ctx.snapAngle(aangle, prefs.angleSnapDegrees) * (Math.PI / 180);
+        pt2X = last.x + alen * Math.cos(asnapped);
+        pt2Y = last.y + alen * Math.sin(asnapped);
+      }
+      const dx = pt2X - state.dimPoints[0].x;
+      const dy = pt2Y - state.dimPoints[0].y;
       if (Math.sqrt(dx * dx + dy * dy) < 3 / scale) return;
-      let finalPt = { x: dimX, y: dimY };
-      if (e.ctrlKey) finalPt = ctx.snapDistanceTo10(state.dimPoints[0].x, state.dimPoints[0].y, dimX, dimY);
+      let finalPt = { x: pt2X, y: pt2Y };
+      if (e.ctrlKey) finalPt = ctx.snapDistanceTo10(state.dimPoints[0].x, state.dimPoints[0].y, pt2X, pt2Y);
       state.dimPoints.push(finalPt);
     } else if (state.dimPoints.length === 2) {
       // Click 3: offset point — defines dimension line position
@@ -61,9 +73,10 @@ export const measureDistanceTool = {
       const prefs = state.preferences;
       const currentPage = getActiveDocument()?.currentPage || 1;
       const dist = ctx.calculateDistance(startX, startY, endX, endY, currentPage);
-      const dimScale = prefs.measureDistDimScale || 0;
-      const dimUnit = prefs.measureDistDimUnit || dist.unit;
       const dimPrecision = prefs.measureDistDimPrecision != null ? prefs.measureDistDimPrecision : 2;
+      const hasScaleSource = getActiveDocument()?.annotations?.some(a => a.type === 'scaleBar' || a.type === 'viewport');
+      const dimScale = hasScaleSource ? 0 : (prefs.measureDistDimScale || 0);
+      const dimUnit = hasScaleSource ? dist.unit : (prefs.measureDistDimUnit || dist.unit);
       let mText;
       if (dimScale) {
         const pixelDist = Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
@@ -137,7 +150,8 @@ export const measureDistanceTool = {
     const sHead = prefs.measureDistStartHead || 'openCircle';
     const eHead = prefs.measureDistEndHead || 'openCircle';
     const hSize = prefs.measureDistHeadSize || 12;
-    const dimScale = prefs.measureDistDimScale || 0;
+    const hasScaleSourcePreview = getActiveDocument()?.annotations?.some(a => a.type === 'scaleBar' || a.type === 'viewport');
+    const dimScale = hasScaleSourcePreview ? 0 : (prefs.measureDistDimScale || 0);
     const dimUnit = prefs.measureDistDimUnit || '';
     const dimPrecision = prefs.measureDistDimPrecision != null ? prefs.measureDistDimPrecision : 2;
 
@@ -146,7 +160,8 @@ export const measureDistanceTool = {
         const pixelDist = Math.sqrt((ex - sx) ** 2 + (ey - sy) ** 2);
         return `${(pixelDist * dimScale).toFixed(dimPrecision)} ${dimUnit}`;
       }
-      return ctx.formatMeasurement(ctx.calculateDistance(sx, sy, ex, ey, getActiveDocument()?.currentPage));
+      const d = ctx.calculateDistance(sx, sy, ex, ey, getActiveDocument()?.currentPage);
+      return ctx.formatMeasurement(d);
     }
 
     if (state.dimPoints.length === 1) {

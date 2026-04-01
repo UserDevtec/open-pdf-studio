@@ -1,4 +1,4 @@
-import { Show, For, createSignal } from 'solid-js';
+import { Show, For, createSignal, onMount, onCleanup } from 'solid-js';
 import { state, getActiveDocument } from '../../core/state.js';
 import { createAnnotation } from '../../annotations/factory.js';
 import {
@@ -11,35 +11,49 @@ import {
   exportCSV,
 } from '../stores/scheduleStore.js';
 
-const closeSvg = `<svg width="8" height="8" viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8" stroke="currentColor" stroke-width="1.5"/><line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" stroke-width="1.5"/></svg>`;
-
 export default function SchedulePanel() {
   const [templateName, setTemplateName] = createSignal('');
   const [showTemplates, setShowTemplates] = createSignal(false);
-  const [panelPos, setPanelPos] = createSignal({ x: null, y: null });
 
-  // Drag logic for panel header
-  function startPanelDrag(e) {
-    if (e.button !== 0) return;
+  let dialogRef;
+  let isDragging = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  function onHeaderMouseDown(e) {
+    if (e.target.closest('.modal-close-btn')) return;
+    isDragging = true;
+    const rect = dialogRef.getBoundingClientRect();
+    dragOffsetX = e.clientX - rect.left;
+    dragOffsetY = e.clientY - rect.top;
     e.preventDefault();
-    const panel = e.target.closest('.schedule-panel');
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
-
-    function onMove(ev) {
-      const nx = Math.max(0, Math.min(ev.clientX - offsetX, window.innerWidth - rect.width));
-      const ny = Math.max(0, Math.min(ev.clientY - offsetY, window.innerHeight - rect.height));
-      setPanelPos({ x: nx, y: ny });
-    }
-    function onUp() {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
   }
+
+  function onMouseMove(e) {
+    if (!isDragging) return;
+    let newX = e.clientX - dragOffsetX;
+    let newY = e.clientY - dragOffsetY;
+    const dialogRect = dialogRef.getBoundingClientRect();
+    newX = Math.max(0, Math.min(newX, window.innerWidth - dialogRect.width));
+    newY = Math.max(0, Math.min(newY, window.innerHeight - dialogRect.height));
+    dialogRef.style.left = newX + 'px';
+    dialogRef.style.top = newY + 'px';
+    dialogRef.style.transform = 'none';
+  }
+
+  function onMouseUp() {
+    isDragging = false;
+  }
+
+  onMount(() => {
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+
+  onCleanup(() => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+  });
 
   // Place schedule as annotation on PDF
   function placeOnPdf() {
@@ -52,7 +66,7 @@ export default function SchedulePanel() {
       type: 'scheduleTable',
       page: doc.currentPage,
       x: 50, y: 50,
-      width: 350, height: 20 + entries.length * 16,
+      width: 400, height: 22 + entries.length * 18,
       scheduleData: entries.map(e => ({ type: e.typeName, label: e.label, subject: e.subject, value: e.value, unit: e.unit, text: e.text, page: e.page })),
       groupByMode: groupBy(),
       color: '#000000',
@@ -65,18 +79,24 @@ export default function SchedulePanel() {
 
   return (
     <Show when={scheduleVisible()}>
-      <div class="schedule-panel"
-        style={panelPos().x != null ? { left: `${panelPos().x}px`, top: `${panelPos().y}px`, right: 'auto', bottom: 'auto' } : {}}>
-        {/* Header — draggable */}
-        <div class="schedule-header" onMouseDown={startPanelDrag} style={{ cursor: 'grab' }}>
-          <span class="schedule-title">Take-Off</span>
-          <div style={{ display: 'flex', gap: '4px', 'align-items': 'center' }}>
-            <button class="schedule-btn-sm" title="Place on PDF" onClick={placeOnPdf}>PDF</button>
-            <button class="schedule-btn-sm" title="Export CSV" onClick={exportCSV}>CSV</button>
-            <button class="schedule-btn-sm" title="Templates" onClick={() => setShowTemplates(!showTemplates())}>
-              {showTemplates() ? 'Hide' : 'Templates'}
+      <div
+        ref={dialogRef}
+        class="modal-dialog schedule-modeless"
+        role="dialog"
+        aria-label="Take-Off"
+      >
+        {/* Header — same style as other dialogs */}
+        <div class="modal-header" onMouseDown={onHeaderMouseDown}>
+          <h2>Take-Off</h2>
+          <div style={{ display: 'flex', gap: '0', 'align-items': 'center', height: '100%' }}>
+            <button class="schedule-header-btn" title="Place on PDF" onClick={placeOnPdf}>PDF</button>
+            <button class="schedule-header-btn" title="Export CSV" onClick={exportCSV}>CSV</button>
+            <button class="schedule-header-btn" title="Templates" onClick={() => setShowTemplates(!showTemplates())}>
+              {showTemplates() ? 'Hide' : 'Tmpl'}
             </button>
-            <button class="schedule-close" onClick={() => setScheduleVisible(false)} innerHTML={closeSvg} />
+            <button class="modal-close-btn" onClick={() => setScheduleVisible(false)}>
+              <svg width="10" height="10" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="10" stroke="currentColor" stroke-width="1.2"/><line x1="10" y1="0" x2="0" y2="10" stroke="currentColor" stroke-width="1.2"/></svg>
+            </button>
           </div>
         </div>
 

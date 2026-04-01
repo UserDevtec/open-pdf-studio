@@ -87,6 +87,59 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         }
       }
 
+      // Read /OPS_PixelsPerUnit, /OPS_Unit, /OPS_ScaleRatio, /OPS_Divisions, /OPS_TotalUnits (viewport/scaleBar)
+      const opsPpuRaw = annotDict.get(PDFName.of('OPS_PixelsPerUnit'));
+      if (opsPpuRaw) {
+        const ppu = pdfNum(context.lookup(opsPpuRaw) || opsPpuRaw);
+        if (ppu !== null) colors.opsPixelsPerUnit = ppu;
+      }
+      const opsUnitRaw = annotDict.get(PDFName.of('OPS_Unit'));
+      if (opsUnitRaw) {
+        const u = context.lookup(opsUnitRaw) || opsUnitRaw;
+        if (u && typeof u.value === 'string') colors.opsUnit = u.value;
+        else if (u && typeof u.decodeText === 'function') colors.opsUnit = u.decodeText();
+      }
+      const opsSrRaw = annotDict.get(PDFName.of('OPS_ScaleRatio'));
+      if (opsSrRaw) {
+        const sr = context.lookup(opsSrRaw) || opsSrRaw;
+        if (sr && typeof sr.value === 'string') colors.opsScaleRatio = sr.value;
+        else if (sr && typeof sr.decodeText === 'function') colors.opsScaleRatio = sr.decodeText();
+      }
+      const opsDivRaw = annotDict.get(PDFName.of('OPS_Divisions'));
+      if (opsDivRaw) {
+        const div = pdfNum(context.lookup(opsDivRaw) || opsDivRaw);
+        if (div !== null) colors.opsDivisions = div;
+      }
+      const opsTuRaw = annotDict.get(PDFName.of('OPS_TotalUnits'));
+      if (opsTuRaw) {
+        const tu = pdfNum(context.lookup(opsTuRaw) || opsTuRaw);
+        if (tu !== null) colors.opsTotalUnits = tu;
+      }
+      const opsLwRaw = annotDict.get(PDFName.of('OPS_LineWidth'));
+      if (opsLwRaw) {
+        const lw = pdfNum(context.lookup(opsLwRaw) || opsLwRaw);
+        if (lw !== null) colors.opsLineWidth = lw;
+      }
+
+      const opsScheduleRaw = annotDict.get(PDFName.of('OPS_ScheduleData'));
+      if (opsScheduleRaw) {
+        const sd = context.lookup(opsScheduleRaw) || opsScheduleRaw;
+        if (sd && typeof sd.value === 'string') colors.opsScheduleData = sd.value;
+        else if (sd && typeof sd.decodeText === 'function') colors.opsScheduleData = sd.decodeText();
+      }
+      const opsGroupByRaw = annotDict.get(PDFName.of('OPS_GroupBy'));
+      if (opsGroupByRaw) {
+        const gb = context.lookup(opsGroupByRaw) || opsGroupByRaw;
+        if (gb && typeof gb.value === 'string') colors.opsGroupBy = gb.value;
+        else if (gb && typeof gb.decodeText === 'function') colors.opsGroupBy = gb.decodeText();
+      }
+
+      const opsArRaw = annotDict.get(PDFName.of('OPS_ArcRadius'));
+      if (opsArRaw) {
+        const ar = pdfNum(context.lookup(opsArRaw) || opsArRaw);
+        if (ar !== null) colors.opsArcRadius = ar;
+      }
+
       // Read /OPS_Holes (our custom holes data for measureArea with cutouts)
       const opsHolesRaw = annotDict.get(PDFName.of('OPS_Holes'));
       if (opsHolesRaw) {

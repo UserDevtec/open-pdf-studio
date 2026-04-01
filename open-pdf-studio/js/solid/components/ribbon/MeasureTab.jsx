@@ -264,6 +264,8 @@ export default function MeasureTab() {
               disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'measureDistance'} onClick={() => setTool('measureDistance')} />
             <RibbonButton size="small" id="tool-measure-area" title={t('measure.measureArea') || 'Oppervlakte meten'} icon={measureAreaIcon} label={t('measure.area') || 'Oppervlakte'}
               disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'measureArea'} onClick={() => setTool('measureArea')} />
+          </RibbonButtonStack>
+          <RibbonButtonStack>
             <RibbonButton size="small" id="tool-measure-perimeter" title={t('measure.measurePerimeter') || 'Omtrek meten'} icon={measurePerimeterIcon} label={t('measure.perimeter') || 'Omtrek'}
               disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'measurePerimeter'} onClick={() => setTool('measurePerimeter')} />
             <RibbonButton size="small" id="tool-measure-angle" title={t('measure.measureAngle') || 'Hoek meten'} icon={measureAngleIcon} label={t('measure.angle') || 'Hoek'}
@@ -299,9 +301,9 @@ export default function MeasureTab() {
 
         <RibbonGroup label={t('measure.schedule') || 'TAKE-OFF'}>
           <RibbonButton id="btn-open-schedule"
-            title={t('measure.openSchedule') || 'Open Take-Off'}
+            title={t('measure.openSchedule') || 'Take-Off'}
             icon={scheduleIcon}
-            label={t('measure.openSchedule') || 'Take-Off'}
+            label={t('measure.takeOff') || 'Take-Off'}
             disabled={noPdf()}
             active={scheduleVisible()}
             onClick={toggleSchedule} />
