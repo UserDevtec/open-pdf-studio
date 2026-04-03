@@ -192,6 +192,8 @@ export async function renderPage(pageNum) {
           const cmdData = await invoke('extract_draw_commands', { path: doc.filePath, pageIndex: pageNum - 1 });
           const cmdBytes = cmdData instanceof Uint8Array ? cmdData : new Uint8Array(cmdData);
           vr.cacheCommands(doc.filePath, pageNum, cmdBytes);
+          // Pre-decode any images in the command buffer (async, must complete before render)
+          await vr.prepareImages(doc.filePath, pageNum);
         }
       }
 

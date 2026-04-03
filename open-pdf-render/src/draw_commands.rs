@@ -157,6 +157,20 @@ impl DrawCommandBuffer {
         self.data.extend_from_slice(&bytes[..len]);
     }
 
+    // Command 19: DrawImage(w, h, dataLen, imageBytes)
+    // Draws an image at the current transform position.
+    // The image is placed in a 1×1 unit square (PDF image space), so the caller
+    // must set up a transform that maps this to the correct page position/size.
+    // Format: u8 opcode + u16 width + u16 height + u32 dataLen + raw image bytes
+    // Image data is encoded as JPEG/PNG (passthrough from PDF) or raw RGB/RGBA.
+    pub fn draw_image(&mut self, width: u16, height: u16, image_bytes: &[u8]) {
+        self.data.push(19);
+        self.data.extend_from_slice(&width.to_le_bytes());
+        self.data.extend_from_slice(&height.to_le_bytes());
+        self.push_u32(image_bytes.len() as u32);
+        self.data.extend_from_slice(image_bytes);
+    }
+
     fn push_f32(&mut self, v: f32) {
         self.data.extend_from_slice(&v.to_le_bytes());
     }

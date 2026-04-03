@@ -15,6 +15,7 @@ const READONLY_ALLOWED_TOOLS = new Set(['select', 'selectComments', 'hand']);
 export function getCursorForTool(tool = state.currentTool) {
   switch (tool) {
     case 'select':
+      return 'text';  // Text selection cursor (I-beam)
     case 'selectComments':
       return 'default';
     case 'hand':
@@ -62,8 +63,8 @@ function setTextSelectionEnabled(enabled) {
 // Centralised here to avoid race conditions with async tool deactivation.
 function setAnnotationCanvasForTextAccess(enabled) {
   document.querySelectorAll('#annotation-canvas, .annotation-canvas').forEach(el => {
-    el.style.zIndex = enabled ? '2' : '';
-    el.style.pointerEvents = enabled ? 'none' : '';
+    el.style.zIndex = enabled ? '2' : '6';
+    el.style.pointerEvents = enabled ? 'none' : 'auto';
   });
   document.querySelectorAll('.formLayer section, .linkLayer .pdf-link').forEach(el => {
     el.style.pointerEvents = enabled ? 'none' : '';

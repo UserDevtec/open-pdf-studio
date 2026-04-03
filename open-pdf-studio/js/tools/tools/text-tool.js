@@ -1,3 +1,5 @@
+import { applyToolTransform } from '../tool-context.js';
+
 /**
  * Text tools — comment, text, stamp, signature, editText
  * These are single-click placement tools that delegate to existing modules
@@ -44,7 +46,6 @@ export const stampTool = {
     const previewImg = state.toolOverrides?._previewImg;
     if (!previewImg || !ctx.canvasCtx) return;
 
-    const scale = ctx.scale || 1.5;
     const w = state.toolOverrides.stampWidth || 40;
     const h = state.toolOverrides.stampHeight || 40;
 
@@ -53,7 +54,7 @@ export const stampTool = {
 
     const canvasCtx = ctx.canvasCtx;
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
     canvasCtx.globalAlpha = 0.6;
     canvasCtx.drawImage(previewImg, ctx.x - w / 2, ctx.y - h / 2, w, h);
     canvasCtx.restore();

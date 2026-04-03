@@ -11,10 +11,13 @@ function getAssetUrl(id) {
 }
 
 // Helper: wrap a raster image URL in an SVG <image> tag for stamp tool compatibility
+// Uses absolute URL so it works when the SVG is loaded from a blob: context
 function rasterSvg(id) {
   const url = getAssetUrl(id);
   if (!url) return '';
-  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><image href="${url}" width="64" height="64"/></svg>`;
+  // Convert relative URL to absolute (blob: context can't resolve relative paths)
+  const absoluteUrl = url.startsWith('http') ? url : window.location.origin + url;
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><image href="${absoluteUrl}" width="64" height="64"/></svg>`;
 }
 
 // Human-readable names for NEN 1414 symbols

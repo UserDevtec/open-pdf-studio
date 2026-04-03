@@ -2,6 +2,7 @@ import { state, getActiveDocument } from '../../core/state.js';
 import { cloneAnnotation } from '../../annotations/factory.js';
 import { recordModify } from '../../core/undo-manager.js';
 import { calculateArea, formatMeasurement, arcControlPoint, expandArcPoints } from '../../annotations/measurement.js';
+import { applyToolTransform } from '../tool-context.js';
 
 // Default hatch options for area measurement preview (red diagonal lines at 45°)
 const DEFAULT_AREA_HATCH = { pattern: 'diagonal-left', color: '#ff0000', scale: 100, angle: 0 };
@@ -140,7 +141,7 @@ export const measureDistanceTool = {
 
     ctx.redraw();
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
     canvasCtx.strokeStyle = dimColor;
     canvasCtx.lineWidth = prefs.measureDistLineWidth || 1;
     canvasCtx.globalAlpha = (prefs.measureDistOpacity || 100) / 100;
@@ -458,7 +459,7 @@ function _measureMultiClickMove(ctx, e, toolType) {
 
   ctx.redraw();
   canvasCtx.save();
-  canvasCtx.scale(scale, scale);
+  applyToolTransform(canvasCtx);
   canvasCtx.strokeStyle = mColor;
   canvasCtx.lineWidth = (isArea ? prefs.measureAreaLineWidth : prefs.measurePerimLineWidth) || 1;
   canvasCtx.globalAlpha = ((isArea ? prefs.measureAreaOpacity : prefs.measurePerimOpacity) || 100) / 100;
@@ -564,7 +565,7 @@ function _drawHolesPhasePreview(ctx, cursorX, cursorY) {
   if (outerPoints.length < 3) return;
 
   canvasCtx.save();
-  canvasCtx.scale(scale, scale);
+  applyToolTransform(canvasCtx);
   canvasCtx.strokeStyle = mColor;
   canvasCtx.lineWidth = prefs.measureAreaLineWidth || 1;
   canvasCtx.globalAlpha = (prefs.measureAreaOpacity || 100) / 100;
@@ -628,7 +629,7 @@ function _drawMeasureInProgress(ctx, toolType) {
   const mFillColor = isArea ? (prefs.measureAreaFillNone ? 'none' : (prefs.measureAreaFillColor || null)) : null;
 
   canvasCtx.save();
-  canvasCtx.scale(scale, scale);
+  applyToolTransform(canvasCtx);
   canvasCtx.strokeStyle = mColor;
   canvasCtx.lineWidth = (isArea ? prefs.measureAreaLineWidth : prefs.measurePerimLineWidth) || 1;
   canvasCtx.globalAlpha = ((isArea ? prefs.measureAreaOpacity : prefs.measurePerimOpacity) || 100) / 100;
@@ -774,7 +775,7 @@ export const addHoleTool = {
     const mBorderStyle = ann.borderStyle || 'dashed';
 
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
     canvasCtx.strokeStyle = mColor;
     canvasCtx.lineWidth = ann.lineWidth || 1;
     canvasCtx.globalAlpha = ann.opacity != null ? ann.opacity : 1;
@@ -892,7 +893,7 @@ function _drawAddHolePreview(ctx, cursorX, cursorY) {
   const mBorderStyle = ann.borderStyle || 'dashed';
 
   canvasCtx.save();
-  canvasCtx.scale(scale, scale);
+  applyToolTransform(canvasCtx);
   canvasCtx.strokeStyle = mColor;
   canvasCtx.lineWidth = ann.lineWidth || 1;
   canvasCtx.globalAlpha = ann.opacity != null ? ann.opacity : 1;
@@ -930,7 +931,7 @@ function _drawAddHoleInProgress(ctx) {
   const allHoles = pts.length >= 3 ? [...existingHoles, pts] : existingHoles;
 
   canvasCtx.save();
-  canvasCtx.scale(scale, scale);
+  applyToolTransform(canvasCtx);
   canvasCtx.strokeStyle = mColor;
   canvasCtx.lineWidth = ann.lineWidth || 1;
   canvasCtx.globalAlpha = ann.opacity != null ? ann.opacity : 1;

@@ -1,5 +1,6 @@
 import { getAnnotationHoverCursor } from '../../ui/cursors/annotation-cursors.js';
 import { getActiveDocument } from '../../core/state.js';
+import { applyToolTransform, getEffectiveScale } from '../tool-context.js';
 
 /**
  * Select tool — click-select, rubber band, drag, resize, Ctrl+drag copy
@@ -121,9 +122,9 @@ export const selectTool = {
     // Rubber band drawing
     if (state.isRubberBanding) {
       ctx.redraw();
-      const sc = state.documents[state.activeDocumentIndex]?.scale || 1.5;
+      const sc = getEffectiveScale();
       canvasCtx.save();
-      canvasCtx.scale(sc, sc);
+      applyToolTransform(canvasCtx);
       canvasCtx.strokeStyle = '#0066cc';
       canvasCtx.lineWidth = 1 / sc;
       canvasCtx.setLineDash([4 / sc, 4 / sc]);

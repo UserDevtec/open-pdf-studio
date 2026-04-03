@@ -1,5 +1,5 @@
 import { state, getActiveDocument } from '../core/state.js';
-import { resolvePointerCoords, buildToolContext, isModalOpen } from './tool-context.js';
+import { resolvePointerCoords, buildToolContext, isModalOpen, applyToolTransform, getEffectiveScale } from './tool-context.js';
 import { getTool } from './tool-registry.js';
 import { cloneAnnotation } from '../annotations/factory.js';
 import { applyResize, applyMove, applyRotation } from '../annotations/transforms.js';
@@ -270,7 +270,7 @@ function _handleResize(ctx, e, coords) {
 
   // Snap cursor position during resize
   const resizeDoc = getActiveDocument();
-  const resizeScale = resizeDoc?.scale || 1.5;
+  const resizeScale = getEffectiveScale();
   const snap = performSnap(coords.x, coords.y, resizeDoc?.annotations || [], coords.pageNum, resizeScale, ann.id);
   const snappedX = snap.snapped ? snap.x : coords.x;
   const snappedY = snap.snapped ? snap.y : coords.y;
@@ -351,7 +351,7 @@ function _handleResize(ctx, e, coords) {
 
   if (state.lastSnapResult) {
     canvasCtx.save();
-    canvasCtx.scale(resizeScale, resizeScale);
+    applyToolTransform(canvasCtx);
     drawSnapIndicator(canvasCtx, state.lastSnapResult, resizeScale);
     canvasCtx.restore();
   }
@@ -362,7 +362,7 @@ function _handleResize(ctx, e, coords) {
     const nodeIdx = parseInt(h.split('_').pop(), 10);
     if (!isNaN(nodeIdx) && nodeIdx < ann.points.length) {
       canvasCtx.save();
-      canvasCtx.scale(resizeScale, resizeScale);
+      applyToolTransform(canvasCtx);
       drawAlignmentGuides(canvasCtx, ann, nodeIdx, resizeScale);
       canvasCtx.restore();
     }
@@ -376,7 +376,7 @@ function _handleResize(ctx, e, coords) {
     ]};
     const dragIdx = h === 'leader_start' ? 0 : 1;
     canvasCtx.save();
-    canvasCtx.scale(resizeScale, resizeScale);
+    applyToolTransform(canvasCtx);
     drawAlignmentGuides(canvasCtx, dimPts, dragIdx, resizeScale);
     canvasCtx.restore();
   }
@@ -387,7 +387,7 @@ function _handleResize(ctx, e, coords) {
     if (!isNaN(angleIdx) && angleIdx < 3) {
       const anglePts = { points: [ann.point1, ann.vertex, ann.point2] };
       canvasCtx.save();
-      canvasCtx.scale(resizeScale, resizeScale);
+      applyToolTransform(canvasCtx);
       drawAlignmentGuides(canvasCtx, anglePts, angleIdx, resizeScale);
       canvasCtx.restore();
     }

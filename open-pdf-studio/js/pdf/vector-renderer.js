@@ -70,6 +70,118 @@ function _rgbaToCSS(rgba) {
 const LINE_CAP = ['butt', 'round', 'square'];
 const LINE_JOIN = ['miter', 'round', 'bevel'];
 
+// Image cache: key = byte offset in command buffer → ImageBitmap
+const _imageCache = new Map();
+let _imagePreparing = false;
+
+/// Pre-decode all images in the command buffer before rendering.
+/// Returns a promise that resolves when all images are ready.
+export async function prepareImages(filePath, pageNum) {
+  const entry = _cache.get(_key(filePath, pageNum));
+  if (!entry) return;
+
+  const { bytes } = entry;
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let pos = 16; // skip header
+
+  const promises = [];
+
+  while (pos < bytes.length) {
+    const op = bytes[pos++];
+    switch (op) {
+      case 0: pos += 8; break;  // MoveTo
+      case 1: pos += 8; break;  // LineTo
+      case 2: pos += 24; break; // CubicTo
+      case 3: pos += 16; break; // Rect
+      case 4: break;            // ClosePath
+      case 5: pos += 8; break;  // SetStroke
+      case 6: pos += 4; break;  // SetFill
+      case 7: break;            // Stroke
+      case 8: break;            // Fill
+      case 9: break;            // FillEvenOdd
+      case 10: break;           // Save
+      case 11: break;           // Restore
+      case 12: pos += 24; break; // Transform
+      case 13: pos += 1; break; // SetLineCap
+      case 14: pos += 1; break; // SetLineJoin
+      case 15: pos += 4; break; // SetMiterLimit
+      case 16: {                // SetDash
+        const count = bytes[pos++];
+        pos += count * 4 + 4;
+        break;
+      }
+      case 17: break;           // BeginPath
+      case 18: {                // TextAt
+        pos += 16; // x + y + fontSize + rgba
+        const len = bytes[pos++];
+        pos += len;
+        break;
+      }
+      case 19: {                // DrawImage
+        const imgPos = pos - 1; // position of the opcode
+        const w = dv.getUint16(pos, true); pos += 2;
+        const h = dv.getUint16(pos, true); pos += 2;
+        const dataLen = dv.getUint32(pos, true); pos += 4;
+        const imgStart = pos;
+        pos += dataLen;
+
+        if (!_imageCache.has(imgPos)) {
+          const imgBytes = bytes.slice(imgStart, imgStart + dataLen);
+          promises.push(_decodeImage(imgPos, w, h, imgBytes));
+        }
+        break;
+      }
+      default:
+        return; // unknown opcode, stop scanning
+    }
+  }
+
+  if (promises.length > 0) {
+    _imagePreparing = true;
+    await Promise.all(promises);
+    _imagePreparing = false;
+  }
+}
+
+async function _decodeImage(cacheKey, w, h, imgBytes) {
+  try {
+    // Check for RGBA raw format (header: "RGBA" + u16 w + u16 h + pixels)
+    if (imgBytes.length > 8 &&
+        imgBytes[0] === 0x52 && imgBytes[1] === 0x47 &&
+        imgBytes[2] === 0x42 && imgBytes[3] === 0x41) {
+      // Raw RGBA pixels
+      const pixelData = imgBytes.slice(8);
+      const imageData = new ImageData(new Uint8ClampedArray(pixelData), w, h);
+      const bitmap = await createImageBitmap(imageData);
+      _imageCache.set(cacheKey, bitmap);
+      return;
+    }
+
+    // Check for JPEG (starts with FF D8)
+    if (imgBytes[0] === 0xFF && imgBytes[1] === 0xD8) {
+      const blob = new Blob([imgBytes], { type: 'image/jpeg' });
+      const bitmap = await createImageBitmap(blob);
+      _imageCache.set(cacheKey, bitmap);
+      return;
+    }
+
+    // Check for PNG (starts with 89 50 4E 47)
+    if (imgBytes[0] === 0x89 && imgBytes[1] === 0x50) {
+      const blob = new Blob([imgBytes], { type: 'image/png' });
+      const bitmap = await createImageBitmap(blob);
+      _imageCache.set(cacheKey, bitmap);
+      return;
+    }
+
+    // Unknown format — try as generic image blob
+    const blob = new Blob([imgBytes]);
+    const bitmap = await createImageBitmap(blob);
+    _imageCache.set(cacheKey, bitmap);
+  } catch (e) {
+    console.warn(`[vector-renderer] Failed to decode image at offset ${cacheKey}:`, e);
+  }
+}
+
 export function renderVectorPage(ctx, filePath, pageNum, transform) {
   const entry = _cache.get(_key(filePath, pageNum));
   if (!entry) return;
@@ -186,7 +298,7 @@ export function renderVectorPage(ctx, filePath, pageNum, transform) {
       case 17: // BeginPath
         ctx.beginPath();
         break;
-      case 18: { // TextAt
+      case 18: { // TextAt (legacy fallback, mostly unused now)
         const x = dv.getFloat32(pos, true); pos += 4;
         const y = dv.getFloat32(pos, true); pos += 4;
         const fontSize = dv.getFloat32(pos, true); pos += 4;
@@ -200,6 +312,20 @@ export function renderVectorPage(ctx, filePath, pageNum, transform) {
         ctx.fillStyle = _rgbaToCSS(rgba);
         ctx.fillText(text, x, -y);
         ctx.restore();
+        break;
+      }
+      case 19: { // DrawImage(w, h, dataLen, imageBytes)
+        const imgPos = pos - 1; // cache key = opcode position
+        const imgW = dv.getUint16(pos, true); pos += 2;
+        const imgH = dv.getUint16(pos, true); pos += 2;
+        const dataLen = dv.getUint32(pos, true); pos += 4;
+        pos += dataLen; // skip image data (already decoded in cache)
+
+        const bitmap = _imageCache.get(imgPos);
+        if (bitmap) {
+          // Draw image in the 1×1 PDF unit square (CTM maps to correct page position)
+          ctx.drawImage(bitmap, 0, 0, 1, 1);
+        }
         break;
       }
       default:

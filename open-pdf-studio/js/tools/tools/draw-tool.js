@@ -1,3 +1,5 @@
+import { applyToolTransform } from '../tool-context.js';
+
 /**
  * Freehand draw tool
  */
@@ -12,14 +14,14 @@ export const drawTool = {
   },
 
   onPointerMove(ctx, e) {
-    const { x, y, state, canvasCtx, scale } = ctx;
+    const { x, y, state, canvasCtx } = ctx;
     if (!state.isDrawing) return;
 
     state.currentPath.push({ x, y });
 
     // Incremental draw — only the new segment
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
     const prefs = state.preferences;
     canvasCtx.strokeStyle = prefs.drawStrokeColor || ctx.getColorPickerValue();
     canvasCtx.lineWidth = prefs.drawLineWidth || ctx.getLineWidthValue();

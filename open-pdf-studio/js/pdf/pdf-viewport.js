@@ -119,32 +119,29 @@ function _render() {
   state.renderEngine = 'Vector';
 
   // Sync text layer with viewport.
-  // PDF.js text layer (0,0) = top-left of page at scale=1.
-  // Our vector canvas has Y-flip: the page top-left in screen coords is
-  // at (offsetX, offsetY - pageH * zoom). That's where the text layer top-left goes.
-  // For PDFs with non-zero origin, shift by originX/originY.
+  // PDF.js text layer (0,0) = page top-left at scale=1.
+  // Page top-left on screen = (offsetX, offsetY).
   const textLayer = document.querySelector('.textLayer');
   if (textLayer) {
-    // PDF.js text layer already accounts for MediaBox origin internally.
-    // We only need to position it at the page top-left in screen space.
-    const scaledH = viewport.pageH * viewport.zoom;
     const tx = viewport.offsetX;
-    const ty = viewport.offsetY - scaledH;
+    const ty = viewport.offsetY;
     textLayer.style.position = 'absolute';
     textLayer.style.left = '0';
     textLayer.style.top = '0';
     textLayer.style.transform = `matrix(${viewport.zoom}, 0, 0, ${viewport.zoom}, ${tx}, ${ty})`;
     textLayer.style.transformOrigin = '0 0';
-    textLayer.style.pointerEvents = 'none';
+    // Text layer: keep pointer-events as set by tool manager (don't override)
+    // The tool manager sets pointer-events based on active tool (text select = auto, other = none)
     textLayer.style.opacity = '1';
-    // PDF.js text layer uses transparent text for selection overlay.
-    // In vector mode, force all text visible since we don't render text in the vector canvas.
-    if (!textLayer._textMadeVisible) {
-      textLayer._textMadeVisible = true;
+
+    // Set up selection highlight styles (once)
+    if (!textLayer._selectionStyled) {
+      textLayer._selectionStyled = true;
       const style = document.createElement('style');
-      style.textContent = `.textLayer span { color: #000 !important; }
-        .textLayer { opacity: 1 !important; }
-        .textLayer ::selection { background: rgba(0, 0, 255, 0.3); }`;
+      style.textContent = `
+        .textLayer span { color: transparent !important; }
+        .textLayer ::selection { background: rgba(0, 100, 255, 0.3) !important; }
+      `;
       textLayer.prepend(style);
     }
   }
@@ -157,7 +154,11 @@ function _render() {
       annCanvas.width = vpW;
       annCanvas.height = vpH;
     }
-    // Sync doc.scale so annotation rendering uses correct zoom
+    // In vector mode: annotation canvas must match PDF canvas exactly (no DPR scaling)
+    // Remove any legacy DPR-based CSS sizing from setupCanvasHiDPI()
+    annCanvas.style.width = '';
+    annCanvas.style.height = '';
+    // Sync doc.scale so legacy code that reads it gets viewport zoom
     const doc = state.documents?.[state.activeDocumentIndex];
     if (doc) doc.scale = viewport.zoom;
   }

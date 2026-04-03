@@ -16,9 +16,16 @@ import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 export function drawShapePreview(currentX, currentY, e) {
   redrawAnnotations();
   const doc = getActiveDocument();
-  const scale = doc?.scale || 1.5;
+  const vp = window.__pdfViewport;
   annotationCtx.save();
-  annotationCtx.scale(scale, scale);
+  if (vp && vp.active) {
+    // Vector viewport: use same transform as annotation rendering
+    annotationCtx.setTransform(vp.zoom, 0, 0, vp.zoom, vp.offsetX, vp.offsetY);
+  } else {
+    // Legacy mode
+    const scale = doc?.scale || 1.5;
+    annotationCtx.scale(scale, scale);
+  }
 
   const tool = state.currentTool;
 
@@ -37,7 +44,8 @@ export function drawShapePreview(currentX, currentY, e) {
 
   // Draw snap indicator overlay
   if (state.lastSnapResult && state.lastSnapResult.snapped) {
-    drawSnapIndicator(annotationCtx, state.lastSnapResult, scale);
+    const snapScale = (vp && vp.active) ? vp.zoom : (doc?.scale || 1.5);
+    drawSnapIndicator(annotationCtx, state.lastSnapResult, snapScale);
   }
 
   annotationCtx.restore();

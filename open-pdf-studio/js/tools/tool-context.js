@@ -71,6 +71,27 @@ export function resolvePointerCoords(e) {
     }
     const ctx = annotationCtx || canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
+
+    // Vector viewport mode: use viewport transform for coordinate conversion
+    const vp = window.__pdfViewport;
+    if (vp && vp.active) {
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      // Annotations use app-space: (0,0) = page top-left, Y-down, scale=1
+      // Page top-left on screen = (offsetX, offsetY)
+      // So app coords = (screen - offset) / zoom — NO Y-flip needed
+      const appX = (screenX - vp.offsetX) / vp.zoom;
+      const appY = (screenY - vp.offsetY) / vp.zoom;
+      return {
+        x: appX,
+        y: appY,
+        pageNum: docCurrentPage,
+        canvas,
+        canvasCtx: ctx
+      };
+    }
+
+    // Legacy PDF.js mode
     return {
       x: (e.clientX - rect.left) / scale,
       y: (e.clientY - rect.top) / scale,
@@ -82,12 +103,41 @@ export function resolvePointerCoords(e) {
 }
 
 /**
+ * Apply the correct canvas transform for drawing tool previews/interactions.
+ * In vector viewport mode: uses viewport zoom + offset (no DPR).
+ * In legacy mode: uses doc.scale (with DPR handled elsewhere).
+ * Call ctx.save() before and ctx.restore() after.
+ */
+export function applyToolTransform(ctx) {
+  const vp = window.__pdfViewport;
+  if (vp && vp.active) {
+    ctx.setTransform(vp.zoom, 0, 0, vp.zoom, vp.offsetX, vp.offsetY);
+  } else {
+    const doc = getActiveDocument();
+    const scale = doc?.scale || 1.5;
+    ctx.scale(scale, scale);
+  }
+}
+
+/**
+ * Get the effective scale for the current rendering mode.
+ * Vector mode: viewport zoom. Legacy mode: doc.scale.
+ */
+export function getEffectiveScale() {
+  const vp = window.__pdfViewport;
+  if (vp && vp.active) return vp.zoom;
+  const doc = getActiveDocument();
+  return doc?.scale || 1.5;
+}
+
+/**
  * Build a tool context object from event + resolved coordinates.
  * This gives each tool a clean API to work with.
  */
 export function buildToolContext(e, coords) {
   const ctxDoc = getActiveDocument();
-  const ctxScale = ctxDoc?.scale || 1.5;
+  const vp = window.__pdfViewport;
+  const ctxScale = (vp && vp.active) ? vp.zoom : (ctxDoc?.scale || 1.5);
   return {
     // Coordinates
     x: coords.x,
@@ -111,7 +161,7 @@ export function buildToolContext(e, coords) {
     drawSnapIndicator: (snapResult) => {
       if (!coords.canvasCtx) return;
       coords.canvasCtx.save();
-      coords.canvasCtx.scale(ctxScale, ctxScale);
+      applyToolTransform(coords.canvasCtx);
       drawSnapIndicator(coords.canvasCtx, snapResult, ctxScale);
       coords.canvasCtx.restore();
     },

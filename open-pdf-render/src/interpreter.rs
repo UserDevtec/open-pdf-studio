@@ -6,14 +6,25 @@ use crate::draw_commands::DrawCommandBuffer;
 use crate::color;
 use crate::RenderError;
 
+/// PDF Text State — follows PDF spec §9.3 and §9.4 exactly.
+///
+/// Two matrices track text position:
+/// - `tm`:  Text Matrix — current glyph rendering position
+/// - `tlm`: Text Line Matrix — start of current line (set by Td/TD/Tm/T*)
+///
+/// Character advances update `tm` via matrix pre-multiplication:
+///   tm_new = [1 0 0 1 tx ty] × tm_old
+///
+/// Line moves (Td/TD/T*) update `tlm` then copy to `tm`.
 struct TextState {
-    font_size: f32,
-    tx: f32,
-    ty: f32,
-    line_x: f32,
-    line_y: f32,
-    tm: [f32; 6],
-    leading: f32,
+    font_size: f32,            // Tfs — set by Tf operator
+    horizontal_scaling: f32,   // Th — set by Tz operator (1.0 = 100%)
+    char_spacing: f32,         // Tc — set by Tc operator
+    word_spacing: f32,         // Tw — set by Tw operator
+    leading: f32,              // TL — set by TL operator
+    rise: f32,                 // Trise — set by Ts operator
+    tm: [f32; 6],             // Text matrix [a b c d e f]
+    tlm: [f32; 6],            // Text line matrix
     in_text: bool,
     current_font_name: String,
 }
@@ -22,32 +33,56 @@ impl TextState {
     fn new() -> Self {
         TextState {
             font_size: 12.0,
-            tx: 0.0,
-            ty: 0.0,
-            line_x: 0.0,
-            line_y: 0.0,
-            tm: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            horizontal_scaling: 1.0,
+            char_spacing: 0.0,
+            word_spacing: 0.0,
             leading: 0.0,
+            rise: 0.0,
+            tm: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+            tlm: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
             in_text: false,
             current_font_name: String::new(),
         }
     }
 
-    fn reset(&mut self) {
-        self.tx = 0.0;
-        self.ty = 0.0;
-        self.line_x = 0.0;
-        self.line_y = 0.0;
+    /// BT operator: reset text matrices to identity
+    fn begin_text(&mut self) {
         self.tm = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
-        self.in_text = false;
+        self.tlm = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+        self.in_text = true;
     }
 
-    fn effective_x(&self) -> f32 {
-        self.tm[4] + self.tx
+    /// Td operator: move to start of next line.
+    /// PDF spec: Tlm = [1 0 0 1 tx ty] × Tlm; Tm = Tlm
+    fn translate_line(&mut self, tx: f32, ty: f32) {
+        let new_e = tx * self.tlm[0] + ty * self.tlm[2] + self.tlm[4];
+        let new_f = tx * self.tlm[1] + ty * self.tlm[3] + self.tlm[5];
+        self.tlm[4] = new_e;
+        self.tlm[5] = new_f;
+        self.tm = self.tlm;
     }
 
-    fn effective_y(&self) -> f32 {
-        self.tm[5] + self.ty
+    /// Tm operator: set text matrix and line matrix directly
+    fn set_text_matrix(&mut self, a: f32, b: f32, c: f32, d: f32, e: f32, f: f32) {
+        self.tm = [a, b, c, d, e, f];
+        self.tlm = self.tm;
+    }
+
+    /// Advance for TJ kerning: adjust = -(kern/1000) × Tfs × Th
+    fn apply_tj_kern(&mut self, kern: f32) {
+        let tx = -(kern / 1000.0) * self.font_size * self.horizontal_scaling;
+        self.tm[4] += tx * self.tm[0];
+        self.tm[5] += tx * self.tm[1];
+    }
+
+    /// Get the effective text position including rise offset.
+    /// Trm position = (Trise × Tm[2] + Tm[4], Trise × Tm[3] + Tm[5])
+    fn render_x(&self) -> f32 {
+        self.rise * self.tm[2] + self.tm[4]
+    }
+
+    fn render_y(&self) -> f32 {
+        self.rise * self.tm[3] + self.tm[5]
     }
 }
 
@@ -417,6 +452,10 @@ impl Interpreter {
                     }
                 }
                 "v" => {
+                    // v x2 y2 x3 y3: cubic bezier where first control point = current point
+                    // We don't track the current point here, so we approximate by using
+                    // (x2,y2) as both control points (same as the existing behavior).
+                    // A perfect implementation would track the current path position.
                     if op.operands.len() >= 4 {
                         if !has_active_path {
                             buf.begin_path();
@@ -532,8 +571,7 @@ impl Interpreter {
                 "W" | "W*" => {}
                 // Text operators
                 "BT" => {
-                    text_state.reset();
-                    text_state.in_text = true;
+                    text_state.begin_text();
                 }
                 "ET" => {
                     text_state.in_text = false;
@@ -556,10 +594,7 @@ impl Interpreter {
                     if op.operands.len() >= 2 {
                         let tx = Self::f(&op.operands[0]);
                         let ty = Self::f(&op.operands[1]);
-                        text_state.line_x += tx;
-                        text_state.line_y += ty;
-                        text_state.tx = text_state.line_x;
-                        text_state.ty = text_state.line_y;
+                        text_state.translate_line(tx, ty);
                     }
                 }
                 "TD" => {
@@ -567,33 +602,23 @@ impl Interpreter {
                         let tx = Self::f(&op.operands[0]);
                         let ty = Self::f(&op.operands[1]);
                         text_state.leading = -ty;
-                        text_state.line_x += tx;
-                        text_state.line_y += ty;
-                        text_state.tx = text_state.line_x;
-                        text_state.ty = text_state.line_y;
+                        text_state.translate_line(tx, ty);
                     }
                 }
                 "Tm" => {
                     if op.operands.len() >= 6 {
-                        text_state.tm = [
+                        text_state.set_text_matrix(
                             Self::f(&op.operands[0]),
                             Self::f(&op.operands[1]),
                             Self::f(&op.operands[2]),
                             Self::f(&op.operands[3]),
                             Self::f(&op.operands[4]),
                             Self::f(&op.operands[5]),
-                        ];
-                        text_state.tx = 0.0;
-                        text_state.ty = 0.0;
-                        text_state.line_x = 0.0;
-                        text_state.line_y = 0.0;
+                        );
                     }
                 }
                 "T*" => {
-                    text_state.line_x += 0.0;
-                    text_state.line_y -= text_state.leading;
-                    text_state.tx = text_state.line_x;
-                    text_state.ty = text_state.line_y;
+                    text_state.translate_line(0.0, -text_state.leading);
                 }
                 "Tj" => {
                     if let Some(Object::String(bytes, _)) = op.operands.first() {
@@ -603,28 +628,24 @@ impl Interpreter {
                             if let Some(font_entry) = font_registry.get_font(
                                 &text_state.current_font_name, doc, resources,
                             ) {
-                                let advance = crate::text_renderer::render_text_glyphs(
-                                    bytes,
-                                    font_entry,
-                                    text_state.font_size,
-                                    &text_state.tm,
-                                    text_state.tx,
-                                    text_state.ty,
-                                    rgba,
-                                    buf,
-                                );
-                                text_state.tx += advance;
-                            } else {
-                                let effective_size = text_state.font_size
-                                    * text_state.tm[0].abs().max(text_state.tm[3].abs()).max(1.0);
-                                let decoded = String::from_utf8_lossy(bytes);
-                                buf.text_at(
-                                    text_state.effective_x(),
-                                    text_state.effective_y(),
-                                    effective_size,
-                                    rgba,
-                                    &decoded,
-                                );
+                                if font_entry.is_cid && font_entry.parsed.is_some() {
+                                    crate::text_renderer::render_cid_text_glyphs(
+                                        bytes, font_entry, text_state.font_size,
+                                        text_state.horizontal_scaling, text_state.char_spacing,
+                                        text_state.word_spacing, text_state.rise,
+                                        &mut text_state.tm, rgba, buf,
+                                    );
+                                } else if font_entry.parsed.is_some() {
+                                    crate::text_renderer::render_text_glyphs(
+                                        bytes, font_entry, text_state.font_size,
+                                        text_state.horizontal_scaling, text_state.char_spacing,
+                                        text_state.word_spacing, text_state.rise,
+                                        &mut text_state.tm, rgba, buf,
+                                    );
+                                } else {
+                                    // No font data available — skip rendering
+                                    // (TextAt fallback causes mispositioned text)
+                                }
                             }
                         }
                     }
@@ -638,6 +659,8 @@ impl Interpreter {
                         );
                         let has_font = font_entry_opt.and_then(|e| e.parsed.as_ref()).is_some();
 
+                        let is_cid_font = font_entry_opt.map(|e| e.is_cid).unwrap_or(false);
+
                         if has_font {
                             for item in arr {
                                 match item {
@@ -646,60 +669,38 @@ impl Interpreter {
                                             let font_entry = font_registry
                                                 .get_font(&text_state.current_font_name, doc, resources)
                                                 .unwrap();
-                                            let advance = crate::text_renderer::render_text_glyphs(
-                                                bytes,
-                                                font_entry,
-                                                text_state.font_size,
-                                                &text_state.tm,
-                                                text_state.tx,
-                                                text_state.ty,
-                                                rgba,
-                                                buf,
-                                            );
-                                            text_state.tx += advance;
+                                            if is_cid_font {
+                                                crate::text_renderer::render_cid_text_glyphs(
+                                                    bytes, font_entry, text_state.font_size,
+                                                    text_state.horizontal_scaling, text_state.char_spacing,
+                                                    text_state.word_spacing, text_state.rise,
+                                                    &mut text_state.tm, rgba, buf,
+                                                );
+                                            } else {
+                                                crate::text_renderer::render_text_glyphs(
+                                                    bytes, font_entry, text_state.font_size,
+                                                    text_state.horizontal_scaling, text_state.char_spacing,
+                                                    text_state.word_spacing, text_state.rise,
+                                                    &mut text_state.tm, rgba, buf,
+                                                );
+                                            }
                                         }
                                     }
                                     Object::Integer(_) | Object::Real(_) => {
                                         let kern = Self::f(item);
-                                        text_state.tx -= kern * text_state.font_size / 1000.0;
+                                        text_state.apply_tj_kern(kern);
                                     }
                                     _ => {}
                                 }
                             }
                         } else {
-                            let effective_size = text_state.font_size
-                                * text_state.tm[0].abs().max(text_state.tm[3].abs()).max(1.0);
-                            let mut accumulated = String::new();
-                            for item in arr {
-                                match item {
-                                    Object::String(bytes, _) => {
-                                        accumulated.push_str(&String::from_utf8_lossy(bytes));
-                                    }
-                                    Object::Integer(_) | Object::Real(_) => {
-                                        let kern = Self::f(item);
-                                        if kern.abs() > 200.0 {
-                                            accumulated.push(' ');
-                                        }
-                                    }
-                                    _ => {}
-                                }
-                            }
-                            if !accumulated.is_empty() {
-                                buf.text_at(
-                                    text_state.effective_x(),
-                                    text_state.effective_y(),
-                                    effective_size,
-                                    rgba,
-                                    &accumulated,
-                                );
-                            }
+                            // No font data — skip rendering
                         }
                     }
                 }
                 "'" => {
-                    text_state.line_y -= text_state.leading;
-                    text_state.tx = text_state.line_x;
-                    text_state.ty = text_state.line_y;
+                    // ' is equivalent to: T* then Tj
+                    text_state.translate_line(0.0, -text_state.leading);
                     if let Some(Object::String(bytes, _)) = op.operands.first() {
                         if !bytes.is_empty() {
                             let (r, g, b, a) = state.current.fill_color;
@@ -707,37 +708,28 @@ impl Interpreter {
                             if let Some(font_entry) = font_registry.get_font(
                                 &text_state.current_font_name, doc, resources,
                             ) {
-                                let advance = crate::text_renderer::render_text_glyphs(
+                                crate::text_renderer::render_text_glyphs(
                                     bytes,
                                     font_entry,
                                     text_state.font_size,
-                                    &text_state.tm,
-                                    text_state.tx,
-                                    text_state.ty,
+                                    text_state.horizontal_scaling,
+                                    text_state.char_spacing,
+                                    text_state.word_spacing,
+                                    text_state.rise,
+                                    &mut text_state.tm,
                                     rgba,
                                     buf,
-                                );
-                                text_state.tx += advance;
-                            } else {
-                                let effective_size = text_state.font_size
-                                    * text_state.tm[0].abs().max(text_state.tm[3].abs()).max(1.0);
-                                let decoded = String::from_utf8_lossy(bytes);
-                                buf.text_at(
-                                    text_state.effective_x(),
-                                    text_state.effective_y(),
-                                    effective_size,
-                                    rgba,
-                                    &decoded,
                                 );
                             }
                         }
                     }
                 }
                 "\"" => {
+                    // " is equivalent to: Tw Tc T* Tj
                     if op.operands.len() >= 3 {
-                        text_state.line_y -= text_state.leading;
-                        text_state.tx = text_state.line_x;
-                        text_state.ty = text_state.line_y;
+                        text_state.word_spacing = Self::f(&op.operands[0]);
+                        text_state.char_spacing = Self::f(&op.operands[1]);
+                        text_state.translate_line(0.0, -text_state.leading);
                         if let Object::String(bytes, _) = &op.operands[2] {
                             if !bytes.is_empty() {
                                 let (r, g, b, a) = state.current.fill_color;
@@ -745,34 +737,44 @@ impl Interpreter {
                                 if let Some(font_entry) = font_registry.get_font(
                                     &text_state.current_font_name, doc, resources,
                                 ) {
-                                    let advance = crate::text_renderer::render_text_glyphs(
+                                    crate::text_renderer::render_text_glyphs(
                                         bytes,
                                         font_entry,
                                         text_state.font_size,
-                                        &text_state.tm,
-                                        text_state.tx,
-                                        text_state.ty,
+                                        text_state.horizontal_scaling,
+                                        text_state.char_spacing,
+                                        text_state.word_spacing,
+                                        text_state.rise,
+                                        &mut text_state.tm,
                                         rgba,
                                         buf,
-                                    );
-                                    text_state.tx += advance;
-                                } else {
-                                    let effective_size = text_state.font_size
-                                        * text_state.tm[0].abs().max(text_state.tm[3].abs()).max(1.0);
-                                    let decoded = String::from_utf8_lossy(bytes);
-                                    buf.text_at(
-                                        text_state.effective_x(),
-                                        text_state.effective_y(),
-                                        effective_size,
-                                        rgba,
-                                        &decoded,
                                     );
                                 }
                             }
                         }
                     }
                 }
-                "Tc" | "Tw" | "Tz" | "Ts" | "Tr" => {}
+                "Tc" => {
+                    if let Some(v) = op.operands.first() {
+                        text_state.char_spacing = Self::f(v);
+                    }
+                }
+                "Tw" => {
+                    if let Some(v) = op.operands.first() {
+                        text_state.word_spacing = Self::f(v);
+                    }
+                }
+                "Tz" => {
+                    if let Some(v) = op.operands.first() {
+                        text_state.horizontal_scaling = Self::f(v) / 100.0;
+                    }
+                }
+                "Ts" => {
+                    if let Some(v) = op.operands.first() {
+                        text_state.rise = Self::f(v);
+                    }
+                }
+                "Tr" => {}
                 "Do" => {
                     Self::handle_do_extract(&op.operands, buf, state, doc, resources, font_registry);
                 }
@@ -844,6 +846,13 @@ impl Interpreter {
             _ => return,
         };
         let subtype = stream.dict.get(b"Subtype").ok().and_then(|s| s.as_name().ok());
+
+        if subtype == Some(b"Image" as &[u8]) {
+            // Image XObject — decode and emit as DrawImage command
+            Self::handle_image_xobject(stream, buf, doc);
+            return;
+        }
+
         if subtype != Some(b"Form" as &[u8]) {
             return;
         }
@@ -870,6 +879,179 @@ impl Interpreter {
         }
         state.restore();
         buf.restore_state();
+    }
+
+    /// Handle an Image XObject: decode image data and emit DrawImage command.
+    /// PDF images live in a 1×1 unit square — the CTM (already on the canvas stack
+    /// via cm operators) scales them to the correct page position and size.
+    fn handle_image_xobject(
+        stream: &lopdf::Stream,
+        buf: &mut DrawCommandBuffer,
+        doc: &Document,
+    ) {
+        let dict = &stream.dict;
+
+        let width = dict.get(b"Width")
+            .ok()
+            .and_then(|o| match o {
+                Object::Integer(i) => Some(*i as u16),
+                Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
+                    if let Object::Integer(i) = o { Some(*i as u16) } else { None }
+                }),
+                _ => None,
+            })
+            .unwrap_or(0);
+        let height = dict.get(b"Height")
+            .ok()
+            .and_then(|o| match o {
+                Object::Integer(i) => Some(*i as u16),
+                Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
+                    if let Object::Integer(i) = o { Some(*i as u16) } else { None }
+                }),
+                _ => None,
+            })
+            .unwrap_or(0);
+
+        if width == 0 || height == 0 {
+            return;
+        }
+
+        // Detect filter to determine image format
+        let filter = dict.get(b"Filter").ok().and_then(|o| {
+            match o {
+                Object::Name(n) => Some(n.clone()),
+                Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
+                    if let Object::Name(n) = o { Some(n.clone()) } else { None }
+                }),
+                Object::Array(arr) => {
+                    // Multiple filters — use the last one (outermost)
+                    arr.last().and_then(|o| match o {
+                        Object::Name(n) => Some(n.clone()),
+                        _ => None,
+                    })
+                }
+                _ => None,
+            }
+        });
+
+        let filter_name = filter.as_deref().unwrap_or(b"");
+
+        if filter_name == b"DCTDecode" {
+            // JPEG — send raw bytes directly (browser decodes via hardware-accelerated createImageBitmap)
+            // stream.content contains the raw JPEG bytes before lopdf's decompression
+            let raw_content = &stream.content;
+            if !raw_content.is_empty() && raw_content.len() > 2
+                && raw_content[0] == 0xFF && raw_content[1] == 0xD8 {
+                buf.save_state();
+                buf.transform(1.0, 0.0, 0.0, -1.0, 0.0, 1.0); // flip Y (images are top-down)
+                buf.draw_image(width, height, raw_content);
+                buf.restore_state();
+                return;
+            }
+        }
+
+        if filter_name == b"JPXDecode" {
+            // JPEG 2000 — send raw bytes, browser may support it
+            let raw_content = &stream.content;
+            if !raw_content.is_empty() {
+                buf.save_state();
+                buf.transform(1.0, 0.0, 0.0, -1.0, 0.0, 1.0);
+                buf.draw_image(width, height, raw_content);
+                buf.restore_state();
+                return;
+            }
+        }
+
+        // For FlateDecode or no filter: decompress and encode as PNG
+        let bits = dict.get(b"BitsPerComponent")
+            .ok()
+            .and_then(|o| match o {
+                Object::Integer(i) => Some(*i as u8),
+                _ => None,
+            })
+            .unwrap_or(8);
+
+        let cs_name = dict.get(b"ColorSpace")
+            .ok()
+            .and_then(|o| match o {
+                Object::Name(n) => Some(n.clone()),
+                Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
+                    if let Object::Name(n) = o { Some(n.clone()) } else { None }
+                }),
+                Object::Array(arr) => {
+                    arr.first().and_then(|o| match o {
+                        Object::Name(n) => Some(n.clone()),
+                        _ => None,
+                    })
+                }
+                _ => None,
+            });
+
+        let components: u8 = match cs_name.as_deref() {
+            Some(b"DeviceRGB") => 3,
+            Some(b"DeviceCMYK") => 4,
+            Some(b"DeviceGray") => 1,
+            Some(b"CalRGB") => 3,
+            Some(b"CalGray") => 1,
+            _ => 3, // default RGB
+        };
+
+        if let Ok(raw_pixels) = stream.decompressed_content() {
+            if bits == 8 {
+                // Convert raw pixels to RGBA and encode as simple bitmap
+                let expected_len = width as usize * height as usize * components as usize;
+                if raw_pixels.len() >= expected_len {
+                    // Build RGBA buffer
+                    let mut rgba = Vec::with_capacity(width as usize * height as usize * 4);
+                    let mut i = 0;
+                    for _ in 0..(width as usize * height as usize) {
+                        match components {
+                            1 => {
+                                let g = raw_pixels.get(i).copied().unwrap_or(0);
+                                rgba.extend_from_slice(&[g, g, g, 255]);
+                                i += 1;
+                            }
+                            3 => {
+                                let r = raw_pixels.get(i).copied().unwrap_or(0);
+                                let g = raw_pixels.get(i + 1).copied().unwrap_or(0);
+                                let b = raw_pixels.get(i + 2).copied().unwrap_or(0);
+                                rgba.extend_from_slice(&[r, g, b, 255]);
+                                i += 3;
+                            }
+                            4 => {
+                                // CMYK → RGB (simple conversion)
+                                let c = raw_pixels.get(i).copied().unwrap_or(0) as f32 / 255.0;
+                                let m = raw_pixels.get(i + 1).copied().unwrap_or(0) as f32 / 255.0;
+                                let y = raw_pixels.get(i + 2).copied().unwrap_or(0) as f32 / 255.0;
+                                let k = raw_pixels.get(i + 3).copied().unwrap_or(0) as f32 / 255.0;
+                                let r = (255.0 * (1.0 - c) * (1.0 - k)) as u8;
+                                let g = (255.0 * (1.0 - m) * (1.0 - k)) as u8;
+                                let b = (255.0 * (1.0 - y) * (1.0 - k)) as u8;
+                                rgba.extend_from_slice(&[r, g, b, 255]);
+                                i += 4;
+                            }
+                            _ => {
+                                rgba.extend_from_slice(&[0, 0, 0, 255]);
+                                i += components as usize;
+                            }
+                        }
+                    }
+
+                    // Send as raw RGBA with a simple header marker
+                    // Format: "RGBA" magic (4 bytes) + width u16 LE + height u16 LE + RGBA pixels
+                    let mut img_data = Vec::with_capacity(8 + rgba.len());
+                    img_data.extend_from_slice(b"RGBA");
+                    img_data.extend_from_slice(&width.to_le_bytes());
+                    img_data.extend_from_slice(&height.to_le_bytes());
+                    img_data.extend_from_slice(&rgba);
+
+                    buf.save_state();
+                    buf.transform(1.0, 0.0, 0.0, -1.0, 0.0, 1.0); // flip Y
+                    buf.draw_image(width, height, &img_data);
+                    buf.restore_state();
+                }
+            }
+        }
     }
 
     fn resolve_dict<'a>(obj: &'a Object, doc: &'a Document) -> Result<&'a Dictionary, lopdf::Error> {

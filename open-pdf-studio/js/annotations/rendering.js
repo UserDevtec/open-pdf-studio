@@ -1208,10 +1208,11 @@ export function redrawAnnotations(lightweight = false) {
   const effectiveScale = useViewport ? vp.zoom : scale * dpr;
   annotationCtx.save();
   if (useViewport) {
-    // Viewport mode: use same transform as vector renderer (zoom + pan + Y-flip + origin)
+    // Viewport mode: annotations are in app-space (top-left origin, Y-down, scale=1).
+    // Page top-left on screen = (offsetX, offsetY).
+    // App coord (ax, ay) → screen (ax*zoom + offsetX, ay*zoom + offsetY).
+    // This is a simple scale + translate — no Y-flip needed for annotations.
     annotationCtx.setTransform(vp.zoom, 0, 0, vp.zoom, vp.offsetX, vp.offsetY);
-    annotationCtx.transform(1, 0, 0, -1, 0, vp.pageH);
-    annotationCtx.translate(-(vp.originX || 0), -(vp.originY || 0));
   } else {
     // Legacy mode: simple scale from origin
     annotationCtx.scale(effectiveScale, effectiveScale);
@@ -1231,22 +1232,32 @@ export function redrawAnnotations(lightweight = false) {
   drawTextEdits(annotationCtx, curPage);
 
   // Viewport culling: skip annotations outside the visible area for performance
-  const canvasW = annotationCanvas.width / effectiveScale;
-  const canvasH = annotationCanvas.height / effectiveScale;
-  const scrollContainer = document.getElementById('pdf-container');
-  let vpX = 0, vpY = 0, vpW = canvasW, vpH = canvasH;
-  if (scrollContainer) {
-    const scale = doc ? doc.scale : 1;
-    vpX = scrollContainer.scrollLeft / scale;
-    vpY = scrollContainer.scrollTop / scale;
-    vpW = scrollContainer.clientWidth / scale;
-    vpH = scrollContainer.clientHeight / scale;
-    // Add generous margin to avoid popping
-    const margin = 200 / scale;
-    vpX -= margin;
-    vpY -= margin;
-    vpW += margin * 2;
-    vpH += margin * 2;
+  let vpX = 0, vpY = 0, vpW, vpH;
+  if (useViewport) {
+    // Vector mode: visible area in app-coords = screen area mapped through inverse transform
+    // Screen (0,0) → app (-offsetX/zoom, -offsetY/zoom)
+    // Screen (canvasW, canvasH) → app ((canvasW-offsetX)/zoom, (canvasH-offsetY)/zoom)
+    vpX = -vp.offsetX / vp.zoom;
+    vpY = -vp.offsetY / vp.zoom;
+    vpW = annotationCanvas.width / vp.zoom;
+    vpH = annotationCanvas.height / vp.zoom;
+    // Generous margin
+    const margin = 200 / vp.zoom;
+    vpX -= margin; vpY -= margin; vpW += margin * 2; vpH += margin * 2;
+  } else {
+    const canvasW = annotationCanvas.width / effectiveScale;
+    const canvasH = annotationCanvas.height / effectiveScale;
+    vpW = canvasW; vpH = canvasH;
+    const scrollContainer = document.getElementById('pdf-container');
+    if (scrollContainer) {
+      const scale = doc ? doc.scale : 1;
+      vpX = scrollContainer.scrollLeft / scale;
+      vpY = scrollContainer.scrollTop / scale;
+      vpW = scrollContainer.clientWidth / scale;
+      vpH = scrollContainer.clientHeight / scale;
+      const margin = 200 / scale;
+      vpX -= margin; vpY -= margin; vpW += margin * 2; vpH += margin * 2;
+    }
   }
 
   // Draw all annotations for current page (with viewport culling)

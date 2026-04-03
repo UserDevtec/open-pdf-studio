@@ -23,7 +23,7 @@ impl DocumentHandle {
 
     pub fn render_page(&self, page: usize, scale: f32) -> Result<RenderedPage, RenderError> {
         let page_id = self.get_page_id(page)?;
-        let (w_pt, h_pt) = self.extract_media_box(page_id)?;
+        let (x0, y0, w_pt, h_pt) = self.extract_media_box_full(page_id)?;
         let width = (w_pt * scale).ceil() as u32;
         let height = (h_pt * scale).ceil() as u32;
 
@@ -32,10 +32,16 @@ impl DocumentHandle {
 
         let mut state = crate::graphics_state::GraphicsStateStack::new();
 
-        // PDF coordinate system: origin at bottom-left, Y up
+        // PDF coordinate system: origin at MediaBox bottom-left, Y up
         // Canvas: origin at top-left, Y down
-        // Transform: scale + flip Y axis
-        state.current.ctm = tiny_skia::Transform::from_row(scale, 0.0, 0.0, -scale, 0.0, h_pt * scale);
+        // Transform: translate(-x0, -y0) to shift MediaBox origin to (0,0),
+        // then scale + flip Y axis
+        // Combined: CTM = [scale, 0, 0, -scale, -x0*scale, (h_pt+y0)*scale]
+        // Simplified: translate to canvas space accounting for non-zero MediaBox origin
+        state.current.ctm = tiny_skia::Transform::from_row(
+            scale, 0.0, 0.0, -scale,
+            -x0 * scale, (h_pt + y0) * scale,
+        );
 
         let content_bytes = self.get_content_stream(page_id)?;
         let resources = self.get_page_resources(page_id)?;

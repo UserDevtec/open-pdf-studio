@@ -1,4 +1,5 @@
 import { getActiveDocument } from '../../core/state.js';
+import { applyToolTransform } from '../tool-context.js';
 
 /**
  * Angle measurement tool — 3-click: point1, vertex, point2
@@ -103,7 +104,7 @@ export const measureAngleTool = {
 
     ctx.redraw();
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
     canvasCtx.strokeStyle = color;
     canvasCtx.lineWidth = lw;
     canvasCtx.globalAlpha = (prefs.measureDistOpacity || 100) / 100;

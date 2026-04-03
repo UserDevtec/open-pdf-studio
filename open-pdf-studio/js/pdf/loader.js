@@ -134,6 +134,11 @@ export async function loadPDF(filePath, docIndex, preloadedData = null) {
   try {
     if (isActive()) showLoading('Loading PDF...');
 
+    // Ensure Tauri FS scope access for this file path (needed for Rust backend)
+    if (filePath && window.__TAURI__) {
+      try { await window.__TAURI__.core.invoke('allow_fs_scope', { path: filePath }); } catch {}
+    }
+
     let typedArray;
 
     if (preloadedData) {

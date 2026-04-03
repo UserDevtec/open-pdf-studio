@@ -853,6 +853,56 @@ fn render_pdf_page(path: String, page_index: u32, scale: f32, cache: tauri::Stat
     Ok(format!("{}|{}|{}", temp_path.to_string_lossy(), page.width, page.height))
 }
 
+/// Render a thumbnail for a PDF page. Returns a JSON string with {dataURL, width, height}.
+/// Uses the Rust bitmap renderer at low resolution for maximum speed (~10-50ms per page).
+#[tauri::command]
+fn render_thumbnail(path: String, page_index: u32, max_width: u32, cache: tauri::State<PdfBytesCache>) -> Result<String, String> {
+    let bytes = {
+        let mut c = cache.0.lock().map_err(|e| format!("{}", e))?;
+        if let Some(b) = c.get(&path) { b.clone() }
+        else { let b = fs::read(&path).map_err(|e| format!("{}", e))?; c.insert(path.clone(), b.clone()); b }
+    };
+
+    let renderer = PdfRenderer::new();
+    let doc = renderer.load_document(&bytes).map_err(|e| format!("{}", e))?;
+
+    // Get page dimensions to calculate thumbnail scale
+    let (w_pt, h_pt) = doc.page_dimensions(page_index as usize)
+        .map_err(|e| format!("{}", e))?;
+
+    // Scale so the longest side fits within max_width pixels
+    let scale = max_width as f32 / w_pt.max(h_pt);
+
+    // Render at thumbnail scale
+    let page = doc.render_page(page_index as usize, scale).map_err(|e| format!("{}", e))?;
+
+    // Convert RGBA to RGB (JPEG doesn't support alpha)
+    let pixel_count = (page.width * page.height) as usize;
+    let mut rgb = Vec::with_capacity(pixel_count * 3);
+    for i in 0..pixel_count {
+        rgb.push(page.rgba[i * 4]);
+        rgb.push(page.rgba[i * 4 + 1]);
+        rgb.push(page.rgba[i * 4 + 2]);
+    }
+
+    // Encode RGB to JPEG in Rust (fast, small result for IPC)
+    let mut jpeg_data = Vec::new();
+    {
+        use image::codecs::jpeg::JpegEncoder;
+        use image::ImageEncoder;
+        let mut encoder = JpegEncoder::new_with_quality(&mut jpeg_data, 60);
+        encoder.write_image(
+            &rgb, page.width, page.height,
+            image::ExtendedColorType::Rgb8,
+        ).map_err(|e| format!("JPEG encode: {}", e))?;
+    }
+
+    // Return as base64 data URL (small enough for IPC, typically 5-30KB per thumbnail)
+    use base64::Engine;
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&jpeg_data);
+    Ok(format!("{{\"dataURL\":\"data:image/jpeg;base64,{}\",\"width\":{},\"height\":{}}}", b64, page.width, page.height))
+}
+
 #[tauri::command]
 fn analyze_page_type(path: String, page_index: u32, cache: tauri::State<PdfBytesCache>) -> Result<String, String> {
     let bytes = {
@@ -1018,6 +1068,7 @@ pub fn run() {
             clear_pdf_cache,
             analyze_page_type,
             extract_draw_commands,
+            render_thumbnail,
             allow_fs_scope
         ])
         .run(tauri::generate_context!())

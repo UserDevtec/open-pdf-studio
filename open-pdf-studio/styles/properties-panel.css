@@ -1,8 +1,8 @@
-/* Annotation canvas - above text layer so clicks reach annotation handlers */
+/* Annotation canvas - z-index and pointer-events managed by tool manager (js/tools/manager.js)
+   Default: above text layer (z:5). Select tool drops it to z:2 for text selection. */
 #annotation-canvas,
 .annotation-canvas {
-  z-index: 6;
-  pointer-events: auto;
+  /* z-index and pointer-events set dynamically by setAnnotationCanvasForTextAccess() */
 }
 
 /* Properties Panel Outer Wrapper (animates width) */

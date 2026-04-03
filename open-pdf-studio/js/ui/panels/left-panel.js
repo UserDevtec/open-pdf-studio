@@ -384,10 +384,29 @@ async function processDocumentThumbnail(docId) {
   return false;
 }
 
-// Render a single page thumbnail to a data URL with timeout
+// Render a single page thumbnail — uses Rust backend for speed when available
 async function renderThumbnailToDataURL(pdfDoc, pageNum) {
   if (!pdfDoc || pageNum > pdfDoc.numPages) return null;
 
+  // Try Rust thumbnail rendering first (10-50ms vs 5-10 sec with PDF.js)
+  const doc = getActiveDocument();
+  if (doc?.filePath && window.__TAURI__) {
+    try {
+      const { invoke } = window.__TAURI__.core;
+      const result = await invoke('render_thumbnail', {
+        path: doc.filePath,
+        pageIndex: pageNum - 1,
+        maxWidth: 200,
+      });
+      const data = JSON.parse(result);
+      return { dataURL: data.dataURL, width: data.width, height: data.height };
+    } catch (e) {
+      console.warn(`[Thumbnails] Rust render failed for page ${pageNum}:`, e);
+      // Fall through to PDF.js fallback
+    }
+  }
+
+  // Fallback: PDF.js rendering
   const timeoutPromise = new Promise((_, reject) => {
     setTimeout(() => reject(new Error('Render timeout')), 10000);
   });

@@ -4,6 +4,7 @@
  */
 import { setCalibrationPixelDistance, setActiveTab } from '../../solid/stores/ribbonStore.js';
 import { setTool } from '../manager.js';
+import { applyToolTransform } from '../tool-context.js';
 
 export const calibrationPickTool = {
   name: 'calibrationPick',
@@ -71,7 +72,7 @@ export const calibrationPickTool = {
 
     ctx.redraw();
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
 
     const p1 = state.calibrationPoints[0];
 

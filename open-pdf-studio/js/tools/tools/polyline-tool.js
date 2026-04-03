@@ -1,4 +1,5 @@
 import { getActiveDocument } from '../../core/state.js';
+import { applyToolTransform, getEffectiveScale } from '../tool-context.js';
 
 /**
  * Polyline tool — multi-click placement, double-click/right-click to finish
@@ -35,7 +36,7 @@ export const polylineTool = {
     // Draw in-progress polyline
     if (state.polylinePoints.length > 0) {
       canvasCtx.save();
-      canvasCtx.scale(scale, scale);
+      applyToolTransform(canvasCtx);
       canvasCtx.strokeStyle = prefs.polylineStrokeColor;
       canvasCtx.lineWidth = prefs.polylineLineWidth;
       canvasCtx.lineCap = 'round';
@@ -65,7 +66,7 @@ export const polylineTool = {
 
     ctx.redraw();
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
     canvasCtx.strokeStyle = prefs.polylineStrokeColor;
     canvasCtx.lineWidth = prefs.polylineLineWidth;
     canvasCtx.lineCap = 'round';
@@ -139,7 +140,7 @@ export const cloudPolylineTool = {
     // Draw in-progress cloud polyline
     if (state.cloudPolylinePoints.length > 1) {
       canvasCtx.save();
-      canvasCtx.scale(scale, scale);
+      applyToolTransform(canvasCtx);
       canvasCtx.strokeStyle = prefs.cloudPolylineStrokeColor;
       canvasCtx.lineWidth = prefs.cloudPolylineLineWidth;
       ctx.buildCloudPolylinePath(canvasCtx, state.cloudPolylinePoints, false);
@@ -176,7 +177,7 @@ export const cloudPolylineTool = {
 
     ctx.redraw();
     canvasCtx.save();
-    canvasCtx.scale(scale, scale);
+    applyToolTransform(canvasCtx);
     canvasCtx.strokeStyle = prefs.cloudPolylineStrokeColor;
     canvasCtx.lineWidth = prefs.cloudPolylineLineWidth;
     const previewPts = [...state.cloudPolylinePoints, { x: snapX, y: snapY }];

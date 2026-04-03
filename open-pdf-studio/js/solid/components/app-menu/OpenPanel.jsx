@@ -76,6 +76,8 @@ export default function OpenPanel() {
           refreshFiles();
           return;
         }
+        // Grant FS scope access for the file path (required for Rust backend to read it)
+        await window.__TAURI__.core.invoke('allow_fs_scope', { path: file.path });
       } catch (e) {
         // If we can't check, try opening anyway
       }
@@ -197,6 +199,9 @@ export default function OpenPanel() {
 
   async function handleOpenPlaceFile(filePath) {
     closeAppMenu();
+    if (isTauri() && window.__TAURI__) {
+      try { await window.__TAURI__.core.invoke('allow_fs_scope', { path: filePath }); } catch {}
+    }
     const { index } = createTab(filePath);
     await loadPDF(filePath, index);
   }
