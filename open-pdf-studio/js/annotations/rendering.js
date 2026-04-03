@@ -1201,11 +1201,21 @@ export function redrawAnnotations(lightweight = false) {
 
   annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
 
-  // Apply scale transformation for zooming (includes hi-DPI factor)
+  // Apply scale transformation for zooming
   const dpr = window.devicePixelRatio || 1;
-  const effectiveScale = scale * dpr;
+  const vp = window.__pdfViewport;
+  const useViewport = vp && vp.active;
+  const effectiveScale = useViewport ? vp.zoom : scale * dpr;
   annotationCtx.save();
-  annotationCtx.scale(effectiveScale, effectiveScale);
+  if (useViewport) {
+    // Viewport mode: use same transform as vector renderer (zoom + pan + Y-flip + origin)
+    annotationCtx.setTransform(vp.zoom, 0, 0, vp.zoom, vp.offsetX, vp.offsetY);
+    annotationCtx.transform(1, 0, 0, -1, 0, vp.pageH);
+    annotationCtx.translate(-(vp.originX || 0), -(vp.originY || 0));
+  } else {
+    // Legacy mode: simple scale from origin
+    annotationCtx.scale(effectiveScale, effectiveScale);
+  }
 
   // Draw grid overlay if enabled
   if (state.preferences.showGrid) {

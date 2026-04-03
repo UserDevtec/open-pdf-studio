@@ -125,9 +125,11 @@ function _render() {
   // For PDFs with non-zero origin, shift by originX/originY.
   const textLayer = document.querySelector('.textLayer');
   if (textLayer) {
+    // PDF.js text layer already accounts for MediaBox origin internally.
+    // We only need to position it at the page top-left in screen space.
     const scaledH = viewport.pageH * viewport.zoom;
-    const tx = viewport.offsetX - viewport.originX * viewport.zoom;
-    const ty = viewport.offsetY - scaledH - viewport.originY * viewport.zoom;
+    const tx = viewport.offsetX;
+    const ty = viewport.offsetY - scaledH;
     textLayer.style.position = 'absolute';
     textLayer.style.left = '0';
     textLayer.style.top = '0';
@@ -147,7 +149,18 @@ function _render() {
     }
   }
 
-  // Annotation overlay
+  // Annotation overlay — sync with viewport transform
+  const annCanvas = document.getElementById('annotation-canvas');
+  if (annCanvas) {
+    // Keep annotation canvas same size as pdf canvas
+    if (annCanvas.width !== vpW || annCanvas.height !== vpH) {
+      annCanvas.width = vpW;
+      annCanvas.height = vpH;
+    }
+    // Sync doc.scale so annotation rendering uses correct zoom
+    const doc = state.documents?.[state.activeDocumentIndex];
+    if (doc) doc.scale = viewport.zoom;
+  }
   if (_annotationRedraw) {
     try { _annotationRedraw(); } catch {}
   }
