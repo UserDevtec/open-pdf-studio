@@ -1,4 +1,4 @@
-import { state, getActiveDocument } from '../core/state.js';
+import { state, getActiveDocument, imageCache } from '../core/state.js';
 import { cloneAnnotation } from './factory.js';
 import { generateImageId } from '../utils/helpers.js';
 import { updateStatusMessage } from '../ui/chrome/status-bar.js';
@@ -14,7 +14,7 @@ export function copyAnnotation(annotation) {
   // Also copy image data to system clipboard so other apps can paste it
   if ((annotation.type === 'image' || annotation.type === 'signature' || annotation.type === 'stamp') && annotation.imageData) {
     try {
-      const img = state.imageCache.get(annotation.imageId);
+      const img = imageCache.get(annotation.imageId);
       if (img && img.complete) {
         const canvas = document.createElement('canvas');
         canvas.width = img.naturalWidth || annotation.width;
@@ -75,7 +75,7 @@ export async function pasteImageFromBlob(blob) {
   });
 
   // Store in cache
-  state.imageCache.set(imageId, img);
+  imageCache.set(imageId, img);
 
   // Calculate position (center of visible area)
   const rect = annotationCanvas.getBoundingClientRect();
@@ -162,9 +162,9 @@ export function pasteAnnotation() {
   // For images/signatures, need to copy the cached image
   if (newAnnotation.type === 'image' || newAnnotation.type === 'signature') {
     const newImageId = generateImageId();
-    const originalImg = state.imageCache.get(state.clipboardAnnotation.imageId);
+    const originalImg = imageCache.get(state.clipboardAnnotation.imageId);
     if (originalImg) {
-      state.imageCache.set(newImageId, originalImg);
+      imageCache.set(newImageId, originalImg);
     }
     newAnnotation.imageId = newImageId;
   }
@@ -235,8 +235,8 @@ export function pasteAnnotations() {
 
     if (newAnn.type === 'image' || newAnn.type === 'signature') {
       const newImageId = generateImageId();
-      const originalImg = state.imageCache.get(source.imageId);
-      if (originalImg) state.imageCache.set(newImageId, originalImg);
+      const originalImg = imageCache.get(source.imageId);
+      if (originalImg) imageCache.set(newImageId, originalImg);
       newAnn.imageId = newImageId;
     }
 

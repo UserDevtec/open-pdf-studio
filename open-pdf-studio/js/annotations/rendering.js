@@ -1,4 +1,4 @@
-import { state, getActiveDocument } from '../core/state.js';
+import { state, getActiveDocument, imageCache } from '../core/state.js';
 import { annotationCanvas, annotationCtx } from '../ui/dom-elements.js';
 import { updateStatusAnnotations } from '../ui/chrome/status-bar.js';
 import { updateAnnotationsList } from '../ui/panels/annotations-list.js';
@@ -13,6 +13,7 @@ import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 import { drawSelectionHandles } from './rendering/selection.js';
 import { updateQuickAccessButtons, updateContextualTabs, drawGrid, snapToGrid } from './rendering/ui-state.js';
 import { drawCommentIcon } from './rendering/comment-icons.js';
+import { spatialIndex } from './spatial-index.js';
 
 // Re-export everything that external code needs
 export { drawPolygonShape, drawCloudShape, buildPolygonPath, buildCloudPath } from './rendering/shapes.js';
@@ -579,7 +580,7 @@ export function drawAnnotation(ctx, annotation) {
 
     case 'image':
       // Draw image with rotation and flip
-      const img = state.imageCache.get(annotation.imageId);
+      const img = imageCache.get(annotation.imageId);
       if (img && img.complete) {
         ctx.save();
 
@@ -670,11 +671,13 @@ export function drawAnnotation(ctx, annotation) {
 
     case 'stamp': {
       // Render stamp - image or text-based
-      // Try annotation-local cache first, then global imageCache
-      let stampImg = annotation._cachedImg;
-      if (!stampImg && annotation.imageId) {
-        stampImg = state.imageCache.get(annotation.imageId) || null;
-        if (stampImg) annotation._cachedImg = stampImg;  // cache locally for perf
+      // Always prefer global imageCache (plain Map, no Proxy) for reliable .complete checks.
+      // SolidJS createMutable can wrap _cachedImg in a Proxy, breaking HTMLImageElement checks.
+      let stampImg = annotation.imageId ? imageCache.get(annotation.imageId) : null;
+      if (!stampImg && annotation._cachedImg) {
+        // Unwrap potential SolidJS proxy by reading src and re-fetching from cache
+        const raw = annotation._cachedImg;
+        if (raw instanceof HTMLImageElement) stampImg = raw;
       }
       if (stampImg && stampImg.complete) {
         ctx.save();
@@ -715,7 +718,7 @@ export function drawAnnotation(ctx, annotation) {
         fallbackImg.onload = () => {
           URL.revokeObjectURL(url);
           const cacheId = annotation.imageId || ('stamp_svg_' + annotation.id);
-          state.imageCache.set(cacheId, fallbackImg);
+          imageCache.set(cacheId, fallbackImg);
           if (!annotation.imageId) annotation.imageId = cacheId;
           annotation._cachedImg = fallbackImg;  // store directly for next render
           redrawAnnotations();
@@ -730,7 +733,7 @@ export function drawAnnotation(ctx, annotation) {
 
     case 'signature': {
       // Render signature image
-      const sigImg = annotation.imageId ? state.imageCache.get(annotation.imageId) : null;
+      const sigImg = annotation.imageId ? imageCache.get(annotation.imageId) : null;
       if (sigImg && sigImg.complete) {
         ctx.save();
         const cx = annotation.x + annotation.width / 2;
@@ -1171,6 +1174,16 @@ function drawTextEdits(ctx, pageNum) {
 
 // Redraw all annotations (single page mode)
 // Pass lightweight=true during drag/resize to skip expensive DOM updates
+// Track annotation count to know when spatial index needs rebuild
+let _lastIndexedCount = -1;
+
+export function rebuildSpatialIndex() {
+  const doc = state.documents[state.activeDocumentIndex];
+  const annotations = doc ? doc.annotations : [];
+  spatialIndex.rebuild(annotations);
+  _lastIndexedCount = annotations.length;
+}
+
 export function redrawAnnotations(lightweight = false) {
   if (!annotationCtx || !annotationCanvas) return;
 
@@ -1179,6 +1192,12 @@ export function redrawAnnotations(lightweight = false) {
   const doc = state.documents[state.activeDocumentIndex];
   const scale = doc ? doc.scale : 1;
   const annotations = doc ? doc.annotations : [];
+
+  // Rebuild spatial index when annotation count changes (add/delete)
+  if (annotations.length !== _lastIndexedCount) {
+    spatialIndex.rebuild(annotations);
+    _lastIndexedCount = annotations.length;
+  }
 
   annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
 
@@ -1201,9 +1220,34 @@ export function redrawAnnotations(lightweight = false) {
   // Draw text edits (cover-and-replace) before annotations
   drawTextEdits(annotationCtx, curPage);
 
-  // Draw all annotations for current page
+  // Viewport culling: skip annotations outside the visible area for performance
+  const canvasW = annotationCanvas.width / effectiveScale;
+  const canvasH = annotationCanvas.height / effectiveScale;
+  const scrollContainer = document.getElementById('pdf-container');
+  let vpX = 0, vpY = 0, vpW = canvasW, vpH = canvasH;
+  if (scrollContainer) {
+    const scale = doc ? doc.scale : 1;
+    vpX = scrollContainer.scrollLeft / scale;
+    vpY = scrollContainer.scrollTop / scale;
+    vpW = scrollContainer.clientWidth / scale;
+    vpH = scrollContainer.clientHeight / scale;
+    // Add generous margin to avoid popping
+    const margin = 200 / scale;
+    vpX -= margin;
+    vpY -= margin;
+    vpW += margin * 2;
+    vpH += margin * 2;
+  }
+
+  // Draw all annotations for current page (with viewport culling)
   annotations.forEach(annotation => {
     if (annotation.page !== curPage) return;
+    // Quick bounding box check for viewport culling
+    if (annotation.x != null && annotation.width != null) {
+      const ax = annotation.x, ay = annotation.y;
+      const aw = annotation.width || 0, ah = annotation.height || 0;
+      if (ax + aw < vpX || ax > vpX + vpW || ay + ah < vpY || ay > vpY + vpH) return;
+    }
     drawAnnotation(annotationCtx, annotation);
   });
 

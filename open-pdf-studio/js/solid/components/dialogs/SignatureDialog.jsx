@@ -1,7 +1,7 @@
 import { createSignal, onMount, onCleanup, For, Show } from 'solid-js';
 import Dialog from '../Dialog.jsx';
 import { closeDialog, showMessage } from '../../stores/dialogStore.js';
-import { state, getActiveDocument } from '../../../core/state.js';
+import { state, getActiveDocument, imageCache } from '../../../core/state.js';
 import { createAnnotation } from '../../../annotations/factory.js';
 import { recordAdd } from '../../../core/undo-manager.js';
 import { showProperties } from '../../../ui/panels/properties-panel.js';
@@ -84,7 +84,7 @@ async function placeSignatureFromDataUrl(dataUrl, x, y, color, t) {
   await new Promise((resolve) => { img.onload = resolve; });
 
   const imageId = generateImageId();
-  state.imageCache.set(imageId, img);
+  imageCache.set(imageId, img);
 
   let width = img.naturalWidth;
   let height = img.naturalHeight;

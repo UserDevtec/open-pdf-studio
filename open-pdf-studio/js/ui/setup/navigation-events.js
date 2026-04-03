@@ -76,13 +76,15 @@ export function setupWheelZoom() {
       // Scale canvases via CSS width/height for instant flicker-free feedback.
       // Unlike CSS transform, this updates layout (centering, scroll area)
       // without clearing the canvas pixel buffer.
+      // c.width is physical pixels (= CSS width × DPR), so divide by DPR to get CSS base.
       const cssScale = doc.scale / _zoomBaseScale;
+      const _dpr = window.devicePixelRatio || 1;
       const canvasSelector = isContinuous
         ? '#continuous-container canvas'
         : '#canvas-container canvas';
       document.querySelectorAll(canvasSelector).forEach(c => {
-        c.style.width = (c.width * cssScale) + 'px';
-        c.style.height = (c.height * cssScale) + 'px';
+        c.style.width = Math.round(c.width / _dpr * cssScale) + 'px';
+        c.style.height = Math.round(c.height / _dpr * cssScale) + 'px';
       });
 
       // Scroll so that the document point stays under the mouse cursor
@@ -92,33 +94,27 @@ export function setupWheelZoom() {
       scrollContainer.scrollLeft += newPointViewportX - e.clientX;
       scrollContainer.scrollTop += newPointViewportY - e.clientY;
 
-      // Debounce the actual full-quality render (fires once after zooming stops)
+      // Debounce: only re-render after user STOPS zooming (500ms idle).
+      // The CSS-scaled canvas stays visible — no freeze, no flicker.
       if (_zoomRenderTimer) clearTimeout(_zoomRenderTimer);
       _zoomRenderTimer = setTimeout(async () => {
         _zoomRenderTimer = null;
         _zoomBaseScale = null;
 
-        // Keep CSS scaling visible while rendering in background.
-        // No loading indicator — the CSS-scaled canvas serves as a seamless placeholder.
-        // Only reset CSS + swap canvases AFTER the new render is done.
+        // Fire-and-forget background render — don't await, don't block UI
         if (isContinuous) {
-          // Continuous mode: reset CSS first then render (pages lazy-render independently)
           document.querySelectorAll(canvasSelector).forEach(c => {
             c.style.width = '';
             c.style.height = '';
           });
-          await renderContinuous();
+          renderContinuous(true).catch(() => {});
         } else {
-          // Single page: render offscreen, then swap atomically to avoid flicker
           const curDoc = state.documents[state.activeDocumentIndex];
           const pageNum = curDoc ? curDoc.currentPage : 1;
-          if (typeof renderPageOffscreen === 'function') {
-            await renderPageOffscreen(pageNum);
-          } else {
-            await renderPage(pageNum);
-          }
+          // Render in background — CSS-scaled version stays visible until done
+          renderPageOffscreen(pageNum).catch(() => {});
         }
-      }, 150);
+      }, 500);
 
       return;
     }

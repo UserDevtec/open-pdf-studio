@@ -211,6 +211,27 @@ export default function StatusBar() {
             {state.statusMessage}
           </Show>
         </div>
+        <Show when={state.renderEngine}>
+          <div class="status-separator"></div>
+          <div class="status-item" title={state.renderTiming || ''}>
+            <span style={{
+              "font-size": "10px",
+              "padding": "1px 6px",
+              "border-radius": "2px",
+              "background": state.renderEngine === 'Rust' ? '#2a7d3f' : '#666',
+              "color": "#fff",
+              "font-weight": "bold",
+              "letter-spacing": "0.5px",
+            }}>
+              {state.renderEngine}
+            </span>
+            <Show when={state.renderTiming}>
+              <span style={{ "font-size": "10px", "margin-left": "4px", "opacity": "0.7" }}>
+                {state.renderTiming}
+              </span>
+            </Show>
+          </div>
+        </Show>
       </div>
     </div>
   );

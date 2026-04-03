@@ -22,6 +22,9 @@ export default defineConfig({
       port: 3041,
     },
   },
+  optimizeDeps: {
+    exclude: ['mupdf'],
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

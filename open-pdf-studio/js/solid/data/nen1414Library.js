@@ -1,5 +1,5 @@
 // NEN 1414 Symbol Library — Dutch standard for safety symbols on technical drawings
-// Source: C:\3BM\20_knowhow\Normen\NEN\NEN 1414\cd-rom (converted TIF→PNG)
+// PNG assets bundled in /assets/nen1414/ (converted TIF→PNG)
 // Categories by prefix: Tb=Brandbeveiliging, Td=Deuren, Tn=Noodverlichting, Tr=Rook/warmteafvoer, Tv=Ventilatie, Tw=Water/sprinkler
 
 // Import all PNG assets via Vite glob

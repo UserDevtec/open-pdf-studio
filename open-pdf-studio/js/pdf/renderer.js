@@ -1,4 +1,5 @@
 import { state, getActiveDocument, getPageRotation, setPageRotation } from '../core/state.js';
+import { isTauri, invoke } from '../core/platform.js';
 // Always-fresh DOM refs (never stale regardless of init timing or bundler behavior)
 function getPdfCanvas() { return document.getElementById('pdf-canvas'); }
 function getAnnotationCanvas() { return document.getElementById('annotation-canvas'); }
@@ -14,9 +15,112 @@ import { createSinglePageFormLayer, clearSinglePageFormLayer, createFormLayer, c
 import { clearPdfVectorCache, prefetchPdfVectorGeometry } from '../tools/pdf-snap-extractor.js';
 import { clearDetectionCache } from '../tools/pdf-element-detector.js';
 import { onPageRendered, clearHighlights } from '../search/find-bar.js';
-
 // Hi-DPI support: render canvases at device pixel ratio for sharp text
 export function getCanvasDPR() { return window.devicePixelRatio || 1; }
+
+// ─── MuPDF WASM Rendering ─────────────────────────────────────────────────
+// Uses MuPDF compiled to WASM for 50-100x faster PDF rendering than PDF.js.
+// Falls back to PDF.js if mupdf is not available.
+
+let _mupdfModule = null;
+let _mupdfAvailable = null;
+let _mupdfDocument = null;
+let _mupdfDocPath = null; // track which file is loaded
+
+async function loadMupdf() {
+  if (_mupdfModule) return _mupdfModule;
+  try {
+    _mupdfModule = await import('mupdf');
+    return _mupdfModule;
+  } catch (e) {
+    console.warn('[mupdf] WASM module not available:', e);
+    return null;
+  }
+}
+
+async function isMupdfAvailable() {
+  if (_mupdfAvailable !== null) return _mupdfAvailable;
+  const mod = await loadMupdf();
+  _mupdfAvailable = mod !== null;
+  return _mupdfAvailable;
+}
+
+// Open or reuse a MuPDF document from cached PDF bytes
+async function getMupdfDocument(pdfBytes) {
+  const mupdf = await loadMupdf();
+  if (!mupdf) return null;
+  // Reuse if same bytes (check by length — imperfect but fast)
+  if (_mupdfDocument && _mupdfDocPath === pdfBytes.length) {
+    return _mupdfDocument;
+  }
+  try {
+    if (_mupdfDocument) { try { _mupdfDocument.destroy(); } catch {} }
+    _mupdfDocument = mupdf.Document.openDocument(pdfBytes, 'application/pdf');
+    _mupdfDocPath = pdfBytes.length;
+    return _mupdfDocument;
+  } catch (e) {
+    console.warn('[mupdf] Failed to open document:', e);
+    return null;
+  }
+}
+
+// Render a page with MuPDF WASM — returns Pixmap as RGBA
+async function renderPageWithMupdf(pdfBytes, pageIndex, scale) {
+  const mupdf = await loadMupdf();
+  if (!mupdf) return null;
+
+  const doc = await getMupdfDocument(pdfBytes);
+  if (!doc) return null;
+
+  const page = doc.loadPage(pageIndex);
+  const dpr = getCanvasDPR();
+  const matrix = mupdf.Matrix.scale(scale * dpr, scale * dpr);
+  const pixmap = page.toPixmap(matrix, mupdf.ColorSpace.DeviceRGB, true, true);
+
+  const w = pixmap.getWidth();
+  const h = pixmap.getHeight();
+  const samples = pixmap.getPixels(); // Uint8ClampedArray RGBA
+
+  // Copy samples before destroying pixmap (pixmap owns the memory)
+  const rgba = new Uint8ClampedArray(samples);
+
+  page.destroy();
+  pixmap.destroy();
+
+  return { rgba, width: w, height: h };
+}
+
+// PDF.js rendering helper — used as fallback when pdfium is not available
+async function _renderPageWithPdfJs(page, viewport, pdfCanvas, bufferW, bufferH, dpr) {
+  const offscreen = document.createElement('canvas');
+  offscreen.width = bufferW;
+  offscreen.height = bufferH;
+  const offCtx = offscreen.getContext('2d');
+
+  const renderContext = {
+    canvasContext: offCtx,
+    viewport: viewport,
+    transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null,
+    annotationMode: 0,
+  };
+  if (state.preferences.thinLines) renderContext.enhanceThinLines = true;
+
+  currentRenderTask = page.render(renderContext);
+  try {
+    await currentRenderTask.promise;
+  } catch (e) {
+    if (e.name === 'RenderingCancelledException') return;
+    throw e;
+  }
+  currentRenderTask = null;
+
+  // Atomic swap
+  pdfCanvas.width = bufferW;
+  pdfCanvas.height = bufferH;
+  pdfCanvas.style.width = Math.floor(viewport.width) + 'px';
+  pdfCanvas.style.height = Math.floor(viewport.height) + 'px';
+  pdfCanvas.getContext('2d').drawImage(offscreen, 0, 0);
+}
 
 function setupCanvasHiDPI(canvas, width, height) {
   const dpr = getCanvasDPR();
@@ -70,44 +174,70 @@ export async function renderPage(pageNum) {
   const bufferW = Math.floor(viewport.width * dpr);
   const bufferH = Math.floor(viewport.height * dpr);
 
-  // Render PDF to an offscreen canvas so the visible canvas keeps its old
-  // content (possibly CSS-scaled) until the new pixels are ready.
-  const offscreen = document.createElement('canvas');
-  offscreen.width = bufferW;
-  offscreen.height = bufferH;
-  const offCtx = offscreen.getContext('2d');
+  // Try Rust open-pdf-render first (pure Rust, fast), fall back to PDF.js
+  const _t0 = performance.now();
+  const _canUseTauri = isTauri();
+  const _hasFilePath = !!doc.filePath;
 
-  const renderContext = {
-    canvasContext: offCtx,
-    viewport: viewport,
-    transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null,
-    annotationMode: 0 // DISABLE - annotations are rendered by the app's overlay canvas
-  };
+  if (_canUseTauri && _hasFilePath) {
+    console.log(`[render] 🦀 Rust render: page=${pageNum}, scale=${scale}, dpr=${dpr}, path=${doc.filePath}`);
+    try {
+      // Rust renders to temp file, returns "tempPath|width|height"
+      const resultStr = await invoke('render_pdf_page', {
+        path: doc.filePath,
+        pageIndex: pageNum - 1,
+        scale: scale,
+      });
+      const _t1 = performance.now();
+      console.log(`[render] Rust command: ${Math.round(_t1 - _t0)}ms`);
 
-  if (state.preferences.thinLines) {
-    renderContext.enhanceThinLines = true;
-  }
+      const parts = resultStr.split('|');
+      const tempPath = parts[0];
+      const rustW = parseInt(parts[1]);
+      const rustH = parseInt(parts[2]);
 
-  currentRenderTask = page.render(renderContext);
+      // Read RGBA from temp file via Tauri FS (fast binary read, no JSON overhead)
+      await invoke('allow_fs_scope', { path: tempPath });
+      const { readBinaryFile } = await import('../core/platform.js');
+      const fileBytes = await readBinaryFile(tempPath);
+      const _t2 = performance.now();
 
-  try {
-    await currentRenderTask.promise;
-  } catch (e) {
-    if (e.name === 'RenderingCancelledException') {
-      return; // Render was cancelled, don't proceed
+      if (fileBytes && fileBytes.length > 8) {
+        // Skip 8-byte header
+        const rgba = new Uint8ClampedArray(fileBytes.buffer, fileBytes.byteOffset + 8, fileBytes.length - 8);
+
+        if (rustW * rustH * 4 !== rgba.length) {
+          console.warn(`[render] ⚠️ Size mismatch: ${rustW}x${rustH}x4=${rustW*rustH*4} ≠ ${rgba.length}. Fallback.`);
+          await _renderPageWithPdfJs(page, viewport, pdfCanvas, bufferW, bufferH, dpr);
+        } else {
+          pdfCanvas.width = rustW;
+          pdfCanvas.height = rustH;
+          pdfCanvas.style.width = Math.floor(viewport.width) + 'px';
+          pdfCanvas.style.height = Math.floor(viewport.height) + 'px';
+          const imageData = new ImageData(rgba, rustW, rustH);
+          pdfCanvas.getContext('2d').putImageData(imageData, 0, 0);
+          const _totalMs = Math.round(_t2 - _t0);
+          state.renderEngine = 'Rust';
+          state.renderTiming = `${_totalMs}ms`;
+          console.log(`[render] ✅ Rust OK: ${rustW}x${rustH}, render=${Math.round(_t1 - _t0)}ms, read=${Math.round(_t2 - _t1)}ms, total=${_totalMs}ms`);
+        }
+      } else {
+        console.warn(`[render] ⚠️ Temp file empty. Fallback.`);
+        await _renderPageWithPdfJs(page, viewport, pdfCanvas, bufferW, bufferH, dpr);
+      }
+    } catch (e) {
+      console.warn(`[render] ❌ Rust render FAILED: ${e}. Falling back to PDF.js`);
+      await _renderPageWithPdfJs(page, viewport, pdfCanvas, bufferW, bufferH, dpr);
+      console.log(`[render] PDF.js fallback: ${Math.round(performance.now() - _t0)}ms`);
     }
-    throw e;
+  } else {
+    console.log(`[render] 📄 PDF.js render: page=${pageNum}, tauri=${_canUseTauri}, filePath=${_hasFilePath}`);
+    await _renderPageWithPdfJs(page, viewport, pdfCanvas, bufferW, bufferH, dpr);
+    const _pjsMs = Math.round(performance.now() - _t0);
+    state.renderEngine = 'PDF.js';
+    state.renderTiming = `${_pjsMs}ms`;
+    console.log(`[render] PDF.js done: ${_pjsMs}ms`);
   }
-
-  currentRenderTask = null;
-
-  // Atomic swap: resize the visible canvas and blit the offscreen content
-  // in the same synchronous block — no visible blank frame.
-  pdfCanvas.width = bufferW;
-  pdfCanvas.height = bufferH;
-  pdfCanvas.style.width = Math.floor(viewport.width) + 'px';
-  pdfCanvas.style.height = Math.floor(viewport.height) + 'px';
-  pdfCanvas.getContext('2d').drawImage(offscreen, 0, 0);
 
   // Annotation canvas resize is deferred to just before redrawAnnotations()
   // so the clear+redraw happens in one synchronous block (no blink).
@@ -196,43 +326,71 @@ export async function renderPageOffscreen(pageNum) {
   const viewport = page.getViewport(viewportOpts);
   const dpr = getCanvasDPR();
 
-  // Create offscreen canvas for PDF content
-  const offPdf = document.createElement('canvas');
-  const offW = Math.floor(viewport.width * dpr);
-  const offH = Math.floor(viewport.height * dpr);
-  offPdf.width = offW;
-  offPdf.height = offH;
-
-  const offCtx = offPdf.getContext('2d');
-  const renderContext = {
-    canvasContext: offCtx,
-    viewport,
-    transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null,
-    annotationMode: 0
-  };
-  if (state.preferences.thinLines) renderContext.enhanceThinLines = true;
-
-  currentRenderTask = page.render(renderContext);
-  try {
-    await currentRenderTask.promise;
-  } catch (e) {
-    if (e.name === 'RenderingCancelledException') return;
-    throw e;
-  }
-  currentRenderTask = null;
-
-  // --- Swap: copy offscreen buffer to visible canvas atomically ---
   const pdfCanvas = getPdfCanvas();
   const annotationCanvas = getAnnotationCanvas();
   if (!pdfCanvas || !annotationCanvas) return;
 
-  // Resize visible canvases to match new viewport
-  setupCanvasHiDPI(pdfCanvas, viewport.width, viewport.height);
-  setupCanvasHiDPI(annotationCanvas, viewport.width, viewport.height);
+  // Try Rust open-pdf-render first, fall back to PDF.js offscreen rendering
+  let rustRendered = false;
 
-  // Copy rendered PDF pixels in one drawImage call (no visible blank frame)
-  const visCtx = pdfCanvas.getContext('2d');
-  visCtx.drawImage(offPdf, 0, 0);
+  if (isTauri() && doc.filePath) {
+    try {
+      const rgbaBytes = await invoke('render_pdf_page', {
+        path: doc.filePath,
+        pageIndex: pageNum - 1,
+        scale: scale,
+      });
+      if (rgbaBytes && rgbaBytes.length > 0) {
+        const expectedW = Math.floor(viewport.width * dpr);
+        const expectedH = Math.floor(rgbaBytes.length / (expectedW * 4));
+        pdfCanvas.width = expectedW;
+        pdfCanvas.height = expectedH;
+        pdfCanvas.style.width = Math.floor(viewport.width) + 'px';
+        pdfCanvas.style.height = Math.floor(viewport.height) + 'px';
+        const imageData = new ImageData(new Uint8ClampedArray(rgbaBytes), expectedW, expectedH);
+        pdfCanvas.getContext('2d').putImageData(imageData, 0, 0);
+        setupCanvasHiDPI(annotationCanvas, viewport.width, viewport.height);
+        rustRendered = true;
+      }
+    } catch (e) {
+      console.warn('[open-pdf-render] Offscreen fallback to PDF.js:', e);
+    }
+  }
+
+  // Fall back to PDF.js offscreen rendering
+  if (!rustRendered) {
+    const offPdf = document.createElement('canvas');
+    const offW = Math.floor(viewport.width * dpr);
+    const offH = Math.floor(viewport.height * dpr);
+    offPdf.width = offW;
+    offPdf.height = offH;
+
+    const offCtx = offPdf.getContext('2d');
+    const renderContext = {
+      canvasContext: offCtx,
+      viewport,
+      transform: dpr !== 1 ? [dpr, 0, 0, dpr, 0, 0] : null,
+      annotationMode: 0
+    };
+    if (state.preferences.thinLines) renderContext.enhanceThinLines = true;
+
+    currentRenderTask = page.render(renderContext);
+    try {
+      await currentRenderTask.promise;
+    } catch (e) {
+      if (e.name === 'RenderingCancelledException') return;
+      throw e;
+    }
+    currentRenderTask = null;
+
+    // Resize visible canvases to match new viewport
+    setupCanvasHiDPI(pdfCanvas, viewport.width, viewport.height);
+    setupCanvasHiDPI(annotationCanvas, viewport.width, viewport.height);
+
+    // Copy rendered PDF pixels in one drawImage call (no visible blank frame)
+    const visCtx = pdfCanvas.getContext('2d');
+    visCtx.drawImage(offPdf, 0, 0);
+  }
 
   // Set CSS scale variables for text/annotation layers
   const container = document.getElementById('canvas-container');
@@ -266,7 +424,51 @@ export async function renderPageOffscreen(pageNum) {
 
 // Track which pages have been rendered in continuous mode
 const _renderedPages = new Set();
+let _renderedPagesScale = null; // scale at which pages were rendered
 let _continuousObserver = null;
+
+// Track active continuous page renders for cancellation
+const _continuousRenderTasks = new Map(); // pageNum -> RenderTask
+
+// Low-res preview cache for fast initial display
+const _lowResCache = new Map(); // pageNum -> { canvas, scale }
+const LOW_RES_SCALE = 0.5; // Render at 50% for fast preview
+
+// Render a quick low-res preview of a page (fast, <50ms per page)
+async function renderLowResPreview(pdfDoc, pageNum, targetWidth, targetHeight) {
+  const cacheKey = pageNum;
+  if (_lowResCache.has(cacheKey)) return _lowResCache.get(cacheKey).canvas;
+
+  const page = await pdfDoc.getPage(pageNum);
+  const extraRotation = getPageRotation(pageNum);
+  const vpOpts = { scale: LOW_RES_SCALE };
+  if (extraRotation) vpOpts.rotation = (page.rotate + extraRotation) % 360;
+  const viewport = page.getViewport(vpOpts);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  const ctx = canvas.getContext('2d');
+
+  try {
+    await page.render({
+      canvasContext: ctx,
+      viewport,
+      annotationMode: 0,
+    }).promise;
+  } catch (e) {
+    if (e.name === 'RenderingCancelledException') return null;
+    return null;
+  }
+
+  _lowResCache.set(cacheKey, { canvas, scale: LOW_RES_SCALE });
+  return canvas;
+}
+
+// Clear low-res cache (on document close)
+export function clearLowResCache() {
+  _lowResCache.clear();
+}
 
 // Render a single page inside its wrapper (used by lazy rendering)
 async function renderContinuousPage(pageNum) {
@@ -278,6 +480,12 @@ async function renderContinuousPage(pageNum) {
 
   const canvasContainer = pageWrapper.querySelector('.canvas-container-cont');
   if (!canvasContainer) return;
+
+  // Cancel any in-progress render for this page
+  if (_continuousRenderTasks.has(pageNum)) {
+    try { _continuousRenderTasks.get(pageNum).cancel(); } catch {}
+    _continuousRenderTasks.delete(pageNum);
+  }
 
   const doc = state.documents[state.activeDocumentIndex];
   if (!doc || !doc.pdfDoc) return;
@@ -292,48 +500,100 @@ async function renderContinuousPage(pageNum) {
   canvasContainer.style.setProperty('--scale-factor', viewport.scale);
   canvasContainer.style.setProperty('--total-scale-factor', viewport.scale);
 
-  // Create PDF canvas (hi-DPI)
-  const pdfCanvasEl = document.createElement('canvas');
-  pdfCanvasEl.className = 'pdf-canvas';
-  setupCanvasHiDPI(pdfCanvasEl, viewport.width, viewport.height);
-  pdfCanvasEl.dataset.page = pageNum;
-  pdfCanvasEl.style.display = 'block';
-  pdfCanvasEl.style.background = 'white';
+  // Reuse existing canvases if available (zoom re-render), or create new ones
+  let pdfCanvasEl = canvasContainer.querySelector('.pdf-canvas');
+  let annotationCanvasEl = canvasContainer.querySelector('.annotation-canvas');
+  let isNewPage = false;
 
-  // Create annotation canvas (hi-DPI)
-  const annotationCanvasEl = document.createElement('canvas');
-  annotationCanvasEl.className = 'annotation-canvas';
+  if (!pdfCanvasEl) {
+    isNewPage = true;
+    pdfCanvasEl = document.createElement('canvas');
+    pdfCanvasEl.className = 'pdf-canvas';
+    pdfCanvasEl.dataset.page = pageNum;
+    pdfCanvasEl.style.display = 'block';
+    pdfCanvasEl.style.background = 'white';
+    canvasContainer.appendChild(pdfCanvasEl);
+
+    // Show low-res preview immediately while full render runs in background
+    setupCanvasHiDPI(pdfCanvasEl, viewport.width, viewport.height);
+    const lowRes = _lowResCache.get(pageNum);
+    if (lowRes) {
+      const previewCtx = pdfCanvasEl.getContext('2d');
+      previewCtx.drawImage(lowRes.canvas, 0, 0, pdfCanvasEl.width, pdfCanvasEl.height);
+    }
+  }
+
+  if (!annotationCanvasEl) {
+    annotationCanvasEl = document.createElement('canvas');
+    annotationCanvasEl.className = 'annotation-canvas';
+    annotationCanvasEl.dataset.page = pageNum;
+    annotationCanvasEl.style.position = 'absolute';
+    annotationCanvasEl.style.top = '0';
+    annotationCanvasEl.style.left = '0';
+    canvasContainer.appendChild(annotationCanvasEl);
+  }
+
+  // Update canvas dimensions for new scale
+  setupCanvasHiDPI(pdfCanvasEl, viewport.width, viewport.height);
   setupCanvasHiDPI(annotationCanvasEl, viewport.width, viewport.height);
-  annotationCanvasEl.dataset.page = pageNum;
-  annotationCanvasEl.style.position = 'absolute';
-  annotationCanvasEl.style.top = '0';
-  annotationCanvasEl.style.left = '0';
   annotationCanvasEl.style.cursor = getCursorForTool();
-  // Apply text-access overrides if select or editText tool is active
+
   if (state.currentTool === 'select' || state.currentTool === 'editText') {
     annotationCanvasEl.style.zIndex = '2';
     annotationCanvasEl.style.pointerEvents = 'none';
   }
 
-  canvasContainer.appendChild(pdfCanvasEl);
-  canvasContainer.appendChild(annotationCanvasEl);
-
-  // Render PDF page
+  // Render PDF page — try Rust open-pdf-render first, fall back to PDF.js
   const pdfCtxEl = pdfCanvasEl.getContext('2d');
   const contDpr = getCanvasDPR();
-  const contRenderContext = {
-    canvasContext: pdfCtxEl,
-    viewport: viewport,
-    transform: contDpr !== 1 ? [contDpr, 0, 0, contDpr, 0, 0] : null,
-    annotationMode: 0
-  };
-  if (state.preferences.thinLines) {
-    contRenderContext.enhanceThinLines = true;
+  let contRustRendered = false;
+
+  if (isTauri() && doc.filePath) {
+    try {
+      const rgbaBytes = await invoke('render_pdf_page', {
+        path: doc.filePath,
+        pageIndex: pageNum - 1,
+        scale: doc.scale * contDpr,
+      });
+      if (rgbaBytes && rgbaBytes.length > 0) {
+        const expectedW = Math.floor(viewport.width * contDpr);
+        const expectedH = Math.floor(rgbaBytes.length / (expectedW * 4));
+        pdfCanvasEl.width = expectedW;
+        pdfCanvasEl.height = expectedH;
+        pdfCanvasEl.style.width = Math.floor(expectedW / contDpr) + 'px';
+        pdfCanvasEl.style.height = Math.floor(expectedH / contDpr) + 'px';
+        const imageData = new ImageData(new Uint8ClampedArray(rgbaBytes), expectedW, expectedH);
+        pdfCtxEl.putImageData(imageData, 0, 0);
+        contRustRendered = true;
+      }
+    } catch (e) {
+      console.warn(`[open-pdf-render] Continuous page ${pageNum} fallback to PDF.js:`, e);
+    }
   }
-  try {
-    await page.render(contRenderContext).promise;
-  } catch (error) {
-    console.error(`Error rendering page ${pageNum}:`, error);
+
+  if (!contRustRendered) {
+    const contRenderContext = {
+      canvasContext: pdfCtxEl,
+      viewport: viewport,
+      transform: contDpr !== 1 ? [contDpr, 0, 0, contDpr, 0, 0] : null,
+      annotationMode: 0
+    };
+    if (state.preferences.thinLines) {
+      contRenderContext.enhanceThinLines = true;
+    }
+
+    const renderTask = page.render(contRenderContext);
+    _continuousRenderTasks.set(pageNum, renderTask);
+
+    try {
+      await renderTask.promise;
+    } catch (error) {
+      if (error.name === 'RenderingCancelledException') return;
+      console.error(`Error rendering page ${pageNum}:`, error);
+      return;
+    } finally {
+      _continuousRenderTasks.delete(pageNum);
+    }
   }
 
   // Create text layer
@@ -371,12 +631,55 @@ async function renderContinuousPage(pageNum) {
   // Re-apply search highlights after re-render
   onPageRendered();
 
-  // Setup mouse events
-  setupContinuousPageEvents(annotationCanvasEl, pageNum);
+  // Setup mouse events only for new pages (not re-renders)
+  if (isNewPage) {
+    setupContinuousPageEvents(annotationCanvasEl, pageNum);
+  }
+}
+
+// Re-render only visible pages at new scale (keeps existing DOM structure)
+export async function reRenderVisibleContinuousPages() {
+  const doc = state.documents[state.activeDocumentIndex];
+  if (!doc || !doc.pdfDoc) return;
+  const scale = doc.scale;
+
+  // Mark all pages as needing re-render at new scale
+  _renderedPages.clear();
+  _renderedPagesScale = scale;
+
+  // Update wrapper dimensions for new scale without destroying canvases
+  const continuousContainer = document.getElementById('continuous-container');
+  if (!continuousContainer) return;
+
+  for (const wrapper of continuousContainer.querySelectorAll('.page-wrapper')) {
+    const pageNum = parseInt(wrapper.dataset.page, 10);
+    if (!pageNum) continue;
+
+    const page = await doc.pdfDoc.getPage(pageNum);
+    const extraRotation = getPageRotation(pageNum);
+    const vpOpts = { scale };
+    if (extraRotation) vpOpts.rotation = (page.rotate + extraRotation) % 360;
+    const viewport = page.getViewport(vpOpts);
+
+    const cc = wrapper.querySelector('.canvas-container-cont');
+    if (cc) {
+      cc.style.width = `${viewport.width}px`;
+      cc.style.height = `${viewport.height}px`;
+    }
+  }
+
+  // IntersectionObserver will automatically trigger re-render for visible pages
+  // Force a re-check by briefly disconnecting and reconnecting
+  if (_continuousObserver) {
+    _continuousObserver.disconnect();
+    continuousContainer.querySelectorAll('.page-wrapper').forEach(wrapper => {
+      _continuousObserver.observe(wrapper);
+    });
+  }
 }
 
 // Render all pages (continuous mode) — creates placeholders, lazily renders visible pages
-export async function renderContinuous() {
+export async function renderContinuous(forceRebuild) {
   // Clear search highlights immediately to prevent stale positions during re-render
   clearHighlights();
 
@@ -385,14 +688,15 @@ export async function renderContinuous() {
   const pdfDoc = doc.pdfDoc;
   const scale = doc.scale;
 
+  const continuousContainer = document.getElementById('continuous-container');
   // Cleanup previous observer
   if (_continuousObserver) {
     _continuousObserver.disconnect();
     _continuousObserver = null;
   }
   _renderedPages.clear();
+  _renderedPagesScale = scale;
 
-  const continuousContainer = document.getElementById('continuous-container');
   continuousContainer.innerHTML = '';
 
   clearTextLayers();
@@ -454,6 +758,21 @@ export async function renderContinuous() {
   continuousContainer.querySelectorAll('.page-wrapper').forEach(wrapper => {
     _continuousObserver.observe(wrapper);
   });
+
+  // Fire-and-forget: pre-render low-res previews in background for fast scroll
+  // This runs without blocking — pages that scroll into view get full render via observer
+  if (pdfDoc.numPages > 1) {
+    (async () => {
+      for (let p = 1; p <= Math.min(pdfDoc.numPages, 200); p++) {
+        if (_lowResCache.has(p)) continue;
+        try {
+          await renderLowResPreview(pdfDoc, p, 0, 0);
+        } catch {}
+        // Yield to main thread every 5 pages
+        if (p % 5 === 0) await new Promise(r => setTimeout(r, 0));
+      }
+    })();
+  }
 }
 
 // Setup pointer events for continuous mode pages
@@ -784,6 +1103,7 @@ export async function rotatePage(delta, targetPage) {
 
 // Clear the PDF view when no document is open
 export function clearPdfView() {
+  import('./mupdf-renderer.js').then(m => m.closeDocument());
   const pdfCanvas = getPdfCanvas();
   const annotationCanvas = getAnnotationCanvas();
   if (!pdfCanvas || !annotationCanvas) return;
@@ -793,6 +1113,11 @@ export function clearPdfView() {
   pdfCtx.clearRect(0, 0, pdfCanvas.width, pdfCanvas.height);
   const annotationCtx = annotationCanvas.getContext('2d');
   annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
+
+  // Clear caches
+  _lowResCache.clear();
+  _renderedPages.clear();
+  _renderedPagesScale = null;
 
   // Clear continuous mode container
   const continuousContainer = document.getElementById('continuous-container');
@@ -824,4 +1149,99 @@ export function clearPdfView() {
 
   // Update status bar (derives from reactive state)
   updateAllStatus();
+}
+
+// ─── Self-test: call from DevTools console with window.__testRender() ──────
+// Tests the full rendering pipeline and reports what engine is used.
+if (typeof window !== 'undefined') {
+  window.__testRender = async function(filePath) {
+    const testPath = filePath || String.raw`C:\3BM\50_projecten\3_3BM_bouwtechniek\3059 Woonhuis Benedenkerkseweg 87 Stolwijk\20_post_IN\01 27-03-2026 beginstukken\begane grond do 3 constructie verwerkt_50.pdf`;
+    console.log('=== Render Self-Test ===');
+    console.log('Path:', testPath);
+    console.log('isTauri():', isTauri());
+
+    // Step 1: Test Rust render command directly
+    if (isTauri()) {
+      try {
+        console.log('Testing invoke("render_pdf_page")...');
+        const t0 = performance.now();
+        const result = await invoke('render_pdf_page', { path: testPath, pageIndex: 0, scale: 1.5 });
+        const elapsed = Math.round(performance.now() - t0);
+        if (result && result.length > 8) {
+          // Parse 8-byte header: width (u32 LE) + height (u32 LE)
+          const hdr = new DataView(result.buffer, result.byteOffset, 8);
+          const w = hdr.getUint32(0, true);
+          const h = hdr.getUint32(4, true);
+          const rgbaLen = result.length - 8;
+          console.log(`✅ Rust render: ${w}x${h}, ${rgbaLen} bytes (${rgbaLen === w*h*4 ? 'size OK' : 'SIZE MISMATCH'}), ${elapsed}ms`);
+
+          // Draw to canvas to verify
+          const canvas = document.getElementById('pdf-canvas');
+          if (canvas && w * h * 4 === rgbaLen) {
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.width = Math.floor(w / (window.devicePixelRatio || 1)) + 'px';
+            canvas.style.height = Math.floor(h / (window.devicePixelRatio || 1)) + 'px';
+            const rgba = result.slice(8);
+            const imgData = new ImageData(new Uint8ClampedArray(rgba.buffer, rgba.byteOffset, rgba.length), w, h);
+            canvas.getContext('2d').putImageData(imgData, 0, 0);
+            document.getElementById('placeholder')?.style.setProperty('display', 'none');
+            document.getElementById('pdf-container')?.classList.add('visible');
+            console.log('✅ Drawn to canvas');
+          }
+        } else {
+          console.log('❌ Rust render returned empty or too small:', result?.length);
+        }
+      } catch (e) {
+        console.log('❌ Rust render error:', e);
+      }
+    } else {
+      console.log('⚠️ Not in Tauri — Rust render unavailable, PDF.js will be used');
+    }
+
+    // Step 2: Test via the full renderPage pipeline
+    const doc = getActiveDocument();
+    if (doc) {
+      console.log('Active doc:', doc.filePath, 'page:', doc.currentPage, 'scale:', doc.scale);
+      console.log('Calling renderPage()...');
+      const t0 = performance.now();
+      await renderPage(doc.currentPage || 1);
+      console.log(`renderPage() total: ${Math.round(performance.now() - t0)}ms`);
+    } else {
+      console.log('No active document. Open a PDF first, then run __testRender() again.');
+    }
+    console.log('=== End Self-Test ===');
+  };
+
+  window.__testRustDirect = async function(filePath) {
+    const testPath = filePath || String.raw`C:\3BM\50_projecten\3_3BM_bouwtechniek\3059 Woonhuis Benedenkerkseweg 87 Stolwijk\20_post_IN\01 27-03-2026 beginstukken\begane grond do 3 constructie verwerkt_50.pdf`;
+    if (!isTauri()) { console.log('Not in Tauri'); return; }
+    try {
+      console.log('Invoking render_pdf_page directly...');
+      const t0 = performance.now();
+      const rgba = await invoke('render_pdf_page', { path: testPath, pageIndex: 0, scale: 1.5 });
+      const elapsed = Math.round(performance.now() - t0);
+      console.log(`Result: ${rgba?.length || 0} bytes in ${elapsed}ms`);
+      if (rgba && rgba.length > 16) {
+        // Show on canvas
+        const canvas = document.getElementById('pdf-canvas');
+        if (canvas) {
+          // Estimate dimensions from A3 landscape at 1.5x
+          const w = Math.round(2384 * 1.5);
+          const h = Math.floor(rgba.length / (w * 4));
+          canvas.width = w;
+          canvas.height = h;
+          canvas.style.width = (w / (window.devicePixelRatio || 1)) + 'px';
+          canvas.style.height = (h / (window.devicePixelRatio || 1)) + 'px';
+          const imgData = new ImageData(new Uint8ClampedArray(rgba), w, h);
+          canvas.getContext('2d').putImageData(imgData, 0, 0);
+          document.getElementById('placeholder')?.style.setProperty('display', 'none');
+          document.getElementById('pdf-container')?.classList.add('visible');
+          console.log(`✅ Drawn to canvas: ${w}x${h}`);
+        }
+      }
+    } catch (e) {
+      console.log('❌ Error:', e);
+    }
+  };
 }

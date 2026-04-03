@@ -233,26 +233,37 @@ export function formatMeasurement(measurement) {
   let val = applyRounding(measurement.value, measurement.unit);
   let unit = measurement.unit || 'mm';
 
+  // Always convert mm distances to meters
+  if (unit === 'mm') {
+    val = val / 1000;
+    unit = 'm';
+  }
+
+  // Always convert mm² areas to m²
+  if (unit === 'mm\u00B2') {
+    val = val / 1000000;
+    unit = 'm\u00B2';
+  }
+
+  // Recalculate suffix after unit conversion
   const suffix = unit === 'px' ? '' : ` ${unit}`;
   const rounding = state.preferences.measureRounding;
   if (rounding && rounding !== 'none' && unit !== 'px') {
     const step = parseFloat(rounding);
     if (step >= 1) return `${Math.round(val)}${suffix}`;
-    return `${val.toFixed(1)}${suffix}`;
+    return `${val.toFixed(2)}${suffix}`;
   }
   // Default formatting per unit
-  if (unit === 'mm') return `${Math.round(val)}${suffix}`;
-  if (unit === 'mm\u00B2') return `${Math.round(val)}${suffix}`;
-  if (unit === 'cm\u00B2') return `${val.toFixed(1)}${suffix}`;
   if (unit === 'm\u00B2') return `${val.toFixed(2)}${suffix}`;
-  if (unit === 'cm') return `${val.toFixed(1)}${suffix}`;
   if (unit === 'm') return `${val.toFixed(2)}${suffix}`;
+  if (unit === 'cm\u00B2') return `${val.toFixed(2)}${suffix}`;
+  if (unit === 'cm') return `${val.toFixed(1)}${suffix}`;
   if (unit === 'ft\u00B2' || unit === 'in\u00B2') return `${val.toFixed(2)}${suffix}`;
   if (unit === 'ft' || unit === 'in') return `${val.toFixed(2)}${suffix}`;
   if (unit === '°') return `${val.toFixed(1)}${suffix}`;
   if (val < 0.01) return `0${suffix}`;
   if (val < 1) return `${val.toFixed(2)}${suffix}`;
-  return `${Math.round(val)}${suffix}`;
+  return `${val.toFixed(2)}${suffix}`;
 }
 
 // Show scale calibration dialog, optionally with a reference pixel length

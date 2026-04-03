@@ -1,4 +1,4 @@
-import { state, getActiveDocument } from '../core/state.js';
+import { state, getActiveDocument, imageCache } from '../core/state.js';
 import { generateImageId } from '../utils/helpers.js';
 import { recordAdd } from '../core/undo-manager.js';
 import { showProperties } from '../ui/panels/properties-panel.js';
@@ -30,7 +30,7 @@ export async function addImageFromFile(filePath) {
     await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
 
     const imageId = generateImageId();
-    state.imageCache.set(imageId, img);
+    imageCache.set(imageId, img);
 
     // Calculate position (center of visible area)
     const rect = annotationCanvas.getBoundingClientRect();

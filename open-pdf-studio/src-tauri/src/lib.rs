@@ -802,6 +802,55 @@ fn read_plugin_file(plugin_id: String, file_path: String) -> Result<String, Stri
     fs::read_to_string(&full_path).map_err(|e| format!("Failed to read file: {}", e))
 }
 
+// ─── Allow FS access to a path (for testing / programmatic file opens) ────
+#[tauri::command]
+fn allow_fs_scope(app: tauri::AppHandle, path: String) -> Result<bool, String> {
+    app.fs_scope().allow_file(&path)
+        .map_err(|e| format!("{}", e))?;
+    // Also allow the directory for related files
+    if let Some(parent) = std::path::Path::new(&path).parent() {
+        let _ = app.fs_scope().allow_directory(parent, false);
+    }
+    Ok(true)
+}
+
+// ─── PDF rendering via open-pdf-render (pure Rust) ────────────────────────
+use open_pdf_render::PdfRenderer;
+
+#[tauri::command]
+fn render_pdf_page(path: String, page_index: u32, scale: f32) -> Result<String, String> {
+    let bytes = fs::read(&path).map_err(|e| format!("Read: {}", e))?;
+    let renderer = PdfRenderer::new();
+    let doc = renderer.load_document(&bytes).map_err(|e| format!("{}", e))?;
+    let page = doc.render_page(page_index as usize, scale).map_err(|e| format!("{}", e))?;
+
+    // Write RGBA to temp file (avoids 36MB IPC serialization overhead)
+    let temp_dir = std::env::temp_dir();
+    let temp_path = temp_dir.join(format!("opdf_render_{}_{}.raw", page_index, std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()));
+
+    // Prepend 8-byte header: width (u32 LE) + height (u32 LE)
+    let mut data = Vec::with_capacity(8 + page.rgba.len());
+    data.extend_from_slice(&page.width.to_le_bytes());
+    data.extend_from_slice(&page.height.to_le_bytes());
+    data.extend_from_slice(&page.rgba);
+
+    fs::write(&temp_path, &data).map_err(|e| format!("Write temp: {}", e))?;
+
+    // Return temp file path + dimensions as JSON string
+    Ok(format!("{}|{}|{}", temp_path.to_string_lossy(), page.width, page.height))
+}
+
+#[tauri::command]
+fn get_page_dimensions(path: String) -> Result<Vec<(f32, f32)>, String> {
+    let bytes = fs::read(&path).map_err(|e| format!("Read: {}", e))?;
+    let renderer = PdfRenderer::new();
+    let doc = renderer.load_document(&bytes).map_err(|e| format!("{}", e))?;
+    (0..doc.page_count())
+        .map(|i| doc.page_dimensions(i).map_err(|e| format!("{}", e)))
+        .collect()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Check for PDF files in command line arguments
@@ -895,7 +944,10 @@ pub fn run() {
             list_plugins,
             install_plugin,
             uninstall_plugin,
-            read_plugin_file
+            read_plugin_file,
+            render_pdf_page,
+            get_page_dimensions,
+            allow_fs_scope
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

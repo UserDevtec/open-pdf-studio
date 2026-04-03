@@ -1,0 +1,11 @@
+[package]
+name = "open-pdf-render"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Pure Rust PDF page renderer — renders PDF pages to RGBA bitmaps"
+
+[dependencies]
+lopdf = "0.34"
+tiny-skia = "0.11"
+image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }

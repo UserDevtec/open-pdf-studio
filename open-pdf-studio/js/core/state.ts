@@ -53,6 +53,7 @@ export interface AppState {
   activeDocumentIndex: number;
   currentTool: string;
   toolOverrides: Record<string, any> | null;
+  /** @deprecated Use the standalone `imageCache` export instead */
   imageCache: Map<string, any>;
   modalDialogOpen: boolean;
   appMenuOpen: boolean;
@@ -61,6 +62,8 @@ export interface AppState {
   shiftKeyPressed: boolean;
   statusMessage: string;
   statusMessageVisible: boolean;
+  renderEngine: string;    // 'Rust' or 'PDF.js' — shown in status bar
+  renderTiming: string;    // e.g. '680ms' — shown next to engine name
   textSelection: TextSelection;
   search: SearchState;
 
@@ -128,12 +131,16 @@ export interface AppState {
   selectedAnnotations: Annotation[];
 }
 
+// Standalone image cache — kept OUTSIDE createMutable to avoid SolidJS Proxy
+// wrapping Map operations (get/set/has don't work reliably through Proxy).
+export const imageCache = new Map<string, HTMLImageElement>();
+
 export const state = createMutable<AppState>({
   documents: [],
   activeDocumentIndex: -1,
   currentTool: 'hand',
   toolOverrides: null,
-  imageCache: new Map(),
+  imageCache: imageCache,  // legacy reference — use standalone `imageCache` export
   modalDialogOpen: false,
   appMenuOpen: false,
   preferences: { ...DEFAULT_PREFERENCES },
@@ -141,6 +148,8 @@ export const state = createMutable<AppState>({
   shiftKeyPressed: false,
   statusMessage: 'Ready',
   statusMessageVisible: true,
+  renderEngine: '',
+  renderTiming: '',
   textSelection: {
     hasSelection: false,
     selectedText: '',

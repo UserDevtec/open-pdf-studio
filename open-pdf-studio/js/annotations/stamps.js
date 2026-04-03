@@ -1,4 +1,4 @@
-import { state, getActiveDocument } from '../core/state.js';
+import { state, getActiveDocument, imageCache } from '../core/state.js';
 import { createAnnotation } from './factory.js';
 import { recordAdd } from '../core/undo-manager.js';
 import { showProperties } from '../ui/panels/properties-panel.js';
@@ -74,22 +74,27 @@ function rasterizeSvg(svgString) {
   return new Promise((resolve) => {
     const blob = new Blob([svgString], { type: 'image/svg+xml' });
     const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
+    const svgImg = new Image();
+    svgImg.onload = () => {
       const canvas = document.createElement('canvas');
       const scale = 3;
-      canvas.width = img.naturalWidth * scale;
-      canvas.height = img.naturalHeight * scale;
+      canvas.width = svgImg.naturalWidth * scale;
+      canvas.height = svgImg.naturalHeight * scale;
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(svgImg, 0, 0, canvas.width, canvas.height);
       URL.revokeObjectURL(url);
-      resolve({ img, dataUrl: canvas.toDataURL('image/png') });
+      const dataUrl = canvas.toDataURL('image/png');
+      // Create a proper rasterized PNG image for reliable canvas rendering
+      const pngImg = new Image();
+      pngImg.onload = () => resolve({ img: pngImg, dataUrl });
+      pngImg.onerror = () => resolve({ img: svgImg, dataUrl });
+      pngImg.src = dataUrl;
     };
-    img.onerror = () => {
+    svgImg.onerror = () => {
       URL.revokeObjectURL(url);
       resolve(null);
     };
-    img.src = url;
+    svgImg.src = url;
   });
 }
 
@@ -146,7 +151,7 @@ export async function placeOverrideStamp(x, y) {
   }
 
   const imageId = 'stamp_' + Date.now();
-  state.imageCache.set(imageId, img);
+  imageCache.set(imageId, img);
 
   // Also store on a non-reactive property for rendering perf
   const _imgRef = img;
@@ -202,7 +207,7 @@ export async function updateStampImage(ann, svgString) {
   const result = await rasterizeSvg(svgString);
   if (!result) return;
   const imageId = 'stamp_' + Date.now();
-  state.imageCache.set(imageId, result.img);
+  imageCache.set(imageId, result.img);
   ann.imageId = imageId;
   ann.imageData = result.dataUrl;
   ann.originalWidth = result.img.naturalWidth;
@@ -230,7 +235,7 @@ async function loadCustomStamp(x, y) {
 
     const { generateImageId } = await import('../utils/helpers.js');
     const imageId = generateImageId();
-    state.imageCache.set(imageId, img);
+    imageCache.set(imageId, img);
 
     let width = img.naturalWidth;
     let height = img.naturalHeight;

@@ -35,9 +35,23 @@ zip = "2"
 tauri-plugin-deep-link = "2"
 tauri-plugin-single-instance = "2"
 reqwest = { version = "0.12", features = ["rustls-tls"], default-features = false }
+open-pdf-render = { path = "../../open-pdf-render" }
 
 [target.'cfg(not(target_os = "android"))'.dependencies]
 tauri-plugin-updater = "2"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_Graphics_Printing", "Win32_Foundation"] }
+
+# Compile open-pdf-render with optimizations even in dev mode (rendering is 100x slower without)
+[profile.dev.package.open-pdf-render]
+opt-level = 3
+
+[profile.dev.package.tiny-skia]
+opt-level = 3
+
+[profile.dev.package.tiny-skia-path]
+opt-level = 3
+
+[profile.dev.package.lopdf]
+opt-level = 3

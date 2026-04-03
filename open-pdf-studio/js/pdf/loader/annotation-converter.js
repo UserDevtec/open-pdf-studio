@@ -1,4 +1,4 @@
-import { state } from '../../core/state.js';
+import { state, imageCache } from '../../core/state.js';
 import { createAnnotation } from '../../annotations/factory.js';
 import { generateImageId } from '../../utils/helpers.js';
 import { colorArrayToHex } from '../../utils/colors.js';
@@ -912,7 +912,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         const imageId = generateImageId();
         const img = new Image();
         img.src = dataUrl;
-        state.imageCache.set(imageId, img);
+        imageCache.set(imageId, img);
         stampProps.imageId = imageId;
         stampProps.imageData = dataUrl;
         stampProps.originalWidth = w;
