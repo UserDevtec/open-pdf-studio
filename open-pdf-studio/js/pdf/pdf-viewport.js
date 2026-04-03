@@ -118,6 +118,13 @@ function _render() {
   // Status bar
   state.renderEngine = 'Vector';
 
+  // Sync text layer position with viewport transform
+  const textLayer = document.querySelector('.textLayer');
+  if (textLayer) {
+    textLayer.style.transform = `matrix(${viewport.zoom}, 0, 0, ${viewport.zoom}, ${viewport.offsetX}, ${viewport.offsetY - viewport.pageH * viewport.zoom})`;
+    textLayer.style.transformOrigin = '0 0';
+  }
+
   // Annotation overlay
   if (_annotationRedraw) {
     try { _annotationRedraw(); } catch {}

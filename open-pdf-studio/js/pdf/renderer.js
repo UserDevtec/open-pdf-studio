@@ -214,7 +214,16 @@ export async function renderPage(pageNum) {
           // Load page into viewport (triggers fitToViewport + first render)
           setPage(doc.filePath, pageNum, dims.w, dims.h, dims.x0 || 0, dims.y0 || 0);
 
-          console.log(`[render] ✅ Vector viewport: ${dims.w}x${dims.h} pt, commands cached`);
+          // Create text layer for text selection + search (one-time per page)
+          try {
+            const page = await pdfDoc.getPage(pageNum);
+            const textViewport = page.getViewport({ scale: 1.0 });
+            await createSinglePageTextLayer(page, textViewport);
+          } catch (e) {
+            console.warn('[render] Text layer failed:', e);
+          }
+
+          console.log(`[render] ✅ Vector viewport: ${dims.w}x${dims.h} pt, origin=(${dims.x0},${dims.y0})`);
           _skipBitmapRender = true;
         }
       }
