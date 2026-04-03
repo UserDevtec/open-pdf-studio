@@ -92,15 +92,18 @@ function _render() {
   _ctx.fillStyle = '#e0e0e0';
   _ctx.fillRect(0, 0, vpW, vpH);
 
-  // White page background in world space
+  // Vector draw commands — renderVectorPage sets its own transform internally
+  // White page background is drawn FIRST using the SAME transform as the vectors
   _ctx.save();
+  // Set the exact transform that renderVectorPage will use
   _ctx.setTransform(viewport.zoom, 0, 0, viewport.zoom, viewport.offsetX, viewport.offsetY);
   _ctx.transform(1, 0, 0, -1, 0, viewport.pageH);
+  // White page background (must be BEFORE vector commands, SAME coordinate space)
   _ctx.fillStyle = '#ffffff';
   _ctx.fillRect(0, 0, viewport.pageW, viewport.pageH);
   _ctx.restore();
 
-  // Vector draw commands (the ONLY render path)
+  // Now draw the vectors (renderVectorPage does setTransform+transform internally)
   _ctx.save();
   renderVectorPage(_ctx, viewport.filePath, viewport.pageNum, {
     a: viewport.zoom,
