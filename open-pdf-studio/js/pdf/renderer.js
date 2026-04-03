@@ -219,6 +219,8 @@ export async function renderPage(pageNum) {
             const page = await pdfDoc.getPage(pageNum);
             const textViewport = page.getViewport({ scale: 1.0 });
             await createSinglePageTextLayer(page, textViewport);
+            // Force viewport re-render so text layer transform gets applied
+            if (window.__pdfViewport) window.__pdfViewport.dirty = true;
           } catch (e) {
             console.warn('[render] Text layer failed:', e);
           }

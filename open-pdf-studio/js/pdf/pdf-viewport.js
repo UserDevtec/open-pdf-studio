@@ -118,11 +118,22 @@ function _render() {
   // Status bar
   state.renderEngine = 'Vector';
 
-  // Sync text layer position with viewport transform
+  // Sync text layer with viewport.
+  // PDF.js text layer (0,0) = top-left of page at scale=1.
+  // Our vector canvas has Y-flip: the page top-left in screen coords is
+  // at (offsetX, offsetY - pageH * zoom). That's where the text layer top-left goes.
+  // For PDFs with non-zero origin, shift by originX/originY.
   const textLayer = document.querySelector('.textLayer');
   if (textLayer) {
-    textLayer.style.transform = `matrix(${viewport.zoom}, 0, 0, ${viewport.zoom}, ${viewport.offsetX}, ${viewport.offsetY - viewport.pageH * viewport.zoom})`;
+    const scaledH = viewport.pageH * viewport.zoom;
+    const tx = viewport.offsetX - viewport.originX * viewport.zoom;
+    const ty = viewport.offsetY - scaledH - viewport.originY * viewport.zoom;
+    textLayer.style.position = 'absolute';
+    textLayer.style.left = '0';
+    textLayer.style.top = '0';
+    textLayer.style.transform = `matrix(${viewport.zoom}, 0, 0, ${viewport.zoom}, ${tx}, ${ty})`;
     textLayer.style.transformOrigin = '0 0';
+    textLayer.style.pointerEvents = 'none';
   }
 
   // Annotation overlay
