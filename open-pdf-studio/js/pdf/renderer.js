@@ -132,41 +132,6 @@ function setupCanvasHiDPI(canvas, width, height) {
 // Track current render task to cancel if needed
 let currentRenderTask = null;
 
-// ─── Page Prefetching ────────────────────────────────────────────────────
-// Pre-load annotations for adjacent pages to reduce delay when navigating.
-let _prefetchAbort = null;
-
-function prefetchAdjacentPages(currentPage) {
-  if (_prefetchAbort) _prefetchAbort.cancelled = true;
-  const abort = { cancelled: false };
-  _prefetchAbort = abort;
-
-  const doc = getActiveDocument();
-  if (!doc || !doc.pdfDoc || doc.viewMode === 'continuous') return;
-
-  const totalPages = doc.pdfDoc.numPages;
-  const pagesToPrefetch = [];
-  if (currentPage < totalPages) pagesToPrefetch.push(currentPage + 1);
-  if (currentPage > 1) pagesToPrefetch.push(currentPage - 1);
-
-  const doPrefetch = async () => {
-    for (const pageNum of pagesToPrefetch) {
-      if (abort.cancelled) return;
-      try {
-        const { ensureAnnotationsForPage } = await import('./loader.js');
-        await ensureAnnotationsForPage(pageNum);
-      } catch (e) {
-        // Silently ignore prefetch errors
-      }
-    }
-  };
-
-  if (typeof requestIdleCallback === 'function') {
-    requestIdleCallback(() => doPrefetch());
-  } else {
-    setTimeout(() => doPrefetch(), 200);
-  }
-}
 
 // ─── Main-thread jank detector ───────────────────────────────────────────
 // Fires every 500ms. If a tick takes >1s to arrive, the main thread was blocked.
@@ -440,8 +405,10 @@ export async function renderPage(pageNum) {
   // Update status bar
   updateAllStatus();
 
-  // Prefetch adjacent pages to reduce navigation delay
-  prefetchAdjacentPages(pageNum);
+  // NOTE: prefetchAdjacentPages was removed — it causes Rust backend contention
+  // with thumbnail rendering, making the app unresponsive on large files.
+  // Annotations are loaded on-demand via ensureAnnotationsForPage() when
+  // the user actually navigates to a page.
   console.log(`[PERF] renderPage(${pageNum}) TOTAL: ${(performance.now() - _rp0).toFixed(0)}ms`);
 }
 
