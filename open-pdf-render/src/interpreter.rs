@@ -356,66 +356,66 @@ impl Interpreter {
         })
     }
 
-    /// Decode JPEG using turbojpeg with native scaled DCT decoding.
-    /// When `max_pixels > 0`, picks the smallest scaling factor (1/1, 1/2,
-    /// 1/4, 1/8) that keeps the decoded pixel count at or below the budget.
-    /// The scaling happens DURING the DCT decode — no full-resolution
-    /// decode is ever performed. This is what makes it fast.
+    /// Decode JPEG with optional pixel-budget downscaling.
+    /// Strategy:
+    ///  1. Try turbojpeg with native scaled DCT decoding (fastest)
+    ///  2. Fall back to `image` crate + box downsample if turbojpeg fails
     fn decode_jpeg_scaled(jpeg_data: &[u8], max_pixels: u32) -> Option<(u32, u32, Vec<u8>)> {
-        let mut decompressor = turbojpeg::Decompressor::new().ok()?;
-        let header = decompressor.read_header(jpeg_data).ok()?;
+        // ─── Try turbojpeg native scaled decode ──────────────────────────
+        if let Some(result) = Self::try_turbojpeg(jpeg_data, max_pixels) {
+            return Some(result);
+        }
+
+        // ─── Fallback: image crate + post-decode downsample ──────────────
+        let img = image::load_from_memory_with_format(jpeg_data, image::ImageFormat::Jpeg).ok()?;
+        let img = img.to_rgba8();
+        let (w, h) = (img.width(), img.height());
+        let mut rgba = img.into_raw();
+
+        // Downsample if over budget
+        if max_pixels > 0 && w * h > max_pixels {
+            let (new_w, new_h, small) = Self::box_downsample(&rgba, w, h, max_pixels);
+            return Some((new_w, new_h, small));
+        }
+        Some((w, h, rgba))
+    }
+
+    /// Try turbojpeg native scaled DCT decode. Returns None on any failure.
+    fn try_turbojpeg(jpeg_data: &[u8], max_pixels: u32) -> Option<(u32, u32, Vec<u8>)> {
+        let mut dc = turbojpeg::Decompressor::new().ok()?;
+        let header = dc.read_header(jpeg_data).ok()?;
         let full_w = header.width;
         let full_h = header.height;
 
-        // Pick best scaling factor if we have a pixel budget.
-        // turbojpeg supports native 1/2, 1/4, 1/8 etc. decode — the DCT
-        // coefficients are only partially reconstructed, making it much
-        // faster than full decode + downsample.
-        if max_pixels > 0 && (full_w * full_h) as u32 > max_pixels {
+        // Pick scaling factor that fits the pixel budget
+        let chosen_factor = if max_pixels > 0 && (full_w * full_h) as u32 > max_pixels {
             let factors = turbojpeg::Decompressor::supported_scaling_factors();
-            let mut best: Option<turbojpeg::ScalingFactor> = None;
-            for &factor in &factors {
-                let sw = factor.scale(full_w as usize);
-                let sh = factor.scale(full_h as usize);
-                if (sw * sh) as u32 <= max_pixels {
-                    best = Some(factor);
+            // factors are sorted largest-first (1/1, 7/8, 3/4, ..., 1/8)
+            let mut picked = None;
+            for &f in &factors {
+                let sw = f.scale(full_w);
+                let sh = f.scale(full_h);
+                if sw > 0 && sh > 0 && (sw * sh) as u32 <= max_pixels {
+                    picked = Some(f);
                     break;
                 }
             }
-            if best.is_none() {
-                best = factors.last().copied();
+            // If nothing fits, use the smallest
+            if picked.is_none() {
+                picked = factors.last().copied();
             }
-            if let Some(factor) = best {
-                let _ = decompressor.set_scaling_factor(factor);
-            }
+            picked
+        } else {
+            None
+        };
+
+        if let Some(factor) = chosen_factor {
+            dc.set_scaling_factor(factor).ok()?;
         }
 
-        // Read header — then apply the scaling factor to get output dimensions
-        let header2 = decompressor.read_header(jpeg_data).ok()?;
-        // If we set a scaling factor, compute the scaled output size
-        let (out_w, out_h) = if max_pixels > 0 && (full_w * full_h) as u32 > max_pixels {
-            let factors = turbojpeg::Decompressor::supported_scaling_factors();
-            let mut sw = header2.width;
-            let mut sh = header2.height;
-            for &factor in &factors {
-                let fw = factor.scale(full_w as usize);
-                let fh = factor.scale(full_h as usize);
-                if (fw * fh) as u32 <= max_pixels {
-                    sw = fw;
-                    sh = fh;
-                    break;
-                }
-            }
-            if sw == header2.width && sh == header2.height {
-                if let Some(&last) = factors.last() {
-                    sw = last.scale(full_w as usize);
-                    sh = last.scale(full_h as usize);
-                }
-            }
-            (sw, sh)
-        } else {
-            (header2.width, header2.height)
-        };
+        // Compute scaled output dimensions using the chosen factor
+        let out_w = chosen_factor.map_or(full_w, |f| f.scale(full_w)).max(1);
+        let out_h = chosen_factor.map_or(full_h, |f| f.scale(full_h)).max(1);
 
         let mut image = turbojpeg::Image {
             pixels: vec![0u8; out_w * out_h * 4],
@@ -425,9 +425,31 @@ impl Interpreter {
             format: turbojpeg::PixelFormat::RGBA,
         };
 
-        decompressor.decompress(jpeg_data, image.as_deref_mut()).ok()?;
-
+        dc.decompress(jpeg_data, image.as_deref_mut()).ok()?;
         Some((out_w as u32, out_h as u32, image.pixels))
+    }
+
+    /// Fast box-filter downsample of RGBA data to fit a pixel budget.
+    fn box_downsample(rgba: &[u8], w: u32, h: u32, max_pixels: u32) -> (u32, u32, Vec<u8>) {
+        let ratio = (max_pixels as f64 / (w as f64 * h as f64)).sqrt();
+        let nw = ((w as f64 * ratio).ceil() as u32).max(1);
+        let nh = ((h as f64 * ratio).ceil() as u32).max(1);
+        let sx = w as f64 / nw as f64;
+        let sy = h as f64 / nh as f64;
+        let mut small = Vec::with_capacity((nw * nh * 4) as usize);
+        for dy in 0..nh {
+            for dx in 0..nw {
+                let src_x = (dx as f64 * sx) as usize;
+                let src_y = (dy as f64 * sy) as usize;
+                let idx = (src_y * w as usize + src_x) * 4;
+                if idx + 3 < rgba.len() {
+                    small.extend_from_slice(&rgba[idx..idx + 4]);
+                } else {
+                    small.extend_from_slice(&[0, 0, 0, 255]);
+                }
+            }
+        }
+        (nw, nh, small)
     }
 
     /// Decode a non-JPEG image (raw/deflated pixel data) with optional
