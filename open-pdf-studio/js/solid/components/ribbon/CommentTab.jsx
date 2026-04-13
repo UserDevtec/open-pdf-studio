@@ -43,6 +43,10 @@ export default function CommentTab() {
             icon={`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20 Q 12 4 20 20"/></svg>`}
             label="Arc" disabled={noPdf() || isPdfAReadOnly()}
             active={state.currentTool === 'arc'} onClick={() => setTool('arc')} />
+          <RibbonButton id="tool-spline" title={t('comment.splineTitle')}
+            icon={`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17 C 7 2, 13 2, 12 12 S 17 22 21 7"/></svg>`}
+            label={t('comment.spline')} disabled={noPdf() || isPdfAReadOnly()}
+            active={state.currentTool === 'spline'} onClick={() => setTool('spline')} />
         </RibbonGroup>
 
         <RibbonGroup label={t('comment.shapes')}>
