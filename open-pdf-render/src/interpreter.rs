@@ -293,9 +293,11 @@ impl Interpreter {
         state.restore();
     }
 
-    /// Decode and draw an image XObject. When `max_decode_pixels` is set,
-    /// images larger than that limit are downsampled after decode to cap
-    /// memory usage and speed up rendering (used for thumbnails).
+    /// Decode and draw an image XObject. When `max_decode_pixels > 0`,
+    /// JPEGs are decoded at reduced resolution via turbojpeg's native
+    /// scaled DCT decoding (1/2, 1/4, or 1/8) — this is done during the
+    /// decode itself, avoiding full-resolution decode entirely. Non-JPEG
+    /// images are decoded at full resolution then box-filtered down.
     fn handle_image_execute(
         stream: &lopdf::Stream,
         renderer: &mut SkiaRenderer,
@@ -304,23 +306,8 @@ impl Interpreter {
         max_decode_pixels: u32,
     ) {
         let dict = &stream.dict;
-        let width = dict.get(b"Width").ok()
-            .and_then(|o| match o {
-                Object::Integer(i) => Some(*i as u32),
-                Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
-                    if let Object::Integer(i) = o { Some(*i as u32) } else { None }
-                }),
-                _ => None,
-            }).unwrap_or(0);
-        let height = dict.get(b"Height").ok()
-            .and_then(|o| match o {
-                Object::Integer(i) => Some(*i as u32),
-                Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
-                    if let Object::Integer(i) = o { Some(*i as u32) } else { None }
-                }),
-                _ => None,
-            }).unwrap_or(0);
-
+        let width = Self::read_int(dict, b"Width", doc).unwrap_or(0);
+        let height = Self::read_int(dict, b"Height", doc).unwrap_or(0);
         if width == 0 || height == 0 { return; }
 
         let filter = dict.get(b"Filter").ok().and_then(|o| match o {
@@ -335,111 +322,191 @@ impl Interpreter {
             _ => None,
         });
         let filter_name = filter.as_deref().unwrap_or(b"");
+        let is_jpeg = filter_name == b"DCTDecode";
 
-        // Decode image to RGBA
-        let (mut img_w, mut img_h, mut rgba) = if filter_name == b"DCTDecode" {
+        // ─── JPEG: use turbojpeg with native scaled DCT decoding ─────────
+        let (img_w, img_h, rgba) = if is_jpeg {
             let raw = &stream.content;
-            match image::load_from_memory_with_format(raw, image::ImageFormat::Jpeg) {
-                Ok(img) => {
-                    let img = img.to_rgba8();
-                    let w = img.width();
-                    let h = img.height();
-                    (w, h, img.into_raw())
-                }
-                Err(_) => return,
+            match Self::decode_jpeg_scaled(raw, max_decode_pixels) {
+                Some(result) => result,
+                None => return,
             }
         } else {
-            let bits = dict.get(b"BitsPerComponent").ok()
-                .and_then(|o| if let Object::Integer(i) = o { Some(*i as u8) } else { None })
-                .unwrap_or(8);
-            if bits != 8 { return; }
+            // ─── Non-JPEG: raw pixel decode + optional box downsample ────
+            match Self::decode_raw_image(dict, stream, doc, width, height, max_decode_pixels) {
+                Some(result) => result,
+                None => return,
+            }
+        };
 
-            let cs_name = dict.get(b"ColorSpace").ok().and_then(|o| match o {
+        state.save();
+        state.concat_matrix(1.0, 0.0, 0.0, -1.0, 0.0, 1.0);
+        renderer.draw_image(img_w, img_h, &rgba, &state.current);
+        state.restore();
+    }
+
+    /// Read an integer from a PDF dict, resolving indirect references.
+    fn read_int(dict: &Dictionary, key: &[u8], doc: &Document) -> Option<u32> {
+        dict.get(key).ok().and_then(|o| match o {
+            Object::Integer(i) => Some(*i as u32),
+            Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
+                if let Object::Integer(i) = o { Some(*i as u32) } else { None }
+            }),
+            _ => None,
+        })
+    }
+
+    /// Decode JPEG using turbojpeg with native scaled DCT decoding.
+    /// When `max_pixels > 0`, picks the smallest scaling factor (1/1, 1/2,
+    /// 1/4, 1/8) that keeps the decoded pixel count at or below the budget.
+    /// The scaling happens DURING the DCT decode — no full-resolution
+    /// decode is ever performed. This is what makes it fast.
+    fn decode_jpeg_scaled(jpeg_data: &[u8], max_pixels: u32) -> Option<(u32, u32, Vec<u8>)> {
+        let mut decompressor = turbojpeg::Decompressor::new().ok()?;
+        let header = decompressor.read_header(jpeg_data).ok()?;
+        let full_w = header.width;
+        let full_h = header.height;
+
+        // Pick best scaling factor if we have a pixel budget.
+        // turbojpeg supports native 1/2, 1/4, 1/8 etc. decode — the DCT
+        // coefficients are only partially reconstructed, making it much
+        // faster than full decode + downsample.
+        if max_pixels > 0 && (full_w * full_h) as u32 > max_pixels {
+            let factors = turbojpeg::Decompressor::supported_scaling_factors();
+            let mut best: Option<turbojpeg::ScalingFactor> = None;
+            for &factor in &factors {
+                let sw = factor.scale(full_w as usize);
+                let sh = factor.scale(full_h as usize);
+                if (sw * sh) as u32 <= max_pixels {
+                    best = Some(factor);
+                    break;
+                }
+            }
+            if best.is_none() {
+                best = factors.last().copied();
+            }
+            if let Some(factor) = best {
+                let _ = decompressor.set_scaling_factor(factor);
+            }
+        }
+
+        // Read header — then apply the scaling factor to get output dimensions
+        let header2 = decompressor.read_header(jpeg_data).ok()?;
+        // If we set a scaling factor, compute the scaled output size
+        let (out_w, out_h) = if max_pixels > 0 && (full_w * full_h) as u32 > max_pixels {
+            let factors = turbojpeg::Decompressor::supported_scaling_factors();
+            let mut sw = header2.width;
+            let mut sh = header2.height;
+            for &factor in &factors {
+                let fw = factor.scale(full_w as usize);
+                let fh = factor.scale(full_h as usize);
+                if (fw * fh) as u32 <= max_pixels {
+                    sw = fw;
+                    sh = fh;
+                    break;
+                }
+            }
+            if sw == header2.width && sh == header2.height {
+                if let Some(&last) = factors.last() {
+                    sw = last.scale(full_w as usize);
+                    sh = last.scale(full_h as usize);
+                }
+            }
+            (sw, sh)
+        } else {
+            (header2.width, header2.height)
+        };
+
+        let mut image = turbojpeg::Image {
+            pixels: vec![0u8; out_w * out_h * 4],
+            width: out_w,
+            pitch: out_w * 4,
+            height: out_h,
+            format: turbojpeg::PixelFormat::RGBA,
+        };
+
+        decompressor.decompress(jpeg_data, image.as_deref_mut()).ok()?;
+
+        Some((out_w as u32, out_h as u32, image.pixels))
+    }
+
+    /// Decode a non-JPEG image (raw/deflated pixel data) with optional
+    /// box-filter downsampling when exceeding the pixel budget.
+    fn decode_raw_image(
+        dict: &Dictionary,
+        stream: &lopdf::Stream,
+        doc: &Document,
+        width: u32,
+        height: u32,
+        max_pixels: u32,
+    ) -> Option<(u32, u32, Vec<u8>)> {
+        let bits = dict.get(b"BitsPerComponent").ok()
+            .and_then(|o| if let Object::Integer(i) = o { Some(*i as u8) } else { None })
+            .unwrap_or(8);
+        if bits != 8 { return None; }
+
+        let cs_name = dict.get(b"ColorSpace").ok().and_then(|o| match o {
+            Object::Name(n) => Some(n.clone()),
+            Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
+                if let Object::Name(n) = o { Some(n.clone()) } else { None }
+            }),
+            Object::Array(arr) => arr.first().and_then(|o| match o {
                 Object::Name(n) => Some(n.clone()),
-                Object::Reference(id) => doc.get_object(*id).ok().and_then(|o| {
-                    if let Object::Name(n) = o { Some(n.clone()) } else { None }
-                }),
-                Object::Array(arr) => arr.first().and_then(|o| match o {
-                    Object::Name(n) => Some(n.clone()),
-                    _ => None,
-                }),
                 _ => None,
-            });
-            let components: usize = match cs_name.as_deref() {
-                Some(b"DeviceCMYK") => 4,
-                Some(b"DeviceGray") | Some(b"CalGray") => 1,
-                _ => 3,
-            };
+            }),
+            _ => None,
+        });
+        let components: usize = match cs_name.as_deref() {
+            Some(b"DeviceCMYK") => 4,
+            Some(b"DeviceGray") | Some(b"CalGray") => 1,
+            _ => 3,
+        };
 
-            let raw_pixels = match stream.decompressed_content() {
-                Ok(p) => p,
-                Err(_) => return,
-            };
-            let expected = width as usize * height as usize * components;
-            if raw_pixels.len() < expected { return; }
+        let raw_pixels = stream.decompressed_content().ok()?;
+        let expected = width as usize * height as usize * components;
+        if raw_pixels.len() < expected { return None; }
 
-            let mut out = Vec::with_capacity(width as usize * height as usize * 4);
-            let mut idx = 0;
-            for _ in 0..(width as usize * height as usize) {
+        // Determine output size — downsample if over budget
+        let (out_w, out_h, step_x, step_y) = if max_pixels > 0 && width * height > max_pixels {
+            let ratio = (max_pixels as f64 / (width as f64 * height as f64)).sqrt();
+            let nw = ((width as f64 * ratio).ceil() as u32).max(1);
+            let nh = ((height as f64 * ratio).ceil() as u32).max(1);
+            (nw, nh, width as f64 / nw as f64, height as f64 / nh as f64)
+        } else {
+            (width, height, 1.0, 1.0)
+        };
+
+        let mut rgba = Vec::with_capacity((out_w * out_h * 4) as usize);
+        for dy in 0..out_h {
+            for dx in 0..out_w {
+                let src_x = (dx as f64 * step_x) as usize;
+                let src_y = (dy as f64 * step_y) as usize;
+                let idx = (src_y * width as usize + src_x) * components;
                 match components {
                     1 => {
                         let g = raw_pixels[idx];
-                        out.extend_from_slice(&[g, g, g, 255]);
-                        idx += 1;
+                        rgba.extend_from_slice(&[g, g, g, 255]);
                     }
                     3 => {
-                        out.extend_from_slice(&[raw_pixels[idx], raw_pixels[idx+1], raw_pixels[idx+2], 255]);
-                        idx += 3;
+                        rgba.extend_from_slice(&[raw_pixels[idx], raw_pixels[idx+1], raw_pixels[idx+2], 255]);
                     }
                     4 => {
                         let c = raw_pixels[idx] as f32 / 255.0;
                         let m = raw_pixels[idx+1] as f32 / 255.0;
                         let y = raw_pixels[idx+2] as f32 / 255.0;
                         let k = raw_pixels[idx+3] as f32 / 255.0;
-                        out.extend_from_slice(&[
+                        rgba.extend_from_slice(&[
                             (255.0 * (1.0 - c) * (1.0 - k)) as u8,
                             (255.0 * (1.0 - m) * (1.0 - k)) as u8,
                             (255.0 * (1.0 - y) * (1.0 - k)) as u8,
                             255,
                         ]);
-                        idx += 4;
                     }
-                    _ => { out.extend_from_slice(&[0, 0, 0, 255]); idx += components; }
+                    _ => { rgba.extend_from_slice(&[0, 0, 0, 255]); }
                 }
             }
-            (width, height, out)
-        };
-
-        // Downsample if image exceeds the pixel budget (fast box filter).
-        // For thumbnails this turns a 5000×5000 decode into a 200×200 draw.
-        if max_decode_pixels > 0 && img_w * img_h > max_decode_pixels {
-            let ratio = (max_decode_pixels as f64 / (img_w as f64 * img_h as f64)).sqrt();
-            let new_w = ((img_w as f64 * ratio).ceil() as u32).max(1);
-            let new_h = ((img_h as f64 * ratio).ceil() as u32).max(1);
-            let sx = img_w as f64 / new_w as f64;
-            let sy = img_h as f64 / new_h as f64;
-            let mut small = Vec::with_capacity((new_w * new_h * 4) as usize);
-            for dy in 0..new_h {
-                for dx in 0..new_w {
-                    let src_x = (dx as f64 * sx) as usize;
-                    let src_y = (dy as f64 * sy) as usize;
-                    let src_idx = (src_y * img_w as usize + src_x) * 4;
-                    if src_idx + 3 < rgba.len() {
-                        small.extend_from_slice(&rgba[src_idx..src_idx + 4]);
-                    } else {
-                        small.extend_from_slice(&[0, 0, 0, 255]);
-                    }
-                }
-            }
-            img_w = new_w;
-            img_h = new_h;
-            rgba = small;
         }
-
-        state.save();
-        state.concat_matrix(1.0, 0.0, 0.0, -1.0, 0.0, 1.0);
-        renderer.draw_image(img_w, img_h, &rgba, &state.current);
-        state.restore();
+        Some((out_w, out_h, rgba))
     }
 
     pub fn extract_commands(
