@@ -327,15 +327,29 @@ impl Interpreter {
         // ─── JPEG: use turbojpeg with native scaled DCT decoding ─────────
         let (img_w, img_h, rgba) = if is_jpeg {
             let raw = &stream.content;
+            eprintln!("[IMG] JPEG {}x{}, {} bytes, budget={}", width, height, raw.len(), max_decode_pixels);
             match Self::decode_jpeg_scaled(raw, max_decode_pixels) {
-                Some(result) => result,
-                None => return,
+                Some(result) => {
+                    eprintln!("[IMG]   -> decoded to {}x{}", result.0, result.1);
+                    result
+                }
+                None => {
+                    eprintln!("[IMG]   -> DECODE FAILED!");
+                    return;
+                }
             }
         } else {
             // ─── Non-JPEG: raw pixel decode + optional box downsample ────
+            eprintln!("[IMG] RAW {}x{}, budget={}", width, height, max_decode_pixels);
             match Self::decode_raw_image(dict, stream, doc, width, height, max_decode_pixels) {
-                Some(result) => result,
-                None => return,
+                Some(result) => {
+                    eprintln!("[IMG]   -> decoded to {}x{}", result.0, result.1);
+                    result
+                }
+                None => {
+                    eprintln!("[IMG]   -> DECODE FAILED!");
+                    return;
+                }
             }
         };
 
@@ -382,8 +396,14 @@ impl Interpreter {
 
     /// Try turbojpeg native scaled DCT decode. Returns None on any failure.
     fn try_turbojpeg(jpeg_data: &[u8], max_pixels: u32) -> Option<(u32, u32, Vec<u8>)> {
-        let mut dc = turbojpeg::Decompressor::new().ok()?;
-        let header = dc.read_header(jpeg_data).ok()?;
+        let mut dc = match turbojpeg::Decompressor::new() {
+            Ok(d) => d,
+            Err(e) => { eprintln!("[IMG]   turbojpeg: Decompressor::new failed: {}", e); return None; }
+        };
+        let header = match dc.read_header(jpeg_data) {
+            Ok(h) => h,
+            Err(e) => { eprintln!("[IMG]   turbojpeg: read_header failed: {}", e); return None; }
+        };
         let full_w = header.width;
         let full_h = header.height;
 
@@ -425,7 +445,11 @@ impl Interpreter {
             format: turbojpeg::PixelFormat::RGBA,
         };
 
-        dc.decompress(jpeg_data, image.as_deref_mut()).ok()?;
+        eprintln!("[IMG]   turbojpeg: decompress {}x{} -> {}x{}", full_w, full_h, out_w, out_h);
+        match dc.decompress(jpeg_data, image.as_deref_mut()) {
+            Ok(_) => {},
+            Err(e) => { eprintln!("[IMG]   turbojpeg: decompress FAILED: {}", e); return None; }
+        }
         Some((out_w as u32, out_h as u32, image.pixels))
     }
 
