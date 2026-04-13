@@ -511,6 +511,24 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           return createAnnotation(mpProps);
         }
 
+        // Check if this is a spline
+        if (extraColors.opsSubtype === 'spline' && extraColors.opsPoints && extraColors.opsPoints.length >= 6) {
+          const splineControlPts = [];
+          for (let i = 0; i < extraColors.opsPoints.length; i += 2) {
+            const [sx, sy] = convertPoint(extraColors.opsPoints[i], extraColors.opsPoints[i + 1]);
+            splineControlPts.push({ x: sx, y: sy });
+          }
+          return createAnnotation({
+            ...baseProps,
+            type: 'spline',
+            controlPoints: splineControlPts,
+            color: colorArrayToHex(annot.color, '#000000'),
+            strokeColor: colorArrayToHex(annot.color, '#000000'),
+            lineWidth: annot.borderStyle?.width || 1,
+            borderStyle: mapBorderStyle(annot, extraColors),
+          });
+        }
+
         return createAnnotation({
           ...baseProps,
           type: 'polyline',

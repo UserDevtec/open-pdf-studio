@@ -140,6 +140,21 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         if (ar !== null) colors.opsArcRadius = ar;
       }
 
+      // Read /OPS_Points (our custom control points for spline annotations)
+      const opsPointsRaw = annotDict.get(PDFName.of('OPS_Points'));
+      if (opsPointsRaw) {
+        const pointsArr = context.lookup(opsPointsRaw) || opsPointsRaw;
+        if (pointsArr && typeof pointsArr.size === 'function') {
+          const flatPoints = [];
+          for (let pi = 0; pi < pointsArr.size(); pi++) {
+            const val = pointsArr.get(pi);
+            const num = pdfNum(context.lookup(val) || val);
+            if (num !== null) flatPoints.push(num);
+          }
+          if (flatPoints.length >= 6) colors.opsPoints = flatPoints;
+        }
+      }
+
       // Read /OPS_Holes (our custom holes data for measureArea with cutouts)
       const opsHolesRaw = annotDict.get(PDFName.of('OPS_Holes'));
       if (opsHolesRaw) {
