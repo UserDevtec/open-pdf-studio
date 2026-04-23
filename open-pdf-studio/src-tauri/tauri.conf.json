@@ -57,7 +57,9 @@
     "fileAssociations": [
       {
         "ext": ["pdf"],
+        "mimeType": "application/pdf",
         "name": "PDF Document",
+        "description": "Portable Document Format",
         "role": "Editor"
       }
     ]
