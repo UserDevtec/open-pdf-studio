@@ -3,7 +3,7 @@
 // Categories by prefix: Tb=Brandbeveiliging, Td=Deuren, Tn=Noodverlichting, Tr=Rook/warmteafvoer, Tv=Ventilatie, Tw=Water/sprinkler
 
 // Import all PNG assets via Vite glob
-const pngModules = import.meta.glob('/assets/nen1414/*.png', { eager: true, as: 'url' });
+const pngModules = import.meta.glob('/assets/nen1414/*.png', { eager: true, query: '?url', import: 'default' });
 
 function getAssetUrl(id) {
   const key = `/assets/nen1414/${id}.png`;
@@ -15,8 +15,9 @@ function getAssetUrl(id) {
 function rasterSvg(id) {
   const url = getAssetUrl(id);
   if (!url) return '';
-  // Convert relative URL to absolute (blob: context can't resolve relative paths)
-  const absoluteUrl = url.startsWith('http') ? url : window.location.origin + url;
+  // Vite inlines PNGs <4KB as data: URIs; larger ones become /assets/*.png paths.
+  // blob: context can't resolve relative paths, so only prepend origin for root-relative URLs.
+  const absoluteUrl = url.startsWith('/') ? window.location.origin + url : url;
   return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><image href="${absoluteUrl}" width="64" height="64"/></svg>`;
 }
 
