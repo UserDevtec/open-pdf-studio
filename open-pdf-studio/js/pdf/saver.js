@@ -7,6 +7,7 @@ import { getCachedPdfBytes, setCachedPdfBytes, hidePdfABar } from './loader.js';
 import { PDFDocument, PDFString, PDFName, PDFArray, PDFStream, degrees,
   PDFTextField, PDFCheckBox, PDFDropdown, PDFRadioGroup, PDFOptionList } from 'pdf-lib';
 import { getAnnotationStorage, getAnnotIdToFieldName } from './form-layer.js';
+import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 import i18next from '../i18n/config.js';
 import { showMessage } from '../bridge.js';
 
@@ -1394,6 +1395,27 @@ export async function savePDF(saveAsPath = null) {
             if (ann.headSize && ann.headSize !== 12) mpDict.OPS_HeadSize = ann.headSize;
             annotDict = context.obj(mpDict);
             annotDict.set(PDFName.of('BS'), buildBorderStyle(context, borderWidth, ann.borderStyle));
+            break;
+          }
+
+          default: {
+            // Plugin-registered annotation types: delegate to the handler's
+            // optional serializeToPdf method. Unknown types without a handler
+            // remain dropped (legacy behavior).
+            const pluginHandler = getAnnotationType(ann.type);
+            if (pluginHandler && typeof pluginHandler.serializeToPdf === 'function') {
+              try {
+                await pluginHandler.serializeToPdf({
+                  pdfDoc: pdfDocLib,
+                  page,
+                  annotation: ann,
+                  convertX,
+                  convertY,
+                });
+              } catch (err) {
+                console.warn(`[saver] plugin serializeToPdf failed for type "${ann.type}":`, err);
+              }
+            }
             break;
           }
         }

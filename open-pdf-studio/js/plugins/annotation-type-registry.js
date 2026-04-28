@@ -12,6 +12,14 @@
  *     preview(ctx, startX, startY, currentX, currentY, state, e) => void,
  *     hitTest(x, y, annotation, tolerance) => boolean,
  *     getBounds(annotation) => { x, y, width, height } | null,
+ *     serializeToPdf({ pdfDoc, page, annotation, convertX, convertY }) =>
+ *       Promise<void>   // optional. Called by saver for unknown types so the
+ *                       // plugin can bake content into the PDF page using its
+ *                       // own pdf-lib draw calls. Without this, plugin
+ *                       // annotations are not persisted in saved PDFs.
+ *                       // pdfDoc/page are pdf-lib instances; convertX/Y map
+ *                       // viewport coords (top-left, y-down) to pdf-lib
+ *                       // page coords (bottom-left, y-up).
  *     drawMode: 'drag' | 'click' | 'polyline',
  *     cursor: string   // CSS cursor, default 'crosshair'
  *   }
