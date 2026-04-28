@@ -52,7 +52,16 @@ export function setupWheelZoom() {
     // Ctrl+wheel = zoom (snaps to discrete preset levels at the cursor).
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      if (!viewport.active) return;
+      // Blank docs (no filePath) bypass the vector viewport entirely; their
+      // zoom path is doc.scale + renderPage. Route ctrl+wheel through the
+      // legacy zoomIn/zoomOut helpers for those.
+      if (!viewport.active) {
+        const dy = e.deltaY || 0;
+        const direction = dy < 0 ? 1 : -1;
+        const m = await import('../../pdf/renderer.js');
+        if (direction > 0) await m.zoomIn(); else await m.zoomOut();
+        return;
+      }
       const rect = e.target.closest('canvas')?.getBoundingClientRect() || e.target.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;

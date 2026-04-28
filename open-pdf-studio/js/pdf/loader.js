@@ -365,6 +365,13 @@ export async function createBlankPDF(widthPt, heightPt, numPages) {
     const doc = state.documents[index];
     doc.fileName = fileName;
 
+    // Pre-populate pageDims so plugins reading dimensions at click time
+    // don't depend on the first renderPage having completed.
+    doc.pageDims = {};
+    for (let i = 1; i <= numPages; i++) {
+      doc.pageDims[i] = { widthPt, heightPt };
+    }
+
     // Cache bytes under a memory key for saving later
     const memoryKey = `__memory__${doc.id}`;
     originalBytesCache.set(memoryKey, typedArray.slice());

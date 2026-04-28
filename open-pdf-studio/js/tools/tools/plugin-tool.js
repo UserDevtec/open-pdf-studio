@@ -16,20 +16,22 @@ export const pluginClickTool = {
     if (!typeHandler || !typeHandler.create) return;
     // Enrich state with the current page dimensions in PDF points so plugin
     // handlers don't need to derive them from canvas geometry (which mixes
-    // DPR + zoom). pdf-viewport.js (a singleton on window.__pdfViewport) is
-    // the canonical source for pageW, pageH, and zoom.
-    const vp = window.__pdfViewport;
-    if (!vp) {
-      console.warn('[plugin-tool] window.__pdfViewport not initialized; aborting plugin click');
+    // DPR + zoom). doc.pageDims is populated by createBlankPDF and renderPage
+    // from page.view (the canonical PDF MediaBox), and stays consistent with
+    // the actual rendered page regardless of zoom or pan.
+    const currentPage = doc?.currentPage || 1;
+    const dims = doc?.pageDims?.[currentPage];
+    if (!dims) {
+      console.warn(`[plugin-tool] doc.pageDims[${currentPage}] missing; aborting plugin click`);
       return;
     }
     const enrichedState = {
       ...state,
-      docScale: vp.zoom,
+      docScale: doc?.scale || 1,
       devicePixelRatio: window.devicePixelRatio || 1,
-      pageWidth: vp.pageW,
-      pageHeight: vp.pageH,
-      currentPage: doc?.currentPage || 1,
+      pageWidth: dims.widthPt,
+      pageHeight: dims.heightPt,
+      currentPage,
     };
     const annProps = typeHandler.create(x, y, x, y, e, enrichedState);
     if (!annProps) return;

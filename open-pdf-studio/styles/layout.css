@@ -300,8 +300,12 @@
 }
 
 .main-view > #pdf-container.visible {
-  align-items: flex-start;
-  justify-content: center;
+  /* "safe center" keeps the canvas centered when it fits, but falls back to
+     top/left when the canvas is larger than the container so overflow stays
+     scrollable. Without `safe`, an oversized page would shift its top-left
+     out of reach above the scroll origin. */
+  align-items: safe center;
+  justify-content: safe center;
 }
 
 #placeholder {

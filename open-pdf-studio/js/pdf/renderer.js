@@ -186,15 +186,13 @@ export async function renderPage(pageNum) {
   }
   const viewport = page.getViewport(viewportOpts);
 
-  // Sync the pdf-viewport singleton with current page dimensions for
-  // blank ("Nieuw") docs. The vector path further below already calls
-  // setPage() for docs with a real filePath; for filePath-less docs the
-  // gate skips that path and the singleton stays at pageW=0.
-  if (!doc.filePath) {
-    const [vx0, vy0, vx1, vy1] = page.view;
-    const { setPage: _setPageVp } = await import('./pdf-viewport.js');
-    _setPageVp(`__memory__${doc.id}`, pageNum, vx1 - vx0, vy1 - vy0, vx0, vy0, extraRotation);
-  }
+  // Cache page dimensions in PDF points on the doc so plugin annotation
+  // handlers can read them synchronously at click time without depending
+  // on the pdf-viewport singleton (which is a noop for blank docs whose
+  // vector path is gated off by the filePath check).
+  if (!doc.pageDims) doc.pageDims = {};
+  const [vx0, vy0, vx1, vy1] = page.view;
+  doc.pageDims[pageNum] = { widthPt: vx1 - vx0, heightPt: vy1 - vy0 };
 
   const pdfCanvas = getPdfCanvas();
   const annotationCanvas = getAnnotationCanvas();
@@ -985,7 +983,7 @@ export async function zoomIn() {
   if (doc.viewMode === 'continuous') {
     await renderContinuous();
   } else {
-    await renderPageOffscreen(doc.currentPage);
+    await renderPage(doc.currentPage);
   }
 }
 
@@ -1003,7 +1001,7 @@ export async function zoomOut() {
     if (doc.viewMode === 'continuous') {
       await renderContinuous();
     } else {
-      await renderPageOffscreen(doc.currentPage);
+      await renderPage(doc.currentPage);
     }
   }
 }
@@ -1025,7 +1023,7 @@ export async function setZoom(newScale) {
   if (doc.viewMode === 'continuous') {
     await renderContinuous();
   } else {
-    await renderPageOffscreen(doc.currentPage);
+    await renderPage(doc.currentPage);
   }
 }
 
@@ -1086,7 +1084,7 @@ async function _applyZoom(fitInputs, newZoom) {
   if (doc.viewMode === 'continuous') {
     await renderContinuous();
   } else {
-    await renderPageOffscreen(doc.currentPage);
+    await renderPage(doc.currentPage);
   }
 }
 
@@ -1127,7 +1125,7 @@ export async function actualSize() {
     if (doc.viewMode === 'continuous') {
       await renderContinuous();
     } else {
-      await renderPageOffscreen(doc.currentPage);
+      await renderPage(doc.currentPage);
     }
   }
 }
