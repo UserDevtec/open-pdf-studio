@@ -13,33 +13,29 @@ export const pluginClickTool = {
     const { x, y, state } = ctx;
     const doc = getActiveDocument();
     const typeHandler = ctx.getAnnotationType(state.currentTool);
-    if (typeHandler && typeHandler.create) {
-      // Enrich state with current page dimensions in PDF points so plugins do
-      // not have to derive these from ctx.canvas (which carries DPR + zoom
-      // and is unreliable across "Nieuw" vs loaded-PDF flows).
-      const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-      const docScale = doc?.scale || 1;
-      const canvasEl = doc?.canvasEl || null;
-      let pageWidth, pageHeight;
-      if (canvasEl) {
-        pageWidth = canvasEl.width / (docScale * dpr);
-        pageHeight = canvasEl.height / (docScale * dpr);
-      }
-      const enrichedState = {
-        ...state,
-        docScale,
-        devicePixelRatio: dpr,
-        pageWidth,
-        pageHeight,
-        currentPage: doc?.currentPage || 1,
-      };
-      const annProps = typeHandler.create(x, y, x, y, e, enrichedState);
-      if (annProps) {
-        const ann = ctx.createAnnotation({ ...annProps, page: doc?.currentPage || 1, ...state.toolOverrides });
-        if (doc) doc.annotations.push(ann);
-        ctx.recordAdd(ann);
-        ctx.redraw();
-      }
+    if (!typeHandler || !typeHandler.create) return;
+    // Enrich state with the current page dimensions in PDF points so plugin
+    // handlers don't need to derive them from canvas geometry (which mixes
+    // DPR + zoom). pdf-viewport.js (a singleton on window.__pdfViewport) is
+    // the canonical source for pageW, pageH, and zoom.
+    const vp = window.__pdfViewport;
+    if (!vp) {
+      console.warn('[plugin-tool] window.__pdfViewport not initialized; aborting plugin click');
+      return;
     }
+    const enrichedState = {
+      ...state,
+      docScale: vp.zoom,
+      devicePixelRatio: window.devicePixelRatio || 1,
+      pageWidth: vp.pageW,
+      pageHeight: vp.pageH,
+      currentPage: doc?.currentPage || 1,
+    };
+    const annProps = typeHandler.create(x, y, x, y, e, enrichedState);
+    if (!annProps) return;
+    const ann = ctx.createAnnotation({ ...annProps, page: doc?.currentPage || 1, ...state.toolOverrides });
+    if (doc) doc.annotations.push(ann);
+    ctx.recordAdd(ann);
+    ctx.redraw();
   },
 };

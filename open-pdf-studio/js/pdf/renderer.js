@@ -186,6 +186,16 @@ export async function renderPage(pageNum) {
   }
   const viewport = page.getViewport(viewportOpts);
 
+  // Sync the pdf-viewport singleton with current page dimensions for
+  // blank ("Nieuw") docs. The vector path further below already calls
+  // setPage() for docs with a real filePath; for filePath-less docs the
+  // gate skips that path and the singleton stays at pageW=0.
+  if (!doc.filePath) {
+    const [vx0, vy0, vx1, vy1] = page.view;
+    const { setPage: _setPageVp } = await import('./pdf-viewport.js');
+    _setPageVp(`__memory__${doc.id}`, pageNum, vx1 - vx0, vy1 - vy0, vx0, vy0, extraRotation);
+  }
+
   const pdfCanvas = getPdfCanvas();
   const annotationCanvas = getAnnotationCanvas();
   if (!pdfCanvas || !annotationCanvas) return;
