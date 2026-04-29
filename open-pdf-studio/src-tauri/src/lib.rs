@@ -213,9 +213,18 @@ fn open_default_apps_settings() -> Result<bool, String> {
         let status = std::process::Command::new("xdg-mime")
             .args(&["default", "Open PDF Studio.desktop", "application/pdf"])
             .status()
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| {
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    "xdg-mime not found. Install xdg-utils (e.g. `sudo apt install xdg-utils`) and try again.".to_string()
+                } else {
+                    format!("Failed to run xdg-mime: {}", e)
+                }
+            })?;
         if !status.success() {
-            return Err(format!("xdg-mime exited with status {}", status));
+            return Err(format!(
+                "xdg-mime exited with status {}. The .desktop file may not be registered — install Open PDF Studio via the bundled .deb/.AppImage so /usr/share/applications/Open PDF Studio.desktop exists.",
+                status
+            ));
         }
         Ok(true)
     }
