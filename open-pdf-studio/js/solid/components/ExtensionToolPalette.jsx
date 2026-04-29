@@ -5,7 +5,7 @@
  * with independent docking, floating, visibility, and drag state.
  */
 
-import { createSignal, Show, For, onMount } from 'solid-js';
+import { createSignal, createEffect, Show, For, onMount, onCleanup } from 'solid-js';
 
 import { state, noPdf } from '../../core/state.js';
 import { setTool } from '../../tools/manager.js';
@@ -15,6 +15,10 @@ import { savePreferences } from '../../core/preferences.js';
 import { registerPaletteDock, unregisterPaletteDock } from '../stores/paletteOrder.js';
 import { hasAnnotationType } from '../../plugins/annotation-type-registry.js';
 import { paletteIconSize, showPaletteCtxMenu } from './ToolPalette.jsx';
+import { getActiveSubTool, setActiveSubTool } from '../../plugins/tool-group-state.js';
+
+// Single-active-group open-state across the whole app (only one sub-menu open at a time).
+const [openGroupId, setOpenGroupId] = createSignal(null);
 
 const DOCK_SNAP = 60;
 
@@ -192,6 +196,131 @@ function ExtToolBtn(props) {
   );
 }
 
+// --- Tool-group button (B1+P1: morphing main + pop-out sub-menu) ---
+function ExtToolGroupBtn(props) {
+  const { t } = useTranslation('ribbon');
+  const toolDisabled = () => noPdf() || isPdfAReadOnly();
+
+  const groupDef = () => props.groupDef;
+  const activeSub = () => getActiveSubTool(groupDef());
+
+  const subOverridesEqual = (a, b) => {
+    if (!a && !b) return true;
+    if (!a || !b) return false;
+    const ka = Object.keys(a);
+    const kb = Object.keys(b);
+    return ka.length === kb.length && ka.every(k => a[k] === b[k]);
+  };
+
+  // Main button is "active" when current tool/overrides match the active sub-tool.
+  const isActive = () => {
+    const sub = activeSub();
+    if (state.currentTool !== sub.tool) return false;
+    return subOverridesEqual(sub.overrides || null, state.toolOverrides || null);
+  };
+
+  const isOpen = () => openGroupId() === groupDef().id;
+
+  // Activate sub-tool: fire setTool + apply overrides.
+  const activateSub = (sub) => {
+    setTool(sub.tool);
+    state.toolOverrides = sub.overrides || null;
+  };
+
+  const onMainClick = () => {
+    const sub = activeSub();
+    activateSub(sub);
+    setOpenGroupId(isOpen() ? null : groupDef().id);
+  };
+
+  const onSubClick = (sub) => {
+    setActiveSubTool(groupDef().id, sub.id);
+    activateSub(sub);
+    setOpenGroupId(null);
+  };
+
+  // Outside-click + Escape handling, mounted only while the menu is open.
+  let menuRef;
+  const onDocMouseDown = (e) => {
+    if (!menuRef) return;
+    if (menuRef.contains(e.target)) return;
+    // Also ignore clicks on the main button itself; its onClick handles toggle.
+    if (e.target.closest && e.target.closest(`[data-tool-group-id="${groupDef().id}"]`)) return;
+    setOpenGroupId(null);
+  };
+  const onDocKey = (e) => {
+    if (e.key === 'Escape') setOpenGroupId(null);
+  };
+  let listenersAttached = false;
+  const ensureListeners = () => {
+    if (listenersAttached) return;
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onDocKey);
+    listenersAttached = true;
+  };
+  const removeListeners = () => {
+    if (!listenersAttached) return;
+    document.removeEventListener('mousedown', onDocMouseDown);
+    document.removeEventListener('keydown', onDocKey);
+    listenersAttached = false;
+  };
+  // Reactively attach/detach listeners when the menu opens/closes.
+  createEffect(() => {
+    if (isOpen()) ensureListeners();
+    else removeListeners();
+  });
+  onCleanup(removeListeners);
+
+  // Sub-menu position class based on palette docked side.
+  const sideClass = () => {
+    const s = props.side;
+    if (s === 'left') return 'from-docked-left';
+    if (s === 'right') return 'from-docked-right';
+    return 'from-float';
+  };
+
+  const subTitle = (sub) => {
+    if (sub.translationKey) {
+      const tr = t(sub.translationKey);
+      if (tr && tr !== sub.translationKey) return tr;
+    }
+    return sub.label || sub.id;
+  };
+
+  return (
+    <div class="tp-btn-group-wrap" data-tool-group-id={groupDef().id} style="position:relative; display:inline-flex;">
+      <button
+        class={`tp-btn has-sub ${isActive() ? 'active' : ''}`}
+        disabled={toolDisabled()}
+        onClick={onMainClick}
+        title={props.title}
+        innerHTML={activeSub().icon}
+      />
+      <span class="tp-btn-chevron" aria-hidden="true">▸</span>
+      <Show when={isOpen()}>
+        <div ref={menuRef} class={`tp-submenu ${sideClass()}`}>
+          <For each={groupDef().subTools}>
+            {(sub) => {
+              const subActive = () =>
+                state.currentTool === sub.tool &&
+                subOverridesEqual(sub.overrides || null, state.toolOverrides || null);
+              return (
+                <button
+                  class={`tp-btn ${subActive() ? 'active' : ''}`}
+                  disabled={toolDisabled()}
+                  onClick={() => onSubClick(sub)}
+                  title={subTitle(sub)}
+                  innerHTML={sub.icon}
+                />
+              );
+            }}
+          </For>
+        </div>
+      </Show>
+    </div>
+  );
+}
+
 // --- Tool list with separators ---
 function ExtToolList(props) {
   const { t } = useTranslation('ribbon');
@@ -203,10 +332,18 @@ function ExtToolList(props) {
         lastGroup = item.group;
         const translated = item.translationKey ? t(item.translationKey) : null;
         const title = (translated && translated !== item.translationKey) ? translated : item.label;
+        const isGroup = Array.isArray(item.subTools) && item.subTools.length > 0;
         return (
           <>
             {showSep && <div class="tp-sep" />}
-            <ExtToolBtn tool={item.tool} title={title} icon={item.icon} overrides={item.overrides || null} />
+            <Show
+              when={isGroup}
+              fallback={
+                <ExtToolBtn tool={item.tool} title={title} icon={item.icon} overrides={item.overrides || null} />
+              }
+            >
+              <ExtToolGroupBtn groupDef={item} title={title} side={props.side} />
+            </Show>
           </>
         );
       }}
@@ -255,7 +392,7 @@ export function DockedExtPalette(props) {
           <div class="tp-logo" innerHTML={props.descriptor.logo} />
         </Show>
         <div class="tp-docked-tools">
-          <ExtToolList tools={props.descriptor.tools} />
+          <ExtToolList tools={props.descriptor.tools} side={side()} />
         </div>
         <button class="tp-close" onClick={() => {
           ps().visible[1](false);
@@ -311,7 +448,7 @@ export function FloatingExtPalette(props) {
           <div class="tp-logo" innerHTML={props.descriptor.logo} />
         </Show>
         <div class="tp-float-body">
-          <ExtToolList tools={props.descriptor.tools} />
+          <ExtToolList tools={props.descriptor.tools} side="float" />
         </div>
       </div>
     </Show>
