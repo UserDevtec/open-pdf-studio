@@ -25,8 +25,22 @@
  *     translationKey: string | null,
  *     icon: string,           // SVG string
  *     group: number,
- *     overrides: object | null
+ *     overrides: object | null,
+ *     subTools?: ToolDefinition[]   // optional: turns this entry into a "tool group"
  *   }
+ *
+ * Tool groups (subTools):
+ *   When a ToolDefinition has a non-empty `subTools` array, the host renders
+ *   it as a "tool group" rather than a single tool button. The main palette
+ *   button then shows the icon (and label) of the *currently active* sub-tool —
+ *   i.e. the button "morphs" to reflect the last choice — and clicking it opens
+ *   a sub-menu pop-out listing all sub-tools. Picking a sub-tool from the
+ *   pop-out activates that tool and persists the choice as the group's new
+ *   active sub-tool for the rest of the session (in-memory only; not
+ *   persisted across app restarts).
+ *
+ *   The active-sub-tool state lives in `tool-group-state.js`. Plugins can
+ *   feature-detect support via `api.features?.toolGroups === true`.
  */
 
 import { createSignal } from 'solid-js';

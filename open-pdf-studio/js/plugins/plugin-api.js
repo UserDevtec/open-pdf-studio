@@ -12,6 +12,7 @@ import {
   registerSelectionListener as _registerSelectionListener,
   unregisterSelectionListener as _unregisterSelectionListener,
 } from './selection-listener-registry.js';
+import { clearAllToolGroups } from './tool-group-state.js';
 import { setNativePanelHidden } from '../solid/stores/propertiesStore.js';
 import { state, getActiveDocument } from '../core/state.js';
 import { setTool } from '../tools/manager.js';
@@ -26,6 +27,15 @@ export function createPluginApi(pluginId) {
 
   return {
     pluginId,
+
+    // --- Feature flags ---
+    // Plugins can feature-detect optional fork capabilities, e.g.:
+    //   if (api.features?.toolGroups === true) { ... }
+    // Adding a flag here is the contract for opting plugins into a feature
+    // without breaking older OPPS builds that lack it.
+    features: {
+      toolGroups: true,
+    },
 
     // --- Annotation type registration ---
     registerAnnotationType(typeName, handler) {
@@ -126,6 +136,8 @@ export function createPluginApi(pluginId) {
       registeredSelectionListeners.forEach(({ typeName, fn }) => _unregisterSelectionListener(typeName, fn));
       // Restore native panel visibility on plugin-deactivate so the host UI returns to default.
       setNativePanelHidden(false);
+      // Reset tool-group sub-tool selections so a fresh activate starts clean.
+      clearAllToolGroups();
       registeredTypes.length = 0;
       registeredPalettes.length = 0;
       registeredPanels.length = 0;
