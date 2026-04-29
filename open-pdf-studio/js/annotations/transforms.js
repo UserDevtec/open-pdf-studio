@@ -1028,6 +1028,16 @@ export function applyMove(annotation, deltaX, deltaY) {
       if (typeof annotation.startY === 'number') annotation.startY += deltaY;
       if (typeof annotation.endX === 'number') annotation.endX += deltaX;
       if (typeof annotation.endY === 'number') annotation.endY += deltaY;
+      // Nested position-bearing fields used by point-marker plugin types
+      // (symitech.schade, symitech.reeks, symitech.doorvoer.point-marker store
+      // their coordinate as `at: {x, y}` rather than top-level x/y).
+      if (annotation.at && typeof annotation.at === 'object') {
+        if (typeof annotation.at.x === 'number') annotation.at.x += deltaX;
+        if (typeof annotation.at.y === 'number') annotation.at.y += deltaY;
+      }
+      // Center-coordinate variants (e.g. circle/ellipse-shaped plugin types).
+      if (typeof annotation.cx === 'number') annotation.cx += deltaX;
+      if (typeof annotation.cy === 'number') annotation.cy += deltaY;
       if (Array.isArray(annotation.points)) {
         annotation.points = annotation.points.map(p => ({
           ...p,
