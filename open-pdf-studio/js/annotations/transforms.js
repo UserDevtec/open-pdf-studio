@@ -844,6 +844,59 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
       break;
 
     default:
+      // Plugin rect/oval-area resize: types that use {x, y, w, h} (not
+      // width/height) get corner/edge resize support here. Mirrors the
+      // built-in 'box' case but writes to `w`/`h` instead.
+      if (
+        typeof originalAnn.x === 'number'
+        && typeof originalAnn.y === 'number'
+        && typeof originalAnn.w === 'number'
+        && typeof originalAnn.h === 'number'
+        && typeof handleType === 'string'
+        && !handleType.startsWith('polyline_node_')
+      ) {
+        switch (handleType) {
+          case HANDLE_TYPES.TOP_LEFT:
+            annotation.x = originalAnn.x + deltaX;
+            annotation.y = originalAnn.y + deltaY;
+            annotation.w = originalAnn.w - deltaX;
+            annotation.h = originalAnn.h - deltaY;
+            break;
+          case HANDLE_TYPES.TOP_RIGHT:
+            annotation.y = originalAnn.y + deltaY;
+            annotation.w = originalAnn.w + deltaX;
+            annotation.h = originalAnn.h - deltaY;
+            break;
+          case HANDLE_TYPES.BOTTOM_LEFT:
+            annotation.x = originalAnn.x + deltaX;
+            annotation.w = originalAnn.w - deltaX;
+            annotation.h = originalAnn.h + deltaY;
+            break;
+          case HANDLE_TYPES.BOTTOM_RIGHT:
+            annotation.w = originalAnn.w + deltaX;
+            annotation.h = originalAnn.h + deltaY;
+            break;
+          case HANDLE_TYPES.TOP:
+            annotation.y = originalAnn.y + deltaY;
+            annotation.h = originalAnn.h - deltaY;
+            break;
+          case HANDLE_TYPES.BOTTOM:
+            annotation.h = originalAnn.h + deltaY;
+            break;
+          case HANDLE_TYPES.LEFT:
+            annotation.x = originalAnn.x + deltaX;
+            annotation.w = originalAnn.w - deltaX;
+            break;
+          case HANDLE_TYPES.RIGHT:
+            annotation.w = originalAnn.w + deltaX;
+            break;
+        }
+        // Minimum-size guard: collapsing below 10 px makes the shape
+        // unreachable. Mirror the box-case minimum.
+        if (annotation.w < 10) annotation.w = 10;
+        if (annotation.h < 10) annotation.h = 10;
+        break;
+      }
       // Plugin polyline fallback: any annotation-type with a points array supports
       // polyline_node_<i> handle-drag identically to the builtin polyline case.
       if (typeof handleType === 'string' && handleType.startsWith('polyline_node_') &&

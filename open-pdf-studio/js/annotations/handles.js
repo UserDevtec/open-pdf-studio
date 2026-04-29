@@ -287,6 +287,27 @@ export function getAnnotationHandles(annotation, scale = 1) {
         annotation.points.forEach((p, i) => {
           handles.push({ type: HANDLE_TYPES.POLYLINE_NODE, x: p.x - hs/2, y: p.y - hs/2, nodeIndex: i });
         });
+      } else if (
+        typeof annotation.x === 'number'
+        && typeof annotation.y === 'number'
+        && typeof annotation.w === 'number'
+        && typeof annotation.h === 'number'
+      ) {
+        // Plugin rect/oval-area types (symitech.doorvoer.rect-area,
+        // symitech.doorvoer.oval-area, symitech.niet-onderzocht.rect-area,
+        // symitech.niet-onderzocht.oval-area) store geometry as
+        // {x, y, w, h} (not width/height). Emit the same 4 corner + 4 edge
+        // handles built-in box/circle types use, so users can resize after
+        // placement by dragging any handle.
+        const ax = annotation.x, ay = annotation.y, aw = annotation.w, ah = annotation.h;
+        handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: ax - hs/2, y: ay - hs/2 });
+        handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: ax + aw - hs/2, y: ay - hs/2 });
+        handles.push({ type: HANDLE_TYPES.BOTTOM_LEFT, x: ax - hs/2, y: ay + ah - hs/2 });
+        handles.push({ type: HANDLE_TYPES.BOTTOM_RIGHT, x: ax + aw - hs/2, y: ay + ah - hs/2 });
+        handles.push({ type: HANDLE_TYPES.TOP, x: ax + aw/2 - hs/2, y: ay - hs/2 });
+        handles.push({ type: HANDLE_TYPES.BOTTOM, x: ax + aw/2 - hs/2, y: ay + ah - hs/2 });
+        handles.push({ type: HANDLE_TYPES.LEFT, x: ax - hs/2, y: ay + ah/2 - hs/2 });
+        handles.push({ type: HANDLE_TYPES.RIGHT, x: ax + aw - hs/2, y: ay + ah/2 - hs/2 });
       }
       break;
   }
