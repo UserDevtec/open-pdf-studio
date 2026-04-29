@@ -1,5 +1,5 @@
 import { Show, createEffect, onCleanup } from 'solid-js';
-import { customPanelRender, updateAnnotProp, getCurrentAnnotation, storeHideProperties } from '../../stores/propertiesStore.js';
+import { customPanelRender, updateAnnotProp, getCurrentAnnotation, storeHideProperties, annotProps } from '../../stores/propertiesStore.js';
 
 /**
  * Mounts a plugin-provided custom property-panel renderer when the selected
@@ -20,6 +20,12 @@ export default function CustomPluginPanel() {
 
   createEffect(() => {
     const renderFn = customPanelRender();
+    // Track annotProps.id reactively so the effect re-runs when the selected
+    // annotation changes, even if customPanelRender stays the same renderFn
+    // reference. getCurrentAnnotation() is a plain getter (not a signal); reading
+    // it alone would lose tracking and the panel would stay stale on selection
+    // swaps within the same plugin type.
+    const trackedId = annotProps.id; // eslint-disable-line @typescript-eslint/no-unused-vars
     const annotation = getCurrentAnnotation();
     if (!containerRef || !renderFn || !annotation) {
       if (containerRef) containerRef.innerHTML = '';

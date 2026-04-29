@@ -702,7 +702,20 @@ function recomputeMeasureText(ann) {
   }
 }
 
-// Update a single annotation property (write to store + annotation + undo + redraw)
+/**
+ * Update a single annotation property (write to store + annotation + undo + redraw).
+ *
+ * Plugin dot-path support: keys containing `.` (e.g. `data.address.email`) walk
+ * the annotation object, creating intermediate objects as needed. This means
+ * plugin annotation-keys MUST NOT contain a literal `.` character — a key like
+ * `version1.0` would be interpreted as `version1` -> `0`. Use snake_case or
+ * camelCase for plugin field names. Dot-path writes do NOT mirror into the
+ * flat Solid `annotProps` store — plugin panels are expected to read from
+ * their own form-state, not from `annotProps`.
+ *
+ * @param {string} key   Property name. May be a dot-path for nested writes.
+ * @param {*}      value New value.
+ */
 export function updateAnnotProp(key, value) {
   // Multi-selection mode: apply to all selected annotations
   if (annotProps.multiCount > 0) {
