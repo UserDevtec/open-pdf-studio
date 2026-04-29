@@ -1,4 +1,5 @@
 import { state, getActiveDocument, getPageRotation } from '../../core/state.js';
+import { drawAnnotation } from '../../annotations/rendering.js';
 import { updateAnnotationsList } from './annotations-list.js';
 import { updateAttachmentsList } from './attachments.js';
 import { updateSignaturesList } from './signatures.js';
@@ -408,6 +409,38 @@ async function processDocumentThumbnail(docId) {
   return false;
 }
 
+// Composite plugin/Solid-store annotations on top of a rendered thumbnail
+// dataURL. Returns a new dataURL with annotations overlayed. If the page has
+// no annotations, returns the input dataURL unchanged (zero-cost early-exit).
+async function overlayAnnotationsOnDataURL(dataURL, pageNum, width, height, scale) {
+  const doc = getActiveDocument();
+  const annotations = (doc?.annotations || []).filter(a => a.page === pageNum);
+  if (annotations.length === 0) return dataURL;
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = dataURL;
+    });
+    ctx.drawImage(img, 0, 0, width, height);
+    ctx.save();
+    ctx.scale(scale, scale);
+    annotations.forEach(a => {
+      try { drawAnnotation(ctx, a); } catch (e) { /* tolerant: 1 broken annotation breekt thumb niet */ }
+    });
+    ctx.restore();
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch (e) {
+    console.warn(`[Thumbnails] overlay failed for page ${pageNum}:`, e);
+    return dataURL;
+  }
+}
+
 // Render a single page thumbnail — uses Rust backend for speed when available
 async function renderThumbnailToDataURL(pdfDoc, pageNum) {
   if (!pdfDoc || pageNum > pdfDoc.numPages) return null;
@@ -428,7 +461,18 @@ async function renderThumbnailToDataURL(pdfDoc, pageNum) {
         skipImages: true,
       });
       const data = JSON.parse(result);
-      return { dataURL: data.dataURL, width: data.width, height: data.height };
+      // Plugin/Solid-store annotations zijn niet in de PDF tot save; overlay
+      // ze hier zodat thumbnail dezelfde inhoud toont als hoofdcanvas.
+      // Scale = thumbnail-pixels / PDF-pt = data.width / pageWidthPt.
+      try {
+        const page = await pdfDoc.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 1 });
+        const scale = data.width / viewport.width;
+        const composited = await overlayAnnotationsOnDataURL(data.dataURL, pageNum, data.width, data.height, scale);
+        return { dataURL: composited, width: data.width, height: data.height };
+      } catch {
+        return { dataURL: data.dataURL, width: data.width, height: data.height };
+      }
     } catch (e) {
       console.warn(`[Thumbnails] Rust render failed for page ${pageNum}:`, e);
       // Fall through to PDF.js fallback
@@ -459,6 +503,24 @@ async function renderThumbnailToDataURL(pdfDoc, pageNum) {
         viewport: viewport,
         annotationMode: 0
       }).promise;
+
+      // Overlay plugin/Solid-store annotations op dezelfde ctx vóór toDataURL.
+      // viewport.width = pdfPtWidth * THUMBNAIL_SCALE, dus scale-factor naar
+      // PDF-pt-coordsysteem = THUMBNAIL_SCALE.
+      try {
+        const docActive = getActiveDocument();
+        const annotations = (docActive?.annotations || []).filter(a => a.page === pageNum);
+        if (annotations.length > 0) {
+          ctx.save();
+          ctx.scale(THUMBNAIL_SCALE, THUMBNAIL_SCALE);
+          annotations.forEach(a => {
+            try { drawAnnotation(ctx, a); } catch (e) { /* tolerant */ }
+          });
+          ctx.restore();
+        }
+      } catch (e) {
+        console.warn(`[Thumbnails] PDF.js overlay failed for page ${pageNum}:`, e);
+      }
 
       return {
         dataURL: canvas.toDataURL('image/jpeg', 0.7),
