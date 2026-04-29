@@ -82,11 +82,16 @@ export function handlePointerDown(e) {
   // Look up current tool
   const tool = getTool(state.currentTool);
   if (!tool) {
-    // Fallback: check plugin registry for drag-mode tools
+    // Fallback: check plugin registry for non-click drawModes
     const typeHandler = getAnnotationType(state.currentTool);
     if (typeHandler?.drawMode === 'click') {
       const clickTool = getTool('_plugin_click');
       if (clickTool) clickTool.onPointerDown(ctx, e);
+    } else if (typeHandler?.drawMode === 'polyline') {
+      // Polyline-mode plugin: delegate to native polyline-tool;
+      // plugin's typeHandler.create() is invoked from _finishPolyline (see patch in polyline-tool.js).
+      const polyTool = getTool('polyline');
+      if (polyTool) polyTool.onPointerDown(ctx, e);
     } else if (typeHandler) {
       // Drag-mode plugin: use shape tool behavior
       const shapeTool = getTool('box'); // shape tool handles all drag-to-create
@@ -144,9 +149,12 @@ export function handlePointerMove(e) {
   if (tool && tool.onPointerMove) {
     tool.onPointerMove(ctx, e);
   } else {
-    // Plugin tool fallback: drag-mode preview
+    // Plugin tool fallback: drag/polyline-mode preview
     const typeHandler = getAnnotationType(state.currentTool);
-    if (typeHandler) {
+    if (typeHandler?.drawMode === 'polyline') {
+      const polyTool = getTool('polyline');
+      if (polyTool && polyTool.onPointerMove) polyTool.onPointerMove(ctx, e);
+    } else if (typeHandler) {
       const shapeTool = getTool('box');
       if (shapeTool && shapeTool.onPointerMove) shapeTool.onPointerMove(ctx, e);
     }
@@ -186,6 +194,11 @@ export function handlePointerUp(e) {
   } else {
     // Plugin tool fallback: shape tool up
     const typeHandler = getAnnotationType(state.currentTool);
+    if (typeHandler?.drawMode === 'polyline') {
+      // Polyline-mode plugin: pointer-up is a no-op (placement is click-driven,
+      // finish happens on right-click / double-click in polyline-tool itself).
+      return;
+    }
     if (typeHandler && typeHandler.drawMode !== 'click') {
       const shapeTool = getTool('box');
       if (shapeTool && shapeTool.onPointerUp) shapeTool.onPointerUp(ctx, e);
