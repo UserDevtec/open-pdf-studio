@@ -334,8 +334,19 @@ function _finishPolyline(ctx) {
   state.isDrawingPolyline = false;
   ctx.redraw();
 
-  // Auto-reset to select tool
-  import('../../tools/manager.js').then(m => m.setTool('select'));
+  // Auto-reset to select tool — alleen voor de built-in polyline-tool.
+  // Plugin-types met drawMode='polyline' (symitech.scheur, vloer-contour,
+  // doorvoer-polyline-closed, etc.) blijven actief zodat de gebruiker
+  // direct het volgende exemplaar kan tekenen zonder de tool opnieuw te
+  // selecteren. User-eis: "na rechtermuisklik-sluiten van scheur direct
+  // de volgende kunnen tekenen".
+  const stillPluginPolyline = (() => {
+    const h = getAnnotationType(state.currentTool);
+    return h && h.drawMode === 'polyline';
+  })();
+  if (!stillPluginPolyline) {
+    import('../../tools/manager.js').then(m => m.setTool('select'));
+  }
 }
 
 function _finishCloudPolyline(ctx) {
