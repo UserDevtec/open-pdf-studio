@@ -28,8 +28,20 @@ export const polylineTool = {
 
     // Single click — add point (with snap)
     const snap = ctx.snap(x, y, null, state.polylinePoints);
-    const ptX = snap.snapped ? snap.x : x;
-    const ptY = snap.snapped ? snap.y : y;
+    let ptX = snap.snapped ? snap.x : x;
+    let ptY = snap.snapped ? snap.y : y;
+
+    // Plugin shift-snap: when shift held + handler exposes snapHook, snap to last vertex.
+    if (e?.shiftKey && state.polylinePoints.length > 0) {
+      const handler = getAnnotationType(state.currentTool);
+      if (handler && typeof handler.snapHook === 'function') {
+        const last = state.polylinePoints[state.polylinePoints.length - 1];
+        const snapped = handler.snapHook(last.x, last.y, ptX, ptY);
+        ptX = snapped.x;
+        ptY = snapped.y;
+      }
+    }
+
     state.polylinePoints.push({ x: ptX, y: ptY });
     state.isDrawingPolyline = true;
     ctx.redraw();
@@ -61,9 +73,20 @@ export const polylineTool = {
 
     const prefs = state.preferences;
     const snap = ctx.snap(x, y, null, state.polylinePoints);
-    const snapX = snap.snapped ? snap.x : x;
-    const snapY = snap.snapped ? snap.y : y;
+    let snapX = snap.snapped ? snap.x : x;
+    let snapY = snap.snapped ? snap.y : y;
     state.lastSnapResult = snap.snapped ? snap : null;
+
+    // Plugin shift-snap preview: reflect snapped position before commit so user sees angle feedback.
+    if (e?.shiftKey && state.polylinePoints.length > 0) {
+      const handler = getAnnotationType(state.currentTool);
+      if (handler && typeof handler.snapHook === 'function') {
+        const last = state.polylinePoints[state.polylinePoints.length - 1];
+        const snapped = handler.snapHook(last.x, last.y, snapX, snapY);
+        snapX = snapped.x;
+        snapY = snapped.y;
+      }
+    }
 
     ctx.redraw();
     canvasCtx.save();
