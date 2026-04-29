@@ -887,11 +887,31 @@ export function updateAnnotProp(key, value) {
       recalculateAllMeasurements();
       break;
     }
-    default: currentAnnotation[key] = value; break;
+    default: {
+      // Dot-path support for plugin nested writes (e.g., 'data.address.email').
+      // Walks the chain creating intermediate objects when missing.
+      if (key.includes('.')) {
+        const parts = key.split('.');
+        let target = currentAnnotation;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const seg = parts[i];
+          if (target[seg] == null || typeof target[seg] !== 'object') {
+            target[seg] = {};
+          }
+          target = target[seg];
+        }
+        target[parts[parts.length - 1]] = value;
+      } else {
+        currentAnnotation[key] = value;
+      }
+      break;
+    }
   }
 
   // Update store (skip custom fields — they read directly from annotation)
-  if (!key.startsWith('tb')) {
+  // Skip dot-paths too: plugin-nested writes don't need to mirror into the
+  // flat Solid store; plugin panels read from their own form-state.
+  if (!key.startsWith('tb') && !key.includes('.')) {
     setAnnotProps(key, value);
   }
 
