@@ -13,6 +13,12 @@ export default function PageDisplayTab(props) {
             <span>{t('pageDisplay.thinLines')}</span>
           </label>
         </div>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.showScrollbars[0]()} onChange={e => p.showScrollbars[1](e.target.checked)} />
+            <span>{t('pageDisplay.showScrollbars')}</span>
+          </label>
+        </div>
       </fieldset>
       <fieldset class="pref-fieldset">
         <legend>{t('pageDisplay.panels')}</legend>

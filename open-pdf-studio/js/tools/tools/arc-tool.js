@@ -85,7 +85,7 @@ export const arcTool = {
         }
         ctx.recordAdd(ann);
         ctx.redraw();
-        import('../../tools/manager.js').then(m => m.setTool('select'));
+        import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
       } else {
         ctx.redraw();
       }

@@ -1,8 +1,8 @@
 import { Show, Switch, Match, ErrorBoundary } from 'solid-js';
 import RibbonTab from './RibbonTab.jsx';
-import MeasureTab from './MeasureTab.jsx';
 import HomeTab from './HomeTab.jsx';
 import CommentTab from './CommentTab.jsx';
+import DrawingTab from './DrawingTab.jsx';
 import ViewTab from './ViewTab.jsx';
 import OrganizeTab from './OrganizeTab.jsx';
 import HelpTab from './HelpTab.jsx';
@@ -27,9 +27,9 @@ export default function Ribbon() {
         <RibbonTab label={t('tabs.comment')} dataTab="comment"
           isActive={activeTab() === 'comment'}
           onClick={() => setActiveTab('comment')} />
-        <RibbonTab label={t('tabs.measure') || 'Meten'} dataTab="measure"
-          isActive={activeTab() === 'measure'}
-          onClick={() => setActiveTab('measure')} />
+        <RibbonTab label={t('tabs.drawing')} dataTab="drawing"
+          isActive={activeTab() === 'drawing'}
+          onClick={() => setActiveTab('drawing')} />
         <RibbonTab label={t('tabs.view')} dataTab="view"
           isActive={activeTab() === 'view'}
           onClick={() => setActiveTab('view')} />
@@ -54,9 +54,10 @@ export default function Ribbon() {
       </div>
 
       <Switch>
-        <Match when={activeTab() === 'measure'}><MeasureTab /></Match>
+        <Match when={activeTab() === 'measure'}><CommentTab /></Match>
         <Match when={activeTab() === 'home'}><HomeTab /></Match>
         <Match when={activeTab() === 'comment'}><CommentTab /></Match>
+        <Match when={activeTab() === 'drawing'}><DrawingTab /></Match>
         <Match when={activeTab() === 'view'}><ViewTab /></Match>
         <Match when={activeTab() === 'organize'}><OrganizeTab /></Match>
         <Match when={activeTab() === 'ai'}><ErrorBoundary fallback={<div class="ribbon-content active">AI tab unavailable</div>}><AITab /></ErrorBoundary></Match>

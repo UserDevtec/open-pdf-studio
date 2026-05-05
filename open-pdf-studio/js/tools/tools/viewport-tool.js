@@ -73,7 +73,7 @@ export const viewportTool = {
     openDialog('viewport-scale', { annotationId: ann.id, pageNum });
 
     // Auto-reset to select tool
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 
     return true;
   },

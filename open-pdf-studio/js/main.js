@@ -17,6 +17,7 @@ import { initPlugins } from './plugins/plugin-manager.js';
 
 // UI initialization
 import { initMenus } from './ui/chrome/menus.js';
+import { initFullscreen } from './ui/chrome/fullscreen.js';
 import { initContextMenus } from './ui/chrome/context-menus.js';
 import { initAnnotationsList } from './ui/panels/annotations-list.js';
 import { initAttachments } from './ui/panels/attachments.js';
@@ -202,6 +203,7 @@ async function init() {
   // Initialize UI components (desktop-only UI modules)
   if (!mobile) {
     initMenus();
+    initFullscreen();
     initContextMenus();
     initAnnotationsList();
     initAttachments();

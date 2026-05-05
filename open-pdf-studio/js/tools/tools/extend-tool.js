@@ -52,7 +52,7 @@ export const extendTool = {
     recordModify(target.id, oldState, target);
     redrawAnnotations();
     _extState.boundary = null;
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
   },
 
   onDeactivate() { _extState.boundary = null; },

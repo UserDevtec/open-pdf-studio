@@ -156,6 +156,8 @@
     "ellipse": "Ellips",
     "polygon": "Polygon",
     "cloud": "Moln",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Text",
     "textBox": "Textruta",
     "note": "Anteckning",

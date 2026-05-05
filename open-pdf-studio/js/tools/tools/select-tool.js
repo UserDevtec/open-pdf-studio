@@ -1,5 +1,7 @@
 import { getActiveDocument } from '../../core/state.js';
 import { applyToolTransform, getEffectiveScale } from '../tool-context.js';
+import { HANDLE_TYPES } from '../../core/constants.js';
+import { recordModify } from '../../core/undo-manager.js';
 
 /**
  * Select tool — click-select, rubber band, drag, resize, Ctrl+drag copy
@@ -21,6 +23,87 @@ export const selectTool = {
     if (!pdfaLocked && selAnn) {
       const handleType = ctx.findHandleAt(x, y, selAnn);
       if (handleType) {
+        // Edit-contour mode: clicking an edge midpoint inserts a new vertex
+        // there and immediately enters drag mode for that new vertex.
+        if (state.editingContour === selAnn.id && typeof handleType === 'string' &&
+            handleType.startsWith('polyline_edge_')) {
+          const before = ctx.cloneAnnotation(selAnn);
+          const holeMatch = handleType.match(/^polyline_edge_hole_(\d+)_(\d+)$/);
+          if (holeMatch && Array.isArray(selAnn.holes)) {
+            const hi = parseInt(holeMatch[1], 10);
+            const ei = parseInt(holeMatch[2], 10);
+            const hole = selAnn.holes[hi];
+            if (hole && ei >= 0 && ei < hole.length) {
+              const a = hole[ei];
+              const b = hole[(ei + 1) % hole.length];
+              const newPt = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+              if (state._editArcMode) {
+                newPt.arc = true;
+                newPt.bulge = 0.5;
+                state._editArcMode = false;
+              }
+              hole.splice(ei + 1, 0, newPt);
+              const newNodeIdx = ei + 1;
+              state.isResizing = true;
+              state.activeHandle = `polyline_node_hole_${hi}_${newNodeIdx}`;
+              state.originalAnnotation = ctx.cloneAnnotation(selAnn);
+              state._editContourBefore = before;
+              ctx.redraw();
+              return;
+            }
+          } else {
+            const ei = parseInt(handleType.split('_').pop(), 10);
+            const pts = selAnn.points || [];
+            if (!isNaN(ei) && ei >= 0 && ei < pts.length) {
+              const a = pts[ei];
+              const b = pts[(ei + 1) % pts.length];
+              const newPt = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+              if (state._editArcMode) {
+                newPt.arc = true;
+                newPt.bulge = 0.5;
+                state._editArcMode = false;
+              }
+              pts.splice(ei + 1, 0, newPt);
+              const newNodeIdx = ei + 1;
+              state.isResizing = true;
+              state.activeHandle = `polyline_node_${newNodeIdx}`;
+              state.originalAnnotation = ctx.cloneAnnotation(selAnn);
+              state._editContourBefore = before;
+              ctx.redraw();
+              return;
+            }
+          }
+        }
+        // Textbox leader: + add button — append a new leader and commit undo
+        if (selAnn.type === 'textbox' && handleType === HANDLE_TYPES.LEADER_ADD) {
+          const before = ctx.cloneAnnotation(selAnn);
+          const bw = selAnn.width || 150;
+          const bh = selAnn.height || 50;
+          const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+          const tipX = selAnn.x + bw + 80;
+          const tipY = selAnn.y + bh / 2;
+          const kneeX = selAnn.x + bw + 40;
+          const kneeY = selAnn.y + bh / 2;
+          if (!Array.isArray(selAnn.leaders)) selAnn.leaders = [];
+          selAnn.leaders.push({ id, tipX, tipY, kneeX, kneeY, endStyle: 'arrow' });
+          selAnn.modifiedAt = new Date().toISOString();
+          recordModify(selAnn.id, before, ctx.cloneAnnotation(selAnn));
+          ctx.redraw();
+          return;
+        }
+        // Textbox leader: × delete button — splice that leader and commit undo
+        if (selAnn.type === 'textbox' && typeof handleType === 'string' &&
+            handleType.startsWith(HANDLE_TYPES.LEADER_DELETE + '_')) {
+          const leaderId = handleType.substring((HANDLE_TYPES.LEADER_DELETE + '_').length);
+          const before = ctx.cloneAnnotation(selAnn);
+          if (Array.isArray(selAnn.leaders)) {
+            selAnn.leaders = selAnn.leaders.filter(l => l.id !== leaderId);
+            selAnn.modifiedAt = new Date().toISOString();
+            recordModify(selAnn.id, before, ctx.cloneAnnotation(selAnn));
+          }
+          ctx.redraw();
+          return;
+        }
         state.isResizing = true;
         state.activeHandle = handleType;
         state.originalAnnotation = ctx.cloneAnnotation(selAnn);
@@ -29,6 +112,10 @@ export const selectTool = {
     }
 
     const clickedAnnotation = ctx.findAnnotationAt(x, y);
+    // Auto-exit edit-contour mode when clicking outside the currently edited annotation
+    if (state.editingContour && (!clickedAnnotation || clickedAnnotation.id !== state.editingContour)) {
+      state.editingContour = null;
+    }
     if (clickedAnnotation) {
       // Double-click to edit textbox/callout
       if (!pdfaLocked && e.detail === 2 && ['textbox', 'callout'].includes(clickedAnnotation.type)) {
@@ -81,6 +168,22 @@ export const selectTool = {
           ctx.hideProperties();
         }
         ctx.redraw();
+      } else if (e.shiftKey) {
+        // Shift+click: additive selection (do not start drag)
+        if (ctx.isSelected(clickedAnnotation)) {
+          // Already selected — leave as is (additive doesn't remove)
+        } else {
+          ctx.addToSelection(clickedAnnotation);
+        }
+        const selAnnsNow = doc ? doc.selectedAnnotations : [];
+        if (selAnnsNow.length === 1) {
+          ctx.showProperties(selAnnsNow[0]);
+        } else if (selAnnsNow.length > 1) {
+          ctx.showMultiSelectionProperties();
+        } else {
+          ctx.hideProperties();
+        }
+        ctx.redraw();
       } else {
         const isTextMarkup = ['textHighlight', 'textStrikethrough', 'textUnderline'].includes(clickedAnnotation.type);
         if (ctx.isSelected(clickedAnnotation) && selAnns.length > 1) {
@@ -101,27 +204,30 @@ export const selectTool = {
         }
       }
     } else {
-      if (e.ctrlKey || e.metaKey) {
-        // Ctrl+click on empty space: keep selection
-      } else {
-        // Start rubber band selection
-        state.isRubberBanding = true;
-        state.rubberBandStartX = x;
-        state.rubberBandStartY = y;
+      // Start rubber band selection. Modifier from initial pointerdown
+      // determines how the resulting set is combined with current selection.
+      state.isRubberBanding = true;
+      state.rubberBandStartX = x;
+      state.rubberBandStartY = y;
+      state.rubberBandMode = 'window'; // updated live during pointermove
+      state.rubberBandModifier = (e.shiftKey)
+        ? 'add'
+        : ((e.ctrlKey || e.metaKey) ? 'toggle' : 'replace');
+      if (state.rubberBandModifier === 'replace') {
         ctx.clearSelection();
         ctx.hideProperties();
-        ctx.redraw();
-
-        // No annotation hit — temporarily enable text layer for text selection
-        const textLayers = document.querySelectorAll('.textLayer');
-        textLayers.forEach(layer => {
-          layer.style.pointerEvents = 'auto';
-          layer.querySelectorAll('span').forEach(span => {
-            span.style.pointerEvents = 'auto';
-            span.style.cursor = 'text';
-          });
-        });
       }
+      ctx.redraw();
+
+      // No annotation hit — temporarily enable text layer for text selection
+      const textLayers = document.querySelectorAll('.textLayer');
+      textLayers.forEach(layer => {
+        layer.style.pointerEvents = 'auto';
+        layer.querySelectorAll('span').forEach(span => {
+          span.style.pointerEvents = 'auto';
+          span.style.cursor = 'text';
+        });
+      });
     }
   },
 
@@ -130,14 +236,24 @@ export const selectTool = {
 
     // Rubber band drawing
     if (state.isRubberBanding) {
+      // AutoCAD-style: drag right (endX >= startX) → window (blue, solid),
+      // drag left (endX < startX) → crossing (green, dashed).
+      const isCrossing = x < state.rubberBandStartX;
+      state.rubberBandMode = isCrossing ? 'crossing' : 'window';
       ctx.redraw();
       const sc = getEffectiveScale();
       canvasCtx.save();
       applyToolTransform(canvasCtx);
-      canvasCtx.strokeStyle = '#0066cc';
+      if (isCrossing) {
+        canvasCtx.strokeStyle = '#10b981'; // green
+        canvasCtx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+        canvasCtx.setLineDash([4 / sc, 4 / sc]);
+      } else {
+        canvasCtx.strokeStyle = '#3b82f6'; // blue
+        canvasCtx.fillStyle = 'rgba(59, 130, 246, 0.15)';
+        canvasCtx.setLineDash([]);
+      }
       canvasCtx.lineWidth = 1 / sc;
-      canvasCtx.setLineDash([4 / sc, 4 / sc]);
-      canvasCtx.fillStyle = 'rgba(0, 102, 204, 0.1)';
       const rbX = Math.min(state.rubberBandStartX, x);
       const rbY = Math.min(state.rubberBandStartY, y);
       const rbW = Math.abs(x - state.rubberBandStartX);
@@ -178,6 +294,8 @@ export const selectTool = {
     // Rubber band selection end
     if (state.isRubberBanding) {
       state.isRubberBanding = false;
+      const mode = state.rubberBandMode || (x < state.rubberBandStartX ? 'crossing' : 'window');
+      const modifier = state.rubberBandModifier || 'replace';
 
       const rbX = Math.min(state.rubberBandStartX, x);
       const rbY = Math.min(state.rubberBandStartY, y);
@@ -191,22 +309,35 @@ export const selectTool = {
           if (ann.page !== ctx.pageNum) continue;
           const bounds = ctx.getAnnotationBounds(ann);
           if (!bounds) continue;
-          if (bounds.x < rbX + rbW && bounds.x + bounds.width > rbX &&
-              bounds.y < rbY + rbH && bounds.y + bounds.height > rbY) {
-            selected.push(ann);
-          }
+          const fullyInside =
+            bounds.x >= rbX && bounds.x + bounds.width <= rbX + rbW &&
+            bounds.y >= rbY && bounds.y + bounds.height <= rbY + rbH;
+          const intersects =
+            bounds.x < rbX + rbW && bounds.x + bounds.width > rbX &&
+            bounds.y < rbY + rbH && bounds.y + bounds.height > rbY;
+          const hit = mode === 'window' ? fullyInside : intersects;
+          if (hit) selected.push(ann);
         }
-        if (selected.length > 0) {
-          const doc = getActiveDocument();
-          if (doc) {
-            doc.selectedAnnotations = selected;
-            doc.selectedAnnotation = selected.length > 0 ? selected[0] : null;
-          }
-          if (selected.length === 1) {
-            ctx.showProperties(selected[0]);
+        if (doc) {
+          if (modifier === 'add') {
+            for (const a of selected) {
+              if (!doc.selectedAnnotations.includes(a)) doc.selectedAnnotations.push(a);
+            }
+          } else if (modifier === 'toggle') {
+            for (const a of selected) {
+              const idx = doc.selectedAnnotations.indexOf(a);
+              if (idx >= 0) doc.selectedAnnotations.splice(idx, 1);
+              else doc.selectedAnnotations.push(a);
+            }
           } else {
-            ctx.showMultiSelectionProperties();
+            // replace
+            doc.selectedAnnotations = selected;
           }
+          const selNow = doc.selectedAnnotations;
+          doc.selectedAnnotation = selNow.length > 0 ? selNow[selNow.length - 1] : null;
+          if (selNow.length === 1) ctx.showProperties(selNow[0]);
+          else if (selNow.length > 1) ctx.showMultiSelectionProperties();
+          else ctx.hideProperties();
         }
       }
       ctx.redraw();

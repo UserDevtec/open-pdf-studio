@@ -18,10 +18,66 @@ import { closeActiveTab } from '../ui/chrome/tabs.js';
 import { hideProperties, showProperties, showMultiSelectionProperties, togglePropertiesPanel } from '../ui/panels/properties-panel.js';
 import { openDialog, aiPanelVisible, setAiPanelVisible, aiIsAuthenticated, aiRequireSignIn } from '../bridge.js';
 import { getTool } from './tool-registry.js';
+import { tryStartGMove, isGMoveModeActive } from './g-move-mode.js';
+import { toggleFullscreen, exitFullscreen, getFullscreenState } from '../ui/chrome/fullscreen.js';
+import { typeLengthActive, consumeKey as typeLengthConsumeKey } from './type-length-input.js';
 
 function redraw() {
   if (getActiveDocument()?.viewMode === 'continuous') redrawContinuous();
   else redrawAnnotations();
+}
+
+// ── CAD-style two-letter command chords (AutoCAD-style command line) ──
+// Map of command → action. Two-letter codes win over one-letter codes; if a
+// one-letter prefix is also a valid command, the timeout fires it after CHORD_MS.
+const CAD_CHORDS = {
+  'tr': () => setTool('trim'),
+  'ex': () => setTool('extend'),
+  'tx': () => setTool('textbox'),
+  // Reserved for future: 'l' line, 'c' circle, 'co' copy, 'mi' mirror, 'ar' array, etc.
+};
+const CHORD_MS = 1200;
+let _chordBuffer = '';
+let _chordTimer = null;
+
+function _resetChord() {
+  _chordBuffer = '';
+  if (_chordTimer) { clearTimeout(_chordTimer); _chordTimer = null; }
+}
+
+// Returns true if the keystroke was consumed by the chord system.
+function _cadChordTry(letter) {
+  // Skip if a single-key tool shortcut would handle this letter alone (G is
+  // already returned-on earlier; A toggles arc-mode; Esc/Tab handled separately).
+  if (letter === 'g' || letter === 'a') return false;
+
+  const next = _chordBuffer + letter;
+
+  // Exact match (multi-letter): fire and clear.
+  if (CAD_CHORDS[next]) {
+    _resetChord();
+    try { CAD_CHORDS[next](); } catch (_) {}
+    return true;
+  }
+
+  // Prefix of some longer chord? Buffer and wait.
+  const isPrefix = Object.keys(CAD_CHORDS).some(k => k.startsWith(next) && k !== next);
+  if (isPrefix) {
+    _chordBuffer = next;
+    if (_chordTimer) clearTimeout(_chordTimer);
+    _chordTimer = setTimeout(() => {
+      // Timeout: if the buffer itself is a valid (single-letter) command, fire it.
+      if (CAD_CHORDS[_chordBuffer]) {
+        try { CAD_CHORDS[_chordBuffer](); } catch (_) {}
+      }
+      _resetChord();
+    }, CHORD_MS);
+    return true;
+  }
+
+  // No match and not a prefix → reset and let the keystroke fall through.
+  _resetChord();
+  return false;
 }
 
 // Handle keydown events
@@ -44,6 +100,14 @@ export async function handleKeydown(e) {
 
   if (e.key === 'F3' && !isFindInput) {
     e.preventDefault();
+    if (e.shiftKey) {
+      // Shift+F3: toggle master Object Snap (OSNAP) setting
+      try {
+        state.preferences.enableObjectSnap = !state.preferences.enableObjectSnap;
+        import('../core/preferences.js').then(m => m.savePreferences && m.savePreferences()).catch(() => {});
+      } catch (_) {}
+      return;
+    }
     if (state.search.isOpen) {
       onFindNext();
     } else {
@@ -55,6 +119,72 @@ export async function handleKeydown(e) {
   // Skip other shortcuts if typing in an input field (except find input which handles its own keys)
   if (isInInput && !isFindInput) {
     return;
+  }
+
+  // Type-length capture (CAD-style "type length"). Active when a tool that
+  // supports it has called enterTypeLengthMode after committing the start
+  // point. We forward digits / '.' / ',' / Backspace / Enter / Escape to the
+  // capture module. Enter triggers the active tool's _typeLengthCommit hook
+  // (set by the tool when it activates the mode).
+  if (typeLengthActive()) {
+    const result = typeLengthConsumeKey(e.key);
+    if (result.handled) {
+      e.preventDefault();
+      if (result.committed && typeof state._typeLengthCommit === 'function') {
+        state._typeLengthCommit(result.length);
+      } else {
+        // Buffer changed → request redraw so preview reflects new constrained endpoint
+        redraw();
+      }
+      return;
+    }
+  }
+
+  // A — in edit-contour mode, toggle "next inserted vertex is an arc vertex"
+  // flag. The flag is consumed (reset) by select-tool.js when an edge-midpoint
+  // click inserts a new vertex.
+  if ((e.key === 'a' || e.key === 'A') && !ctrl && !e.altKey && !shift && state.editingContour) {
+    e.preventDefault();
+    state._editArcMode = !state._editArcMode;
+    redraw();
+    return;
+  }
+
+  // Tab — toggle "edit contour" mode for a single selected filledArea annotation
+  if (e.key === 'Tab' && !ctrl && !e.altKey) {
+    const _doc = getActiveDocument();
+    const _sel = _doc ? _doc.selectedAnnotations : [];
+    if (_sel.length === 1 && _sel[0].type === 'filledArea') {
+      e.preventDefault();
+      if (state.editingContour === _sel[0].id) {
+        state.editingContour = null;
+        state._editArcMode = false;
+      } else {
+        state.editingContour = _sel[0].id;
+      }
+      redraw();
+      return;
+    }
+  }
+
+  // G-key Blender-style move mode (issue #210) — only trigger when not already
+  // in G-mode (g-move-mode.js intercepts subsequent keys at capture phase).
+  if (!ctrl && !shift && !e.altKey && !isGMoveModeActive() && (e.key === 'g' || e.key === 'G')) {
+    if (tryStartGMove()) {
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // CAD-style two-letter command chords (AutoCAD-style: "TR"=Trim, "EX"=Extend,
+  // "L"=Line, "C"=Circle, "M"=Move, "CO"=Copy, "TR"=Trim, "EX"=Extend, ...).
+  // Buffer alphabetic keys for ~1.2s; on each keystroke check for a match.
+  // No modifier keys (ctrl/alt) and not while a tool is mid-operation.
+  if (!ctrl && !e.altKey && /^[a-zA-Z]$/.test(e.key) && !isGMoveModeActive() && !typeLengthActive()) {
+    if (_cadChordTry(e.key.toLowerCase())) {
+      e.preventDefault();
+      return;
+    }
   }
 
   // Find input handles Enter, Shift+Enter, and Escape internally
@@ -233,20 +363,92 @@ export async function handleKeydown(e) {
     // Don't preventDefault — let native paste event fire so handlePaste can
     // read clipboardData.items (required on Linux/WebKitGTK where the async
     // Clipboard API is unavailable).
+    //
+    // Fallback: in some Tauri webview contexts the native 'paste' event does
+    // not fire when no editable element has focus (canvas focused, or no focus
+    // at all). Schedule a deferred check — if the native handler did not run,
+    // try the async Clipboard API for image data, then fall back to the
+    // internal annotation clipboard.
+    const beforeMark = state._lastNativePasteAt || 0;
+    setTimeout(async () => {
+      const afterMark = state._lastNativePasteAt || 0;
+      if (afterMark > beforeMark) return; // native paste already handled
+      if (!getActiveDocument()?.pdfDoc) return;
+      if (isPdfAReadOnly()) return;
+      // Try async Clipboard API for image data
+      let handledImage = false;
+      try {
+        if (navigator.clipboard?.read) {
+          const items = await navigator.clipboard.read();
+          for (const it of items) {
+            const imgType = it.types.find(t => t.startsWith('image/'));
+            if (imgType) {
+              const blob = await it.getType(imgType);
+              const { pasteImageFromBlob } = await import('../annotations/clipboard.js');
+              await pasteImageFromBlob(blob);
+              handledImage = true;
+              break;
+            }
+          }
+        }
+      } catch (_) { /* permission denied or no focus — fall through */ }
+      if (handledImage) return;
+      // No image — fall back to internal annotation clipboard
+      const { pasteAnnotation, pasteAnnotations } = await import('../annotations/clipboard.js');
+      const clips = state.clipboardAnnotations;
+      if (clips && clips.length > 1) pasteAnnotations();
+      else if ((clips && clips.length === 1) || state.clipboardAnnotation) pasteAnnotation();
+    }, 50);
   } else if (ctrl && e.key === ',') {
     e.preventDefault();
     showPreferencesDialog();
   } else if (ctrl && e.key === 'd') {
     e.preventDefault();
     showDocPropertiesDialog();
+  } else if (ctrl && (e.key === 'l' || e.key === 'L')) {
+    e.preventDefault();
+    toggleFullscreen();
   }
 
-  // ESC key - deselect, or close dialogs, or switch back to hand tool
+  // ESC key - exit fullscreen, deselect, or close dialogs, or switch back to hand tool
   else if (e.key === 'Escape') {
     e.preventDefault();
+    // Cancel an in-progress grip-stretch / resize: restore the original
+    // annotation snapshot and exit resize mode without recording undo.
+    if (state.isResizing && state.originalAnnotation) {
+      const _doc = getActiveDocument();
+      const _sel = _doc ? _doc.selectedAnnotations : [];
+      const ann = _sel.length === 1 ? _sel[0] : null;
+      if (ann) {
+        // Restore annotation to its pre-stretch state
+        Object.assign(ann, state.originalAnnotation);
+      }
+      state.isResizing = false;
+      state.isDragging = false;
+      state.activeHandle = null;
+      state.originalAnnotation = null;
+      state.originalAnnotations = [];
+      state._editContourBefore = null;
+      state.lastSnapResult = null;
+      state.dragCursor = null;
+      redraw();
+      return;
+    }
+    // Exit fullscreen first if active
+    if (getFullscreenState()) {
+      exitFullscreen();
+      return;
+    }
     // First check if find bar is open
     if (state.search.isOpen) {
       closeFindBar();
+      return;
+    }
+    // Exit edit-contour mode if active
+    if (state.editingContour) {
+      state.editingContour = null;
+      state._editArcMode = false;
+      redraw();
       return;
     }
     // Cancel in-progress dimension drawing
@@ -259,9 +461,12 @@ export async function handleKeydown(e) {
     // Cancel in-progress measurement
     if (state.measurePoints) {
       state.measurePoints = null;
+      import('./snap-engine.js').then(m => m.clearPolarAnchor && m.clearPolarAnchor()).catch(() => {});
       redraw();
       return;
     }
+    // Always clear any lingering polar anchor on Escape
+    import('./snap-engine.js').then(m => m.clearPolarAnchor && m.clearPolarAnchor()).catch(() => {});
     // If annotations are selected, deselect them first
     if ((getActiveDocument()?.selectedAnnotations || []).length > 0) {
       clearSelection();
@@ -336,13 +541,32 @@ export async function handleKeydown(e) {
     }
   }
 
-  // Help shortcuts
+  // Help / drafting shortcuts
   if (e.key === 'F1') {
     e.preventDefault();
     openDialog('shortcuts');
-  } else if (e.key === 'F9') {
+  } else if (e.key === 'F7') {
+    // F7 — toggle dot grid visibility (AutoCAD convention)
+    e.preventDefault();
+    state.preferences.showGrid = !state.preferences.showGrid;
+    import('../core/preferences.js').then(m => m.savePreferences && m.savePreferences()).catch(() => {});
+    redraw();
+  } else if (e.key === 'F8') {
+    // F8 — toggle the document outline / left panel (was F9)
     e.preventDefault();
     toggleLeftPanel();
+  } else if (e.key === 'F9') {
+    // F9 — toggle snap-to-grid (AutoCAD convention)
+    e.preventDefault();
+    state.preferences.enableGridSnap = !state.preferences.enableGridSnap;
+    import('../core/preferences.js').then(m => m.savePreferences && m.savePreferences()).catch(() => {});
+    redraw();
+  } else if (e.key === 'F10') {
+    // F10 — toggle polar tracking (AutoCAD convention)
+    e.preventDefault();
+    state.preferences.polarTrackingEnabled = !state.preferences.polarTrackingEnabled;
+    import('../core/preferences.js').then(m => m.savePreferences && m.savePreferences()).catch(() => {});
+    redraw();
   } else if (e.key === 'F12') {
     e.preventDefault();
     togglePropertiesPanel();
@@ -358,6 +582,9 @@ function handlePaste(e) {
   if (isPdfAReadOnly()) return;
   const isInInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
   if (isInInput) return;
+
+  // Mark that the native paste fired so the Ctrl+V keydown fallback skips itself.
+  state._lastNativePasteAt = Date.now();
 
   // Must preventDefault synchronously before any async work
   e.preventDefault();
@@ -393,4 +620,8 @@ function handlePaste(e) {
 export function initKeyboardHandlers() {
   document.addEventListener('keydown', handleKeydown);
   document.addEventListener('paste', handlePaste);
+  // G-move-mode requires knowing the current cursor position when G is pressed,
+  // so install a passive tracker that updates state._lastMouseAppX/Y on every
+  // mousemove. This is cheap (just two assignments + rect calc).
+  import('./g-move-mode.js').then(m => m.installGMoveMouseTracker());
 }

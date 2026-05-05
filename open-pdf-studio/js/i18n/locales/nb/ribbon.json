@@ -156,6 +156,8 @@
     "ellipse": "Ellipse",
     "polygon": "Polygon",
     "cloud": "Sky",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Tekst",
     "textBox": "Tekstboks",
     "note": "Notat",

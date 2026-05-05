@@ -36,6 +36,24 @@ export default function BehaviorTab(props) {
       </fieldset>
 
       <fieldset class="pref-fieldset">
+        <legend>{t('behavior.polarTracking') || 'Polar tracking'}</legend>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.polarTrackingEnabled[0]()} onChange={e => p.polarTrackingEnabled[1](e.target.checked)} />
+            <span>{t('behavior.enablePolarTracking') || 'Enable polar tracking (F10)'}</span>
+          </label>
+        </div>
+        <div class="pref-row">
+          <label>{t('behavior.polarIncrement') || 'Polar increment (°)'}</label>
+          <input type="number" min="1" max="180" step="1" value={p.polarIncrement[0]()} onInput={e => p.polarIncrement[1](parseFloat(e.target.value) || 45)} disabled={!p.polarTrackingEnabled[0]()} />
+        </div>
+        <div class="pref-row">
+          <label>{t('behavior.polarTolerance') || 'Polar tolerance (°)'}</label>
+          <input type="number" min="0.5" max="15" step="0.5" value={p.polarTolerance[0]()} onInput={e => p.polarTolerance[1](parseFloat(e.target.value) || 3)} disabled={!p.polarTrackingEnabled[0]()} />
+        </div>
+      </fieldset>
+
+      <fieldset class="pref-fieldset">
         <legend>{t('behavior.objectSnapping')}</legend>
         <div class="pref-row pref-checkbox-row">
           <label class="pref-checkbox-label">
@@ -67,9 +85,39 @@ export default function BehaviorTab(props) {
             <span>{t('behavior.snapToEdges')}</span>
           </label>
         </div>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.snapToIntersections[0]()} onChange={e => p.snapToIntersections[1](e.target.checked)} disabled={!p.enableObjectSnap[0]()} />
+            <span>{t('behavior.snapToIntersections')}</span>
+          </label>
+        </div>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.snapToPerpendicular[0]()} onChange={e => p.snapToPerpendicular[1](e.target.checked)} disabled={!p.enableObjectSnap[0]()} />
+            <span>{t('behavior.snapToPerpendicular')}</span>
+          </label>
+        </div>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.snapToQuadrant[0]()} onChange={e => p.snapToQuadrant[1](e.target.checked)} disabled={!p.enableObjectSnap[0]()} />
+            <span>{t('behavior.snapToQuadrant')}</span>
+          </label>
+        </div>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.snapToTangent[0]()} onChange={e => p.snapToTangent[1](e.target.checked)} disabled={!p.enableObjectSnap[0]()} />
+            <span>{t('behavior.snapToTangent')}</span>
+          </label>
+        </div>
+        <div class="pref-row pref-checkbox-row">
+          <label class="pref-checkbox-label">
+            <input type="checkbox" checked={p.snapToNearest[0]()} onChange={e => p.snapToNearest[1](e.target.checked)} disabled={!p.enableObjectSnap[0]()} />
+            <span>{t('behavior.snapToNearest')}</span>
+          </label>
+        </div>
         <div class="pref-row">
           <label>{t('behavior.objectSnapRadius')}</label>
-          <input type="number" min="3" max="30" value={p.objectSnapRadius[0]()} onInput={e => p.objectSnapRadius[1](parseInt(e.target.value) || 10)} disabled={!p.enableObjectSnap[0]()} />
+          <input type="number" min="5" max="30" value={p.objectSnapRadius[0]()} onInput={e => p.objectSnapRadius[1](parseInt(e.target.value) || 12)} disabled={!p.enableObjectSnap[0]()} />
         </div>
         <div class="pref-row pref-checkbox-row">
           <label class="pref-checkbox-label">

@@ -68,8 +68,10 @@ function getAnnotationCenterAndSize(ann) {
     case 'signature':
     case 'redaction':
     case 'viewport':
+    case 'scaleRegion':
     case 'scaleBar':
     case 'scheduleTable':
+    case 'parametricSymbol':
       return {
         centerX: ann.x + ann.width / 2,
         centerY: ann.y + ann.height / 2,
@@ -271,6 +273,27 @@ export function findAnnotationAt(x, y) {
         const tbCenter = { x: ann.x + tbWidth / 2, y: ann.y + tbHeight / 2 };
         const tbLocal = transformPointByInverseRotation(x, y, tbCenter.x, tbCenter.y, ann.rotation);
         if (tbLocal.x >= ann.x && tbLocal.x <= ann.x + tbWidth && tbLocal.y >= ann.y && tbLocal.y <= ann.y + tbHeight) return ann;
+        // Leader segment hit-test: cursor within ~4 px of any anchor->knee->tip line
+        if (Array.isArray(ann.leaders) && ann.leaders.length > 0) {
+          const ldrTol = Math.max(4 / scale, tol);
+          const bw = tbWidth, bh = tbHeight;
+          for (const l of ann.leaders) {
+            // Pick anchor side using same logic as renderer
+            const cs = [
+              { x: ann.x + bw / 2, y: ann.y },
+              { x: ann.x + bw,     y: ann.y + bh / 2 },
+              { x: ann.x + bw / 2, y: ann.y + bh },
+              { x: ann.x,          y: ann.y + bh / 2 },
+            ];
+            let aBest = cs[0], bestD = Infinity;
+            for (const c of cs) {
+              const d = (c.x - l.kneeX) * (c.x - l.kneeX) + (c.y - l.kneeY) * (c.y - l.kneeY);
+              if (d < bestD) { bestD = d; aBest = c; }
+            }
+            if (distanceToLine(x, y, aBest.x, aBest.y, l.kneeX, l.kneeY) < ldrTol) return ann;
+            if (distanceToLine(x, y, l.kneeX, l.kneeY, l.tipX, l.tipY) < ldrTol) return ann;
+          }
+        }
         break;
       case 'callout':
         const coWidth = ann.width || 150;
@@ -287,7 +310,7 @@ export function findAnnotationAt(x, y) {
         break;
       case 'polygon':
       case 'cloud': {
-        // Edge proximity check
+        // Edge proximity check (when annotation has explicit points array)
         if (ann.points && ann.points.length >= 2) {
           for (let i = 0; i < ann.points.length - 1; i++) {
             if (distanceToLine(x, y, ann.points[i].x, ann.points[i].y, ann.points[i+1].x, ann.points[i+1].y) < tol) return ann;
@@ -297,25 +320,39 @@ export function findAnnotationAt(x, y) {
             if (distanceToLine(x, y, ann.points[last].x, ann.points[last].y, ann.points[0].x, ann.points[0].y) < tol) return ann;
           }
         }
-        // Point-in-polygon: click anywhere inside
+        // Point-in-polygon: click anywhere inside (points-based)
         if (ann.points && ann.points.length >= 3) {
           if (pointInPolygon(x, y, ann.points)) return ann;
+        }
+        // Bounding-box hit test for bbox-based shapes (cloud is created via x/y/width/height,
+        // and polygon also stores width/height for the inscribed regular polygon).
+        if (ann.width !== undefined && ann.height !== undefined) {
+          const bbCenter = { x: ann.x + ann.width / 2, y: ann.y + ann.height / 2 };
+          const bbLocal = transformPointByInverseRotation(x, y, bbCenter.x, bbCenter.y, ann.rotation);
+          // Inside bbox -> click anywhere selects (cloud has no points fallback)
+          if (bbLocal.x >= ann.x && bbLocal.x <= ann.x + ann.width &&
+              bbLocal.y >= ann.y && bbLocal.y <= ann.y + ann.height) return ann;
+          // Near border edges (covers the wavy scallops that extend slightly outside the bbox)
+          if (isPointNearRect(bbLocal.x, bbLocal.y, ann.x, ann.y, ann.width, ann.height, tol + 8)) return ann;
         }
         break;
       }
       case 'image':
       case 'stamp':
       case 'signature':
-      case 'redaction': {
-        // Images/stamps/signatures: selectable ANYWHERE inside the bounding box
+      case 'redaction':
+      case 'parametricSymbol': {
+        // Images/stamps/signatures/parametric symbols: selectable ANYWHERE inside the bounding box
         const imgCenter = { x: ann.x + ann.width / 2, y: ann.y + ann.height / 2 };
         const imgLocal = transformPointByInverseRotation(x, y, imgCenter.x, imgCenter.y, ann.rotation);
         if (imgLocal.x >= ann.x && imgLocal.x <= ann.x + ann.width &&
             imgLocal.y >= ann.y && imgLocal.y <= ann.y + ann.height) return ann;
         break;
       }
-      case 'viewport': {
-        // Viewport: hit test on boundary edges and name label only
+      case 'viewport':
+      case 'scaleRegion': {
+        // Hit test on boundary edges and the top-left badge/label only,
+        // so that annotations placed *inside* the region remain selectable.
         const edgeTol = 6;
         const nearLeft = Math.abs(x - ann.x) < edgeTol && y >= ann.y - edgeTol && y <= ann.y + ann.height + edgeTol;
         const nearRight = Math.abs(x - (ann.x + ann.width)) < edgeTol && y >= ann.y - edgeTol && y <= ann.y + ann.height + edgeTol;
@@ -323,7 +360,7 @@ export function findAnnotationAt(x, y) {
         const nearBottom = Math.abs(y - (ann.y + ann.height)) < edgeTol && x >= ann.x - edgeTol && x <= ann.x + ann.width + edgeTol;
         if (nearLeft || nearRight || nearTop || nearBottom) return ann;
         // Label area above top-left
-        if (x >= ann.x && x <= ann.x + 120 && y >= ann.y - 16 && y <= ann.y) return ann;
+        if (x >= ann.x && x <= ann.x + 160 && y >= ann.y - 16 && y <= ann.y) return ann;
         break;
       }
       case 'scaleBar':
@@ -357,6 +394,7 @@ export function findAnnotationAt(x, y) {
       }
       case 'measureArea':
       case 'measurePerimeter':
+      case 'filledArea':
         if (ann.points && ann.points.length >= 2) {
           // Check proximity to any edge
           for (let i = 0; i < ann.points.length - 1; i++) {
@@ -364,13 +402,13 @@ export function findAnnotationAt(x, y) {
             if (d < tol) return ann;
           }
           // For area, also check closing edge
-          if (ann.type === 'measureArea' && ann.points.length >= 3) {
+          if ((ann.type === 'measureArea' || ann.type === 'filledArea') && ann.points.length >= 3) {
             const last = ann.points.length - 1;
             const d = distanceToLine(x, y, ann.points[last].x, ann.points[last].y, ann.points[0].x, ann.points[0].y);
             if (d < tol) return ann;
           }
-          // Check hole edges for measureArea
-          if (ann.type === 'measureArea' && ann.holes) {
+          // Check hole edges
+          if ((ann.type === 'measureArea' || ann.type === 'filledArea') && ann.holes) {
             for (const hole of ann.holes) {
               if (!hole || hole.length < 2) continue;
               for (let i = 0; i < hole.length - 1; i++) {
@@ -384,7 +422,7 @@ export function findAnnotationAt(x, y) {
             }
           }
           // Point-in-polygon: click anywhere inside filled area
-          if (ann.type === 'measureArea' && ann.points.length >= 3) {
+          if ((ann.type === 'measureArea' || ann.type === 'filledArea') && ann.points.length >= 3) {
             let insideOuter = pointInPolygon(x, y, ann.points);
             if (insideOuter) {
               let insideHole = false;
@@ -553,6 +591,7 @@ export function isPointInsideAnnotation(x, y, annotation) {
       return false;
 
     case 'viewport':
+    case 'scaleRegion':
     case 'image':
     case 'stamp':
     case 'signature':
@@ -590,11 +629,12 @@ export function isPointInsideAnnotation(x, y, annotation) {
 
     case 'measureArea':
     case 'measurePerimeter':
+    case 'filledArea':
       if (annotation.points && annotation.points.length >= 2) {
         for (let i = 0; i < annotation.points.length - 1; i++) {
           if (distanceToLine(x, y, annotation.points[i].x, annotation.points[i].y, annotation.points[i+1].x, annotation.points[i+1].y) < 8) return true;
         }
-        if (annotation.type === 'measureArea' && annotation.points.length >= 3) {
+        if ((annotation.type === 'measureArea' || annotation.type === 'filledArea') && annotation.points.length >= 3) {
           const last = annotation.points.length - 1;
           if (distanceToLine(x, y, annotation.points[last].x, annotation.points[last].y, annotation.points[0].x, annotation.points[0].y) < 8) return true;
         }

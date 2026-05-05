@@ -1,5 +1,66 @@
 import { state } from '../core/state.js';
 import { getCachedPdfSnapPoints, getCachedPdfEdgeSegments } from './pdf-snap-extractor.js';
+import { snapPointToGrid } from '../annotations/rendering/ui-state.js';
+
+// ─── Polar tracking ────────────────────────────────────────────────────
+// A "polar anchor" is a point set by a tool when a draw operation has a
+// known start point (line click 1, polyline last vertex, etc.).
+// `setPolarAnchor(x,y,page)` enables polar; `clearPolarAnchor()` disables.
+// `polarPass(rawX, rawY)` returns a snap candidate or null.
+
+export function setPolarAnchor(x, y, page) {
+  state._polarAnchor = { x, y, page };
+}
+
+export function clearPolarAnchor() {
+  state._polarAnchor = null;
+  state._polarPreview = null;
+}
+
+export function getPolarAnchor() {
+  return state._polarAnchor || null;
+}
+
+// Polar pass: if polar enabled and an anchor exists for the current page,
+// project the cursor onto the nearest polar increment ray (within tolerance).
+// Returns { x, y, snapped:true, type:'polar', angle, length } or null.
+export function polarPass(rawX, rawY, currentPage) {
+  const prefs = state.preferences;
+  if (!prefs.polarTrackingEnabled) return null;
+  const anchor = state._polarAnchor;
+  if (!anchor) return null;
+  if (currentPage != null && anchor.page != null && anchor.page !== currentPage) return null;
+
+  const dx = rawX - anchor.x;
+  const dy = rawY - anchor.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  if (len < 1e-6) return null;
+
+  const incRad = ((prefs.polarIncrement || 45) * Math.PI) / 180;
+  if (incRad <= 0) return null;
+
+  const angle = Math.atan2(dy, dx);
+  const k = Math.round(angle / incRad);
+  const snappedAngle = k * incRad;
+  const tolRad = ((prefs.polarTolerance ?? 3) * Math.PI) / 180;
+
+  // Engage only if cursor angle is within tolerance of the increment
+  let delta = Math.abs(angle - snappedAngle);
+  if (delta > Math.PI) delta = 2 * Math.PI - delta;
+  if (delta > tolRad) return null;
+
+  const x = anchor.x + len * Math.cos(snappedAngle);
+  const y = anchor.y + len * Math.sin(snappedAngle);
+  return {
+    x,
+    y,
+    snapped: true,
+    type: 'polar',
+    angle: snappedAngle,
+    length: len,
+    anchor,
+  };
+}
 
 // Collect snap points from all annotations on the given page.
 // excludeId: optional annotation id to skip (the one being drawn).
@@ -24,6 +85,7 @@ function extractSnapPoints(ann, points, prefs) {
   const doEndpoints = prefs.snapToEndpoints;
   const doMidpoints = prefs.snapToMidpoints;
   const doCenters = prefs.snapToCenters;
+  const doQuadrants = prefs.snapToQuadrant;
 
   switch (ann.type) {
     case 'line':
@@ -68,12 +130,17 @@ function extractSnapPoints(ann, points, prefs) {
     case 'circle': {
       const x = ann.x, y = ann.y, w = ann.width, h = ann.height;
       const cx = x + w / 2, cy = y + h / 2;
-      // Cardinal points of the ellipse
-      if (doEndpoints) {
-        points.push({ x: cx, y: y, type: 'endpoint', annotation: ann });         // top
-        points.push({ x: cx, y: y + h, type: 'endpoint', annotation: ann });     // bottom
-        points.push({ x: x, y: cy, type: 'endpoint', annotation: ann });         // left
-        points.push({ x: x + w, y: cy, type: 'endpoint', annotation: ann });     // right
+      // Cardinal/quadrant points of the ellipse
+      if (doQuadrants) {
+        points.push({ x: cx, y: y, type: 'quadrant', annotation: ann });
+        points.push({ x: cx, y: y + h, type: 'quadrant', annotation: ann });
+        points.push({ x: x, y: cy, type: 'quadrant', annotation: ann });
+        points.push({ x: x + w, y: cy, type: 'quadrant', annotation: ann });
+      } else if (doEndpoints) {
+        points.push({ x: cx, y: y, type: 'endpoint', annotation: ann });
+        points.push({ x: cx, y: y + h, type: 'endpoint', annotation: ann });
+        points.push({ x: x, y: cy, type: 'endpoint', annotation: ann });
+        points.push({ x: x + w, y: cy, type: 'endpoint', annotation: ann });
       }
       if (doCenters) {
         points.push({ x: cx, y: cy, type: 'center', annotation: ann });
@@ -431,6 +498,62 @@ export function drawSnapIndicator(ctx, snapResult, scale) {
       ctx.fillRect(x - lineWidth, y - lineWidth, lineWidth * 3, lineWidth * 3);
       break;
     }
+    case 'quadrant': {
+      // Diamond (rotated square)
+      ctx.beginPath();
+      ctx.moveTo(x, y - size / 2);
+      ctx.lineTo(x + size / 2, y);
+      ctx.lineTo(x, y + size / 2);
+      ctx.lineTo(x - size / 2, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      break;
+    }
+    case 'tangent': {
+      // Circle with horizontal bar through it
+      ctx.beginPath();
+      ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x - size / 2, y);
+      ctx.lineTo(x + size / 2, y);
+      ctx.stroke();
+      break;
+    }
+    case 'nearest': {
+      // Hourglass / rotated bowtie
+      ctx.beginPath();
+      ctx.moveTo(x - size / 2, y - size / 2);
+      ctx.lineTo(x + size / 2, y - size / 2);
+      ctx.lineTo(x - size / 2, y + size / 2);
+      ctx.lineTo(x + size / 2, y + size / 2);
+      ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+    case 'grid': {
+      // Small "+" glyph
+      const prevStroke = ctx.strokeStyle;
+      ctx.strokeStyle = '#888888';
+      ctx.beginPath();
+      ctx.moveTo(x - size / 2, y);
+      ctx.lineTo(x + size / 2, y);
+      ctx.moveTo(x, y - size / 2);
+      ctx.lineTo(x, y + size / 2);
+      ctx.stroke();
+      ctx.strokeStyle = prevStroke;
+      break;
+    }
+    case 'polar': {
+      // Polar gets its ray drawn separately (drawPolarRay). Here just a
+      // small filled dot to indicate the snapped point.
+      ctx.fillStyle = '#cc66cc';
+      ctx.beginPath();
+      ctx.arc(x, y, size / 3, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
   }
 
   // Draw snap type label
@@ -438,7 +561,9 @@ export function drawSnapIndicator(ctx, snapResult, scale) {
     const labels = {
       endpoint: 'Endpoint', corner: 'Corner', midpoint: 'Midpoint',
       center: 'Center', edge: 'Edge',
-      intersection: 'Intersection', perpendicular: 'Perpendicular'
+      intersection: 'Intersection', perpendicular: 'Perpendicular',
+      quadrant: 'Quadrant', tangent: 'Tangent', nearest: 'Nearest',
+      grid: 'Grid', polar: 'Polar'
     };
     const label = labels[snapResult.type];
     if (label) {
@@ -458,6 +583,66 @@ export function drawSnapIndicator(ctx, snapResult, scale) {
     }
   }
 
+  ctx.restore();
+}
+
+// Draw the polar tracking ray + tooltip (angle / length) for the active
+// polar snap. Called by callers that already have an active snapResult of
+// type 'polar'. ctx is in app-coord space (already scaled).
+export function drawPolarRay(ctx, snapResult, scale) {
+  if (!snapResult || snapResult.type !== 'polar' || !snapResult.anchor) return;
+  const ax = snapResult.anchor.x;
+  const ay = snapResult.anchor.y;
+  const angle = snapResult.angle;
+  const length = snapResult.length;
+
+  const lw = 0.75 / scale;
+  const dash = 6 / scale;
+  const extent = 50000; // huge — clipped by canvas
+
+  ctx.save();
+  ctx.strokeStyle = '#cc66cc';
+  ctx.lineWidth = lw;
+  ctx.setLineDash([dash, dash]);
+  ctx.beginPath();
+  // Bidirectional ray through anchor at snapped angle
+  const cosA = Math.cos(angle), sinA = Math.sin(angle);
+  ctx.moveTo(ax - cosA * extent, ay - sinA * extent);
+  ctx.lineTo(ax + cosA * extent, ay + sinA * extent);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Tooltip near cursor: "Polar: 90.00° < 100.00 mm"
+  let unit = 'px';
+  let lenInUnits = length;
+  try {
+    // Lazy import-free read: getMeasureScale is defined in measurement.js;
+    // use the global state-only lookup if available.
+    const ms = state._lastMeasureScale || null;
+    if (ms && ms.pixelsPerUnit > 0) {
+      lenInUnits = length / ms.pixelsPerUnit;
+      unit = ms.unit || 'mm';
+    }
+  } catch (_) { /* ignore */ }
+  const angleDeg = (angle * 180 / Math.PI + 360) % 360;
+  const text = `Polar: ${angleDeg.toFixed(2)}° < ${lenInUnits.toFixed(2)} ${unit}`;
+  const fontSize = 11 / scale;
+  ctx.font = `${fontSize}px Arial`;
+  const padX = 4 / scale;
+  const padY = 3 / scale;
+  const tw = ctx.measureText(text).width;
+  // Place tooltip near the snapped (cursor) point
+  const tx = snapResult.x + 12 / scale;
+  const ty = snapResult.y + 12 / scale;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.strokeStyle = '#cc66cc';
+  ctx.lineWidth = 0.5 / scale;
+  ctx.fillRect(tx - padX, ty - fontSize, tw + padX * 2, fontSize + padY * 2);
+  ctx.strokeRect(tx - padX, ty - fontSize, tw + padX * 2, fontSize + padY * 2);
+  ctx.fillStyle = '#552255';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(text, tx, ty);
   ctx.restore();
 }
 
@@ -545,11 +730,20 @@ function nearestPointOnPdfEdge(cursorX, cursorY, currentPage, snapRadius) {
 // inProgressPoints: optional array of {x,y} from the polyline/measure being drawn
 export function performSnap(cursorX, cursorY, annotations, currentPage, scale, excludeId, inProgressPoints) {
   const prefs = state.preferences;
+
+  // Pre-compute grid + polar candidates (used as fallback when object snap
+  // doesn't engage). Object snap, when within radius, always wins.
+  const gridCand = snapPointToGrid(cursorX, cursorY);
+  const polarCand = polarPass(cursorX, cursorY, currentPage);
+
   if (!prefs.enableObjectSnap) {
+    // No object snap — still apply polar/grid in priority order.
+    if (polarCand) return polarCand;
+    if (gridCand) return gridCand;
     return { x: cursorX, y: cursorY, snapped: false };
   }
 
-  const snapRadius = (prefs.objectSnapRadius || 10) / scale;
+  const snapRadius = (prefs.objectSnapRadius || 12) / scale;
 
   // 1. Collect point snap targets from completed annotations
   const snapPoints = collectSnapPoints(annotations, currentPage, excludeId);
@@ -598,7 +792,95 @@ export function performSnap(cursorX, cursorY, annotations, currentPage, scale, e
     if (perpResult) return perpResult;
   }
 
+  // 9. Tangent snap (from last placed point to circle/ellipse circumference)
+  if (prefs.snapToTangent && inProgressPoints && inProgressPoints.length > 0) {
+    const lastPt = inProgressPoints[inProgressPoints.length - 1];
+    const tanResult = findTangentSnap(cursorX, cursorY, lastPt, annotations, currentPage, snapRadius, excludeId);
+    if (tanResult) return tanResult;
+  }
+
+  // 10. Nearest snap — generic closest point on any segment
+  if (prefs.snapToNearest) {
+    const nearestResult = findNearestSnap2(cursorX, cursorY, annotations, currentPage, snapRadius, excludeId);
+    if (nearestResult) return nearestResult;
+  }
+
+  // 11. Polar tracking — engages when a draw anchor is active and cursor
+  // angle is within tolerance of an increment. Wins over grid because the
+  // user explicitly asked for an angular constraint.
+  if (polarCand) return polarCand;
+
+  // 12. Grid snap — fallback so untyped clicks still land on grid nodes.
+  if (gridCand) return gridCand;
+
   return { x: cursorX, y: cursorY, snapped: false };
+}
+
+// Nearest: closest point on any annotation edge (alias of edge but always-on
+// when prefs.snapToNearest is set). Distinct from snapToEdges to allow either
+// behavior to be toggled independently.
+function findNearestSnap2(cursorX, cursorY, annotations, currentPage, snapRadius, excludeId) {
+  let bestDist = Infinity;
+  let bestPoint = null;
+  for (const ann of annotations) {
+    if (ann.page !== currentPage) continue;
+    if (excludeId && ann.id === excludeId) continue;
+    if (ann.type === 'draw') continue;
+    const segments = getEdgeSegments(ann);
+    for (const seg of segments) {
+      const proj = projectPointOnSegment(cursorX, cursorY, seg.x1, seg.y1, seg.x2, seg.y2);
+      if (proj.dist < bestDist && proj.dist <= snapRadius) {
+        bestDist = proj.dist;
+        bestPoint = { x: proj.x, y: proj.y, type: 'nearest', snapped: true };
+      }
+    }
+  }
+  return bestPoint;
+}
+
+// Tangent: from a fixed reference point (last placed vertex), find the
+// point on a circle/ellipse where a line from the reference touches the
+// curve tangentially. Picks whichever tangent point is nearer to the
+// cursor, within radius.
+function findTangentSnap(cursorX, cursorY, refPt, annotations, currentPage, snapRadius, excludeId) {
+  let bestDist = Infinity;
+  let bestPoint = null;
+  for (const ann of annotations) {
+    if (ann.page !== currentPage) continue;
+    if (excludeId && ann.id === excludeId) continue;
+    if (ann.type !== 'circle') continue;
+    const cx = ann.x + ann.width / 2;
+    const cy = ann.y + ann.height / 2;
+    const r = (ann.width + ann.height) / 4; // average radius (treat ellipse as circle)
+    if (r <= 0) continue;
+    const dx = refPt.x - cx;
+    const dy = refPt.y - cy;
+    const distRef = Math.sqrt(dx * dx + dy * dy);
+    if (distRef <= r) continue; // refPt inside circle — no tangent
+    // Tangent length
+    const tLen = Math.sqrt(distRef * distRef - r * r);
+    // Angle to center, half-angle to tangent point
+    const baseAng = Math.atan2(dy, dx) + Math.PI; // direction from refPt toward center
+    const halfAng = Math.asin(r / distRef);
+    // Two candidate tangent points on the circle
+    for (const sign of [-1, 1]) {
+      const ang = baseAng + sign * halfAng;
+      // Tangent point lies at refPt + tLen * (cos(ang), sin(ang)), but easier:
+      // Reflect direction-from-center: angle from center to tangent point is
+      // perpendicular to the tangent line. Use parametric: tx = cx + r*cos(theta).
+      // Solve via geometric construction:
+      const tx = refPt.x + tLen * Math.cos(ang);
+      const ty = refPt.y + tLen * Math.sin(ang);
+      const cdx = cursorX - tx;
+      const cdy = cursorY - ty;
+      const cd = Math.sqrt(cdx * cdx + cdy * cdy);
+      if (cd < bestDist && cd <= snapRadius) {
+        bestDist = cd;
+        bestPoint = { x: tx, y: ty, type: 'tangent', snapped: true };
+      }
+    }
+  }
+  return bestPoint;
 }
 
 // Find intersection point of edge segments from different annotations near cursor

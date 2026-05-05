@@ -1,4 +1,5 @@
 import RibbonGroup from './RibbonGroup.jsx';
+import AdaptiveGroups from './AdaptiveGroups.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
 import SplitButton from './SplitButton.jsx';
@@ -22,7 +23,7 @@ export default function HomeTab() {
 
   return (
     <div class="ribbon-content active" id="tab-home">
-      <div class="ribbon-groups">
+      <AdaptiveGroups>
         <RibbonGroup label={t('home.tools')}>
           <RibbonButton id="tool-hand" title={t('home.handTool')} icon={handIcon} label={t('home.hand')}
             disabled={noPdf()} active={state.currentTool === 'hand'} onClick={() => setTool('hand')} />
@@ -100,26 +101,7 @@ export default function HomeTab() {
           </RibbonButtonStack>
         </RibbonGroup>
 
-        <RibbonGroup label={t('home.edit')}>
-          <RibbonButton id="edit-text" title={t('home.editText')} icon={editTextIcon} label={t('home.editText')}
-            disabled={noPdf() || isPdfAReadOnly()} active={state.currentTool === 'editText'} onClick={() => setTool('editText')} />
-          <RibbonButton id="add-text" title={t('home.addText')} icon={addTextIcon} label={t('home.addText')}
-            disabled={noPdf() || isPdfAReadOnly()} onClick={() => setTool('text')} />
-          <RibbonButton id="crop-margins" title={t('home.cropMargins')} icon={cropMarginsIcon} label={t('home.crop')}
-            disabled={noPdf() || isPdfAReadOnly()} onClick={() => { const doc = getActiveDocument(); openDialog('crop-margins', { totalPages: doc?.pdfDoc?.numPages, currentPage: doc?.currentPage || 1 }); }} />
-          <RibbonButton id="tool-trim" title="Trim / Extend"
-            icon={`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="20" x2="20" y2="4"/><line x1="12" y1="4" x2="12" y2="20" stroke-dasharray="2 2"/></svg>`}
-            label="Trim" disabled={noPdf() || isPdfAReadOnly()}
-            active={state.currentTool === 'trim'} onClick={() => setTool('trim')} />
-          <RibbonButton id="tool-extend" title="Extend to boundary"
-            icon={`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="12" x2="14" y2="12"/><line x1="14" y1="12" x2="20" y2="12" stroke-dasharray="2 2"/><line x1="20" y1="4" x2="20" y2="20"/></svg>`}
-            label="Extend" disabled={noPdf() || isPdfAReadOnly()}
-            active={state.currentTool === 'extend'} onClick={() => setTool('extend')} />
-          <RibbonButton id="tool-array" title="Array copies"
-            icon={`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="6" height="6"/><rect x="12" y="3" width="6" height="6" stroke-dasharray="2 2"/><rect x="3" y="12" width="6" height="6" stroke-dasharray="2 2"/></svg>`}
-            label="Array" disabled={noPdf() || isPdfAReadOnly()}
-            active={state.currentTool === 'array'} onClick={() => setTool('array')} />
-        </RibbonGroup>
+        {/* Edit group moved to the "PDF bewerken & samenvoegen" tab. */}
 
         <RibbonGroup label={t('home.navigate')}>
           <RibbonButtonStack>
@@ -140,7 +122,7 @@ export default function HomeTab() {
           <RibbonButton id="ribbon-find" title={t('home.findCtrlF')} icon={findIcon} label={t('home.find')}
             disabled={noPdf()} onClick={() => openFindBar()} />
         </RibbonGroup>
-      </div>
+      </AdaptiveGroups>
     </div>
   );
 }

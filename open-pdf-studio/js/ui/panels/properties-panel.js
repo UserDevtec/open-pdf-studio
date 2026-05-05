@@ -64,9 +64,10 @@ export function togglePropertiesPanel() {
   }
 }
 
-// Initialize panel — always visible, always expanded on startup
+// Initialize panel — restore visibility from saved preferences
 export function initPropertiesPanel() {
-  setPanelVisible(true);
+  const visible = state.preferences?.propertiesPanelVisible !== false;
+  setPanelVisible(visible);
   setPanelCollapsed(false);
 }
 

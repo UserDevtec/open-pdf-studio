@@ -874,21 +874,21 @@
 .measure-scale-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 2px 4px;
+  gap: 4px;
+  padding: 1px 2px;
 }
 
 .measure-calib-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  width: 160px;
+  gap: 2px;
+  width: 132px;
   flex-shrink: 0;
 }
 
 .measure-hint-text {
-  font-size: 10px;
-  height: 14px;
+  font-size: 9px;
+  height: 12px;
   color: var(--theme-ribbon-text-secondary, var(--theme-text-secondary, #888));
 }
 
@@ -898,22 +898,22 @@
 }
 
 .measure-value-text {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--theme-ribbon-text, var(--theme-text, #333));
 }
 
 .measure-section-divider {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-left: 8px;
+  gap: 2px;
+  margin-left: 4px;
   border-left: 1px solid var(--theme-ribbon-separator, var(--theme-border, #d4d4d4));
-  padding-left: 8px;
+  padding-left: 4px;
 }
 
 .measure-apply-btn {
-  height: 22px;
-  font-size: 11px;
+  height: 20px;
+  font-size: 10px;
   cursor: default;
   background: var(--theme-accent, #0078d4);
   color: #fff;
@@ -957,9 +957,9 @@
   align-items: center;
   gap: 6px;
   padding: 3px 8px;
-  border: 1px solid var(--theme-ribbon-input-border);
-  background: var(--theme-ribbon-input-bg);
-  color: var(--theme-ribbon-input-text);
+  border: 1px solid var(--theme-ribbon-input-border, #d4d4d4);
+  background: var(--theme-ribbon-input-bg, #ffffff);
+  color: var(--theme-ribbon-input-text, #333);
   font-size: 11px;
   cursor: pointer;
   min-width: 130px;
@@ -993,8 +993,11 @@
   left: 0;
   z-index: 1000;
   min-width: 170px;
-  border: 1px solid var(--theme-ribbon-input-border);
-  background: var(--theme-ribbon-input-bg);
+  border: 1px solid var(--theme-ribbon-input-border, #d4d4d4);
+  background: var(--theme-ribbon-input-bg, #ffffff);
+  /* Solid fallback color so the dropdown is never transparent regardless of
+     theme variable availability. */
+  background-color: var(--theme-ribbon-input-bg, #ffffff);
   padding: 2px 0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -1031,3 +1034,87 @@
   flex: 1;
 }
 
+
+/* Compact ribbon group — icon-only buttons (CAD-style toolbar).
+   Used by RibbonGroup with compact={true}. Labels suppressed inside the group;
+   full button name still shown via tooltip on hover. */
+.ribbon-group-compact .ribbon-btn-label { display: none; }
+.ribbon-group-compact .ribbon-btn {
+  min-width: 26px;
+  width: 26px;
+  height: 26px;
+  padding: 1px;
+  margin: 0;
+}
+.ribbon-group-compact .ribbon-btn.medium,
+.ribbon-group-compact .ribbon-btn.small { width: 26px; height: 26px; min-width: 26px; padding: 1px; margin: 0; }
+.ribbon-group-compact .ribbon-btn-icon { width: 18px; height: 18px; }
+
+/* Compact CAD-style icon grid: 2 rows of 7 buttons (26×26 each ⇒ 7·26 = 182 px wide).
+   flex-wrap fills row 1 first, then row 2. align-content:center keeps them
+   vertically centered so the group label slot below stays even. */
+.ribbon-group-compact .ribbon-group-content {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 0;
+  width: 182px;        /* 7 × 26 = exactly two rows of 7 */
+  align-content: center;
+}
+.ribbon-group-compact .ribbon-btn-stack { gap: 0; }
+.ribbon-group-compact { padding: 0 4px; }
+.ribbon-group-compact .ribbon-group-label { margin-top: 2px; text-align: center; }
+
+/* ─── Adaptive ribbon: overflow ("More") group ───────────────────────────── */
+.ribbon-groups-adaptive { flex: 1 1 auto; width: 100%; min-width: 0; overflow: hidden; position: relative; }
+.ribbon-group-overflow { min-width: 60px; position: relative; }
+.ribbon-group-overflow .ribbon-group-content { justify-content: center; }
+.ribbon-overflow-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 56px;
+  height: 60px;
+  padding: 4px 2px 2px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: default;
+  font-size: 11px;
+  color: var(--theme-text, #1f1f1f);
+  gap: 2px;
+}
+.ribbon-overflow-btn:hover,
+.ribbon-overflow-btn.open {
+  background: var(--theme-ribbon-btn-hover-bg, #e5f1fb);
+  border-color: var(--theme-ribbon-btn-hover-border, #b8d6ef);
+}
+.ribbon-overflow-btn-icon { display: flex; align-items: center; justify-content: center; height: 22px; }
+.ribbon-overflow-btn-label { font-size: 11px; line-height: 1.1; }
+.ribbon-overflow-btn-chevron { display: flex; align-items: center; justify-content: center; height: 6px; }
+
+.ribbon-overflow-flyout {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 1000;
+  background: var(--theme-ribbon-content-bg, #fff);
+  border: 1px solid var(--theme-ribbon-group-border, #d4d4d4);
+  box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.18);
+  padding: 6px 8px;
+  min-width: 120px;
+  max-width: 90vw;
+}
+.ribbon-overflow-flyout-inner {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+/* Inside the flyout, give every group its full appearance even though
+   the rightmost normally has no border in the inline ribbon. */
+.ribbon-overflow-flyout-inner > .ribbon-group {
+  border-right: 1px solid var(--theme-ribbon-group-border, #d4d4d4);
+  height: 86px;
+}
+.ribbon-overflow-flyout-inner > .ribbon-group:last-child { border-right: none; }

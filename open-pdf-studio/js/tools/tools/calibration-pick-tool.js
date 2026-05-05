@@ -16,7 +16,7 @@ export const calibrationPickTool = {
     // Right-click cancels
     if (e.button === 2) {
       state.calibrationPoints = [];
-      setActiveTab('measure');
+      setActiveTab('comment');
       setTool('hand');
       ctx.redraw();
       return;
@@ -41,7 +41,7 @@ export const calibrationPickTool = {
 
       setCalibrationPixelDistance(pixelDist);
       state.calibrationPoints = [];
-      setActiveTab('measure');
+      setActiveTab('comment');
       setTool('hand');
       ctx.redraw();
     }

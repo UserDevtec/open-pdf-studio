@@ -1,8 +1,11 @@
 import { For } from 'solid-js';
 import RibbonGroup from './RibbonGroup.jsx';
+import AdaptiveGroups from './AdaptiveGroups.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import ThemePicker from './ThemePicker.jsx';
-import { singlePageIcon, continuousIcon, navigationIcon, propertiesIcon, annotationsListIcon, toolPaletteIcon } from '../../data/ribbonIcons.js';
+import { singlePageIcon, continuousIcon, navigationIcon, propertiesIcon, annotationsListIcon, toolPaletteIcon, fullscreenIcon, fullscreenExitIcon } from '../../data/ribbonIcons.js';
+import { isFullscreen } from '../../stores/ribbonStore.js';
+import { toggleFullscreen } from '../../../ui/chrome/fullscreen.js';
 import { toggleToolPalette, paletteVisible } from '../ToolPalette.jsx';
 import { toggleSymbolPalette } from '../SymbolPalette.jsx';
 import { symbolPaletteVisible } from '../../stores/symbolStore.js';
@@ -16,13 +19,15 @@ import { togglePropertiesPanel } from '../../../ui/panels/properties-panel.js';
 import { panelVisible, panelCollapsed } from '../../stores/propertiesStore.js';
 import { state, noPdf } from '../../../core/state.js';
 import { useTranslation } from '../../../i18n/useTranslation.js';
+import { openDialog } from '../../stores/dialogStore.js';
+import { compareActive, exitCompare } from '../../../compare/compare-store.js';
 
 export default function ViewTab() {
   const { t } = useTranslation('ribbon');
 
   return (
     <div class="ribbon-content active" id="tab-view">
-      <div class="ribbon-groups">
+      <AdaptiveGroups>
         <RibbonGroup label={t('view.pageDisplay')}>
           <RibbonButton id="single-page" title={t('view.singlePage')} icon={singlePageIcon} label={t('view.single')}
             disabled={noPdf()} active={(state.documents[state.activeDocumentIndex]?.viewMode || 'single') === 'single'}
@@ -77,7 +82,29 @@ export default function ViewTab() {
         <RibbonGroup label={t('view.appearance')}>
           <ThemePicker />
         </RibbonGroup>
-      </div>
+
+        <RibbonGroup label={t('view.compareGroup') || 'Compare'}>
+          <RibbonButton id="ribbon-compare"
+            title={t('compare.title') || 'Compare PDFs'}
+            icon={`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="8" height="16"/><rect x="13" y="4" width="8" height="16"/><line x1="11" y1="12" x2="13" y2="12"/></svg>`}
+            label={t('compare.title') || 'Compare'}
+            disabled={(state.documents?.length || 0) < 2}
+            active={compareActive()}
+            onClick={() => {
+              if (compareActive()) exitCompare();
+              else openDialog('compare', {});
+            }} />
+        </RibbonGroup>
+
+        <RibbonGroup label={t('view.window') || 'Window'}>
+          <RibbonButton id="ribbon-fullscreen"
+            title={(t('view.fullscreen') || 'Fullscreen') + ' (Ctrl+L / F11)'}
+            icon={isFullscreen() ? fullscreenExitIcon : fullscreenIcon}
+            label={t('view.fullscreen') || 'Fullscreen'}
+            active={isFullscreen()}
+            onClick={() => toggleFullscreen()} />
+        </RibbonGroup>
+      </AdaptiveGroups>
     </div>
   );
 }

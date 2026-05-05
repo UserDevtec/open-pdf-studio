@@ -9,10 +9,11 @@ import { startTextEditing, finishTextEditing } from './text-editing.js';
 import { openStickyPopup } from '../bridge.js';
 import { findAnnotationAt } from '../annotations/geometry.js';
 import { startPan, startContinuousPan, handlePanEnd, handleMiddleButtonPanEnd } from './pan-handler.js';
-import { performSnap, drawSnapIndicator, drawAlignmentGuides } from './snap-engine.js';
+import { performSnap, drawSnapIndicator, drawAlignmentGuides, setPolarAnchor, clearPolarAnchor } from './snap-engine.js';
 import { recordAdd, recordModify, recordBulkModify } from '../core/undo-manager.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { isPdfAReadOnly } from '../pdf/loader.js';
+import { setTypeLengthCursorScreen } from './type-length-input.js';
 import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 import { hideMenu } from '../bridge.js';
 import { syncDocScale } from '../annotations/scale-bar.js';
@@ -60,6 +61,9 @@ export function handlePointerDown(e) {
   state.startX = startSnap.snapped ? startSnap.x : snapToGrid(coords.x);
   state.startY = startSnap.snapped ? startSnap.y : snapToGrid(coords.y);
   state.lastSnapResult = startSnap.snapped ? startSnap : null;
+  // Polar tracking: anchor at the drag-start point so subsequent moves can
+  // engage the polar pass. Cleared in _finishDrawing / Escape.
+  setPolarAnchor(state.startX, state.startY, coords.pageNum);
   state.dragStartX = coords.x;
   state.dragStartY = coords.y;
   state._dragExitedDeadzone = false;
@@ -130,6 +134,9 @@ export function handlePointerMove(e) {
 
   const coords = resolvePointerCoords(e);
   const ctx = buildToolContext(e, coords);
+
+  // Track screen-space cursor for the TypeLengthHUD overlay
+  setTypeLengthCursorScreen(e.clientX, e.clientY);
 
   // Handle resizing (shared across hand/select tools)
   if (state.isResizing && state.activeHandle) {
@@ -294,6 +301,17 @@ function _handleResize(ctx, e, coords) {
     const orig = state.originalAnnotation;
     const h = state.activeHandle;
     let ox, oy;
+    // Textbox leader tip/knee: pull origin from the matching leader on originalAnn
+    if (typeof h === 'string' && (h.startsWith('leader_tip_') || h.startsWith('leader_knee_'))) {
+      const isTipL = h.startsWith('leader_tip_');
+      const lid = h.substring(isTipL ? 'leader_tip_'.length : 'leader_knee_'.length);
+      const ldrs = Array.isArray(orig.leaders) ? orig.leaders : [];
+      const found = ldrs.find(l => l.id === lid);
+      if (found) {
+        ox = isTipL ? found.tipX : found.kneeX;
+        oy = isTipL ? found.tipY : found.kneeY;
+      }
+    } else
     if (typeof h === 'string' && h.startsWith('polyline_node_')) {
       // Check for hole node: polyline_node_hole_<holeIdx>_<nodeIdx>
       const holeSnapMatch = h.match(/^polyline_node_hole_(\d+)_(\d+)$/);
@@ -334,19 +352,25 @@ function _handleResize(ctx, e, coords) {
     if (ox === undefined) {
       ox = h === 'line_start' ? orig.startX
         : h === 'line_end' ? orig.endX
+        : h === 'line_mid' ? (orig.startX + orig.endX) / 2
         : h === 'leader_start' ? orig.leaderStartX
         : h === 'leader_end' ? orig.leaderEndX
         : h === 'callout_arrow' ? (orig.arrowX || orig.x)
         : h === 'callout_knee' ? (orig.kneeX || orig.x)
+        : h === 'circle_center' ? ((orig.x !== undefined ? orig.x : orig.centerX - (orig.radius || 0)) + (orig.width || (orig.radius || 0) * 2) / 2)
+        : h === 'rect_center' ? (orig.x + (orig.width || 0) / 2)
         : (h === 'tl' || h === 'l' || h === 'bl') ? orig.x
         : (h === 'tr' || h === 'r' || h === 'br') ? orig.x + orig.width
         : orig.x + orig.width / 2;
       oy = h === 'line_start' ? orig.startY
         : h === 'line_end' ? orig.endY
+        : h === 'line_mid' ? (orig.startY + orig.endY) / 2
         : h === 'leader_start' ? orig.leaderStartY
         : h === 'leader_end' ? orig.leaderEndY
         : h === 'callout_arrow' ? (orig.arrowY || orig.y)
         : h === 'callout_knee' ? (orig.kneeY || orig.y)
+        : h === 'circle_center' ? ((orig.y !== undefined ? orig.y : orig.centerY - (orig.radius || 0)) + (orig.height || (orig.radius || 0) * 2) / 2)
+        : h === 'rect_center' ? (orig.y + (orig.height || 0) / 2)
         : (h === 'tl' || h === 't' || h === 'tr') ? orig.y
         : (h === 'bl' || h === 'b' || h === 'br') ? orig.y + orig.height
         : orig.y + orig.height / 2;
@@ -367,6 +391,79 @@ function _handleResize(ctx, e, coords) {
     applyToolTransform(canvasCtx);
     drawSnapIndicator(canvasCtx, state.lastSnapResult, resizeScale);
     canvasCtx.restore();
+  }
+
+  // ─── Grip-stretch tracking line + tooltip ──────────────────────────────
+  // While dragging any grip-style handle, draw a 1 px dashed line from the
+  // grip's original location (basePoint) to the current cursor position
+  // (livePoint), plus a small "<length> < <angle>°" tooltip. Per the
+  // grippoints design spec.
+  {
+    const orig = state.originalAnnotation;
+    const h = state.activeHandle;
+    let bx, by;
+    if (typeof h === 'string' && h.startsWith('polyline_node_') && !h.includes('hole') && Array.isArray(orig.points)) {
+      const ni = parseInt(h.split('_').pop(), 10);
+      if (!isNaN(ni) && ni < orig.points.length) {
+        bx = orig.points[ni].x; by = orig.points[ni].y;
+      }
+    } else if (h === 'line_start') { bx = orig.startX; by = orig.startY; }
+    else if (h === 'line_end') { bx = orig.endX; by = orig.endY; }
+    else if (h === 'line_mid') { bx = (orig.startX + orig.endX) / 2; by = (orig.startY + orig.endY) / 2; }
+    else if (h === 'rect_center') { bx = orig.x + (orig.width || 0) / 2; by = orig.y + (orig.height || 0) / 2; }
+    else if (h === 'circle_center') {
+      const cw = orig.width || (orig.radius || 0) * 2;
+      const ch = orig.height || (orig.radius || 0) * 2;
+      const cx0 = orig.x !== undefined ? orig.x : (orig.centerX - (orig.radius || 0));
+      const cy0 = orig.y !== undefined ? orig.y : (orig.centerY - (orig.radius || 0));
+      bx = cx0 + cw / 2; by = cy0 + ch / 2;
+    } else if (h === 'tl') { bx = orig.x; by = orig.y; }
+    else if (h === 'tr') { bx = orig.x + orig.width; by = orig.y; }
+    else if (h === 'bl') { bx = orig.x; by = orig.y + orig.height; }
+    else if (h === 'br') { bx = orig.x + orig.width; by = orig.y + orig.height; }
+    else if (h === 't') { bx = orig.x + orig.width / 2; by = orig.y; }
+    else if (h === 'b') { bx = orig.x + orig.width / 2; by = orig.y + orig.height; }
+    else if (h === 'l') { bx = orig.x; by = orig.y + orig.height / 2; }
+    else if (h === 'r') { bx = orig.x + orig.width; by = orig.y + orig.height / 2; }
+
+    if (bx !== undefined && by !== undefined) {
+      const lx = state.lastSnapResult ? state.lastSnapResult.x : coords.x;
+      const ly = state.lastSnapResult ? state.lastSnapResult.y : coords.y;
+      const lineColor = ann.strokeColor || ann.color || ann.lineColor || '#0078d4';
+      canvasCtx.save();
+      applyToolTransform(canvasCtx);
+      canvasCtx.strokeStyle = lineColor;
+      canvasCtx.lineWidth = 1 / resizeScale;
+      canvasCtx.setLineDash([4 / resizeScale, 4 / resizeScale]);
+      canvasCtx.beginPath();
+      canvasCtx.moveTo(bx, by);
+      canvasCtx.lineTo(lx, ly);
+      canvasCtx.stroke();
+      canvasCtx.setLineDash([]);
+      // Tooltip text "<length> < <angle>°" near cursor
+      const dxT = lx - bx, dyT = ly - by;
+      const len = Math.sqrt(dxT * dxT + dyT * dyT);
+      const ang = Math.atan2(dyT, dxT) * 180 / Math.PI;
+      const measureScale = (getActiveDocument()?.measureScale) || 1;
+      const measureUnit = (getActiveDocument()?.measureUnit) || 'px';
+      const lenLabel = (len * measureScale).toFixed(1) + ' ' + measureUnit;
+      const label = `${lenLabel} < ${ang.toFixed(1)}°`;
+      const fontPx = 11 / resizeScale;
+      canvasCtx.font = `${fontPx}px sans-serif`;
+      const textW = canvasCtx.measureText(label).width;
+      const padTT = 3 / resizeScale;
+      const tx = lx + 10 / resizeScale;
+      const ty = ly - 10 / resizeScale - fontPx;
+      canvasCtx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+      canvasCtx.fillRect(tx - padTT, ty - padTT, textW + padTT * 2, fontPx + padTT * 2);
+      canvasCtx.strokeStyle = '#888';
+      canvasCtx.lineWidth = 1 / resizeScale;
+      canvasCtx.strokeRect(tx - padTT, ty - padTT, textW + padTT * 2, fontPx + padTT * 2);
+      canvasCtx.fillStyle = '#000';
+      canvasCtx.textBaseline = 'top';
+      canvasCtx.fillText(label, tx, ty);
+      canvasCtx.restore();
+    }
   }
 
   // Draw alignment guides for polyline/polygon node dragging
@@ -509,8 +606,14 @@ function _finishDragResize(ctx, e, coords) {
         state.originalAnnotations[i] && _annotationChanged(state.originalAnnotations[i], ann)
       );
       if (anyChanged) recordBulkModify(_fSel, state.originalAnnotations);
-    } else if (state.originalAnnotation && upAnn && _annotationChanged(state.originalAnnotation, upAnn)) {
-      recordModify(upAnn.id, state.originalAnnotation, upAnn);
+    } else if (state.originalAnnotation && upAnn) {
+      // For edit-contour insert-vertex operations, the "true" before state is
+      // _editContourBefore (pre-insert); originalAnnotation is post-insert and
+      // is only used as the drag-math baseline.
+      const beforeForUndo = state._editContourBefore || state.originalAnnotation;
+      if (_annotationChanged(beforeForUndo, upAnn)) {
+        recordModify(upAnn.id, beforeForUndo, upAnn);
+      }
     }
 
     // If a scaleBar was modified, recalculate pixelsPerUnit from the new width,
@@ -535,6 +638,7 @@ function _finishDragResize(ctx, e, coords) {
   state.originalAnnotations = [];
   state._ctrlDragCopy = false;
   state._ctrlCopiesCreated = false;
+  state._editContourBefore = null;
   state.lastSnapResult = null;
   state.dragCursor = null;
   // Cursor is reactive — clearing the drag flags above causes the cursor
@@ -554,6 +658,7 @@ function _finishDrawing(ctx, e, coords) {
   const endY = endSnap.snapped ? endSnap.y : snapToGrid(rawEndY);
   state.lastSnapResult = null;
   state.isDrawing = false;
+  clearPolarAnchor();
 
   const { createAnnotationFromTool } = ctx;
   const ann = createAnnotationFromTool(state.currentTool, state.startX, state.startY, endX, endY, e);
@@ -563,13 +668,18 @@ function _finishDrawing(ctx, e, coords) {
   }
   redraw();
 
-  // Auto-reset to select tool
-  import('./manager.js').then(m => m.setTool('select'));
-
   if (ann && ['textbox', 'callout'].includes(ann.type)) {
+    // For text annotations, switch to select FIRST then start editing
+    // (startTextEditing requires select tool active to receive keyboard input)
     if (drawDoc) { drawDoc.selectedAnnotations = [ann]; drawDoc.selectedAnnotation = ann; }
     showProperties(ann);
-    startTextEditing(ann);
+    import('./manager.js').then(m => {
+      m.setTool('select');
+      startTextEditing(ann);
+    });
+  } else {
+    // Auto-reset to select tool for non-text annotations
+    import('./manager.js').then(m => m.setTool('select'));
   }
 
   // Clear continuous mode state

@@ -5,7 +5,10 @@ export type AnnotationType =
   | 'polygon' | 'cloud' | 'cloudPolyline' | 'polyline' | 'text'
   | 'arc' | 'spline' | 'redaction'
   | 'measureDistance' | 'measureArea' | 'measurePerimeter' | 'measureAngle'
-  | 'scaleBar';
+  | 'filledArea'
+  | 'scaleBar'
+  | 'scaleRegion'
+  | 'parametricSymbol';
 
 export interface Point {
   x: number;
@@ -71,6 +74,22 @@ export interface TextAnnotation extends AnnotationBase {
   fontWeight?: string;
   fontStyle?: string;
   textAlign?: string;
+}
+
+export interface Leader {
+  id: string;
+  tipX: number;
+  tipY: number;
+  kneeX: number;
+  kneeY: number;
+  endStyle?: 'arrow' | 'circle';
+}
+
+export interface TextboxAnnotation extends RectAnnotation {
+  text?: string;
+  fontSize?: number;
+  fontFamily?: string;
+  leaders?: Leader[];
 }
 
 export interface CalloutAnnotation extends RectAnnotation {
@@ -155,6 +174,8 @@ export type Annotation = AnnotationBase & {
   arrowY?: number;
   kneeX?: number;
   kneeY?: number;
+  // Textbox leaders (multi-leader generalisation)
+  leaders?: Leader[];
   // Image/stamp
   imageData?: string;
   // Measurement
@@ -188,6 +209,11 @@ export type Annotation = AnnotationBase & {
   // Viewport
   name?: string;
   scaleRatio?: string;
+
+  // Scale Region (per-region calibration)
+  scaleString?: string;  // e.g. "1:100"
+  units?: string;        // 'mm' | 'cm' | 'm' | 'in' | 'ft'
+  label?: string;        // optional user label drawn in badge
 };
 
 export interface AnnotationBounds {

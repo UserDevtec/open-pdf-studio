@@ -110,6 +110,7 @@ export async function pasteImageFromBlob(blob) {
     imageData: dataUrl, // data:image/... URL for PDF embedding
     originalWidth: img.naturalWidth,
     originalHeight: img.naturalHeight,
+    lockAspectRatio: true, // images keep their original w:h on resize by default
     opacity: 1,
     locked: false,
     printable: true,

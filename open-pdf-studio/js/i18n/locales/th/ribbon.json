@@ -156,6 +156,8 @@
     "ellipse": "วงรี",
     "polygon": "รูปหลายเหลี่ยม",
     "cloud": "เมฆ",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "ข้อความ",
     "textBox": "กล่องข้อความ",
     "note": "บันทึก",

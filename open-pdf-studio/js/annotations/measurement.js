@@ -3,12 +3,16 @@ import { openDialog } from '../bridge.js';
 import { redrawAnnotations, redrawContinuous } from './rendering.js';
 import { savePreferences } from '../core/preferences.js';
 import { getScaleForPoint } from './scale-bar.js';
+import { getScaleFromRegion } from './scale-region.js';
 
 // Scale calibration: pixels per unit
-// Priority: scaleBar annotation → per-document scale → legacy global → default (px)
+// Priority: scaleRegion (innermost containing point) → scaleBar/viewport →
+//          per-document scale → legacy global → default (px)
 export function getMeasureScale(pageNum, x, y) {
-  // 1. Check scaleBar annotations if point is provided
+  // 1. Check scaleRegion (innermost) — highest priority when a point is given
   if (pageNum != null && x != null && y != null) {
+    const regionScale = getScaleFromRegion(pageNum, x, y);
+    if (regionScale) return regionScale;
     const sbScale = getScaleForPoint(pageNum, x, y);
     if (sbScale) return sbScale;
   } else {

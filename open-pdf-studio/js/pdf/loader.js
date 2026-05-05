@@ -19,6 +19,34 @@ import { extractStampImagesViaPdfJs, extractStampImages, extractStampImagesHybri
 import { convertPdfAnnotation } from './loader/annotation-converter.js';
 
 
+// Convert one batch of pdf.js annotations and push them to doc.annotations,
+// detecting textbox-leader PolyLines (linked via IRT) and attaching them
+// to their parent textbox instead of pushing a standalone annotation.
+async function _convertAndPushAnnotations(annots, pageNum, viewport, stampImageMap, annotColorMap, doc) {
+  const textboxByRect = new Map();
+  const pendingLeaders = [];
+  for (const annot of annots) {
+    const converted = await convertPdfAnnotation(annot, pageNum, viewport, stampImageMap, annotColorMap);
+    if (!converted) continue;
+    if (converted.__textboxLeader) {
+      pendingLeaders.push(converted);
+      continue;
+    }
+    if (converted.type === 'textbox' && converted._pdfRectKey) {
+      textboxByRect.set(converted._pdfRectKey, converted);
+    }
+    doc.annotations.push(converted);
+  }
+  for (const pl of pendingLeaders) {
+    const parent = textboxByRect.get(pl.irtRectKey);
+    if (parent) {
+      if (!Array.isArray(parent.leaders)) parent.leaders = [];
+      parent.leaders.push(pl.leader);
+    }
+  }
+  for (const tb of textboxByRect.values()) delete tb._pdfRectKey;
+}
+
 // Cache for original PDF bytes (used by saver to avoid re-reading)
 const originalBytesCache = new Map(); // filePath -> Uint8Array
 
@@ -520,12 +548,7 @@ async function loadAnnotationsForSinglePage(doc, pageNum, waitForColors = false)
   }
 
   const _cv0 = performance.now();
-  for (const annot of annotations) {
-    const converted = await convertPdfAnnotation(annot, pageNum, viewport, stampImageMap, annotColorMap);
-    if (converted) {
-      doc.annotations.push(converted);
-    }
-  }
+  await _convertAndPushAnnotations(annotations, pageNum, viewport, stampImageMap, annotColorMap, doc);
   console.log(`[PERF] page ${pageNum}: convertAnnotations (${annotations.length}): ${(performance.now() - _cv0).toFixed(0)}ms`);
   console.log(`[PERF] page ${pageNum}: TOTAL: ${(performance.now() - _sp0).toFixed(0)}ms`);
 }
@@ -635,12 +658,7 @@ export async function loadExistingAnnotations(doc) {
         if (loadId !== doc._annotationLoadId || !state.documents.includes(doc)) return;
       }
 
-      for (const annot of annotations) {
-        const converted = await convertPdfAnnotation(annot, pageNum, viewport, stampImageMap, annotColorMap);
-        if (converted) {
-          doc.annotations.push(converted);
-        }
-      }
+      await _convertAndPushAnnotations(annotations, pageNum, viewport, stampImageMap, annotColorMap, doc);
     }
   }
 
@@ -686,12 +704,7 @@ export async function loadExistingAnnotations(doc) {
           annotColorMap = await extractAnnotationColors(pageNum, pdfLibDoc);
         }
 
-        for (const annot of annotations) {
-          const converted = await convertPdfAnnotation(annot, pageNum, viewport, stampImageMap, annotColorMap);
-          if (converted) {
-            doc.annotations.push(converted);
-          }
-        }
+        await _convertAndPushAnnotations(annotations, pageNum, viewport, stampImageMap, annotColorMap, doc);
       }
       doc._pagesNeedingColorUpdate.clear();
     }

@@ -70,10 +70,10 @@
   top: 0;
 }
 
-/* Selection highlighting */
+/* Selection highlighting — translucent so the underlying glyphs remain
+   visible. Solid AccentColor masked the text completely. */
 .textLayer ::selection {
-  background: rgba(0, 0, 255, 1);
-  background: AccentColor;
+  background: rgba(0, 120, 255, 0.28);
 }
 
 .textLayer br::selection {

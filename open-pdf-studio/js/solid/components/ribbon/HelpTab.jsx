@@ -1,4 +1,5 @@
 import RibbonGroup from './RibbonGroup.jsx';
+import AdaptiveGroups from './AdaptiveGroups.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import { aboutIcon, shortcutsIcon, updatesIcon, fileAssocIcon, preferencesIcon, extensionsIcon } from '../../data/ribbonIcons.js';
 import { showPreferencesDialog } from '../../../core/preferences.js';
@@ -10,7 +11,7 @@ export default function HelpTab() {
 
   return (
     <div class="ribbon-content active" id="tab-help">
-      <div class="ribbon-groups">
+      <AdaptiveGroups>
         <RibbonGroup label={t('help.settings')}>
           <RibbonButton
             id="ribbon-preferences"
@@ -58,7 +59,7 @@ export default function HelpTab() {
             onClick={() => import('../../../ui/chrome/updater.js').then(m => m.checkForUpdates(false))}
           />
         </RibbonGroup>
-      </div>
+      </AdaptiveGroups>
     </div>
   );
 }

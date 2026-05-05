@@ -1,5 +1,6 @@
 import { createSignal, Show } from 'solid-js';
 import RibbonGroup from './RibbonGroup.jsx';
+import AdaptiveGroups from './AdaptiveGroups.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
 import PrefSelect from '../preferences/PrefSelect.jsx';
@@ -101,7 +102,7 @@ export default function AITab() {
       </Show>
 
       <Show when={isAuthenticated()}>
-      <div class="ribbon-groups">
+      <AdaptiveGroups>
         <RibbonGroup label={t('ai.panel') || 'Panel'}>
           <RibbonButton id="btn-ai-panel" title={t('ai.openPanel') || 'AI Assistant'}
             icon={icons.ai} label={t('ai.assistant') || 'AI Assistant'}
@@ -172,7 +173,7 @@ export default function AITab() {
               setAiPanelVisible(true);
             }} />
         </RibbonGroup>
-      </div>
+      </AdaptiveGroups>
       </Show>
     </div>
   );

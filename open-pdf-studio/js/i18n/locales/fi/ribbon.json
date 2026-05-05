@@ -156,6 +156,8 @@
     "ellipse": "Ellipsi",
     "polygon": "Monikulmio",
     "cloud": "Pilvi",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Teksti",
     "textBox": "Tekstilaatikko",
     "note": "Muistiinpano",

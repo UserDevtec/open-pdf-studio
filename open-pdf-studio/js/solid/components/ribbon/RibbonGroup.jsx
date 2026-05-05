@@ -1,6 +1,6 @@
 export default function RibbonGroup(props) {
   return (
-    <div class={`ribbon-group${props.wide ? ' ribbon-group-wide' : ''}`}>
+    <div class={`ribbon-group${props.wide ? ' ribbon-group-wide' : ''}${props.compact ? ' ribbon-group-compact' : ''}`}>
       <div class="ribbon-group-content">
         {props.children}
       </div>

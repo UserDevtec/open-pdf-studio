@@ -156,6 +156,8 @@
     "ellipse": "Elipsa",
     "polygon": "Wielokąt",
     "cloud": "Chmurka",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Tekst",
     "textBox": "Pole tekstowe",
     "note": "Notatka",

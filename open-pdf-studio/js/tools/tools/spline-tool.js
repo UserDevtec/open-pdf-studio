@@ -191,7 +191,7 @@ function _finishSpline(ctx) {
   state.splinePoints = [];
   state.isDrawingSpline = false;
   ctx.redraw();
-  import('../../tools/manager.js').then(m => m.setTool('select'));
+  import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 }
 
 function _drawHoverSnap(ctx, x, y) {

@@ -30,10 +30,13 @@ import ExtensionsDialog from './dialogs/ExtensionsDialog.jsx';
 import ConfirmDialog from './dialogs/ConfirmDialog.jsx';
 import AITranslateDialog from './dialogs/AITranslateDialog.jsx';
 import ViewportScaleDialog from './dialogs/ViewportScaleDialog.jsx';
+import ScaleRegionDialog from './dialogs/ScaleRegionDialog.jsx';
 import TitleBlockDialog from './dialogs/TitleBlockDialog.jsx';
+import CompareDialog from './compare/CompareDialog.jsx';
 import TextEditOverlay from './TextEditOverlay.jsx';
 import PdfTextEditOverlay from './PdfTextEditOverlay.jsx';
 import StickyNotePopupHost from './StickyNotePopup.jsx';
+import ParametricSymbolPicker from './dialogs/ParametricSymbolPicker.jsx';
 
 const DIALOG_MAP = {
   'doc-properties': DocPropertiesDialog,
@@ -67,6 +70,8 @@ const DIALOG_MAP = {
   'title-block-edit': TitleBlockDialog,
   'ai-translate': AITranslateDialog,
   'viewport-scale': ViewportScaleDialog,
+  'scale-region': ScaleRegionDialog,
+  'compare': CompareDialog,
 };
 
 export default function DialogHost() {
@@ -82,6 +87,7 @@ export default function DialogHost() {
       <TextEditOverlay />
       <PdfTextEditOverlay />
       <StickyNotePopupHost />
+      <ParametricSymbolPicker />
     </>
   );
 }

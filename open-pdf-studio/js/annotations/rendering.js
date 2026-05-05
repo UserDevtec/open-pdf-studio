@@ -15,14 +15,131 @@ import { drawSelectionHandles } from './rendering/selection.js';
 import { updateQuickAccessButtons, updateContextualTabs, drawGrid, snapToGrid } from './rendering/ui-state.js';
 import { drawCommentIcon } from './rendering/comment-icons.js';
 import { spatialIndex } from './spatial-index.js';
+import { invalidateScaleRegionCache } from './scale-region.js';
+import { getTemplate } from '../symbols/registry.js';
 
 // Re-export everything that external code needs
 export { drawPolygonShape, drawCloudShape, buildPolygonPath, buildCloudPath } from './rendering/shapes.js';
 export { updateQuickAccessButtons, snapToGrid } from './rendering/ui-state.js';
 
-// Resolve line width, clamping to 1px when thin-lines view mode is active
+// Inline polar-ray + tooltip drawer (kept here to avoid an import cycle
+// with snap-engine.js).  ctx is in app-coord space.
+function _drawPolarOverlay(ctx, snapResult, scale) {
+  if (!snapResult || snapResult.type !== 'polar' || !snapResult.anchor) return;
+  const ax = snapResult.anchor.x;
+  const ay = snapResult.anchor.y;
+  const angle = snapResult.angle;
+  const length = snapResult.length;
+  const lw = 0.75 / scale;
+  const dash = 6 / scale;
+  const extent = 50000;
+
+  ctx.save();
+  ctx.strokeStyle = '#cc66cc';
+  ctx.lineWidth = lw;
+  ctx.setLineDash([dash, dash]);
+  const cosA = Math.cos(angle), sinA = Math.sin(angle);
+  ctx.beginPath();
+  ctx.moveTo(ax - cosA * extent, ay - sinA * extent);
+  ctx.lineTo(ax + cosA * extent, ay + sinA * extent);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Tooltip with angle + length
+  let unit = 'px';
+  let lenInUnits = length;
+  try {
+    // Lazy resolve to avoid hard cycle
+    const ms = state._lastMeasureScale || null;
+    if (ms && ms.pixelsPerUnit > 0) {
+      lenInUnits = length / ms.pixelsPerUnit;
+      unit = ms.unit || 'mm';
+    }
+  } catch (_) { /* ignore */ }
+  const angleDeg = (angle * 180 / Math.PI + 360) % 360;
+  const text = `Polar: ${angleDeg.toFixed(2)}° < ${lenInUnits.toFixed(2)} ${unit}`;
+  const fontSize = 11 / scale;
+  ctx.font = `${fontSize}px Arial`;
+  const padX = 4 / scale;
+  const padY = 3 / scale;
+  const tw = ctx.measureText(text).width;
+  const tx = snapResult.x + 12 / scale;
+  const ty = snapResult.y + 12 / scale;
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+  ctx.strokeStyle = '#cc66cc';
+  ctx.lineWidth = 0.5 / scale;
+  ctx.fillRect(tx - padX, ty - fontSize, tw + padX * 2, fontSize + padY * 2);
+  ctx.strokeRect(tx - padX, ty - fontSize, tw + padX * 2, fontSize + padY * 2);
+  ctx.fillStyle = '#552255';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillText(text, tx, ty);
+  ctx.restore();
+}
+
+// Resolve line width:
+// - width === 0 means "no border" (PDF spec) — return 0 untouched
+// - Thin-lines view: clamp to max 1px
+// - Normal view: respect the PDF-defined width with a tiny floor (0.5) so
+//   a non-zero stroke stays visible
 function thinLw(width) {
-  return state.preferences?.thinLines ? Math.min(width, 1) : width;
+  if (width === 0) return 0;
+  if (state.preferences?.thinLines) return Math.min(width, 1);
+  return Math.max(width, 0.5);
+}
+
+// Pick the textbox edge whose midpoint is closest to (kx, ky).
+// Returns { x, y, side } where side is 'top'|'right'|'bottom'|'left'.
+export function pickAnchorSide(box, kx, ky) {
+  const bx = box.x, by = box.y;
+  const bw = box.width || 150, bh = box.height || 50;
+  const candidates = [
+    { side: 'top',    x: bx + bw / 2, y: by },
+    { side: 'right',  x: bx + bw,     y: by + bh / 2 },
+    { side: 'bottom', x: bx + bw / 2, y: by + bh },
+    { side: 'left',   x: bx,          y: by + bh / 2 },
+  ];
+  let best = candidates[0];
+  let bestD = Infinity;
+  for (const c of candidates) {
+    const d = (c.x - kx) * (c.x - kx) + (c.y - ky) * (c.y - ky);
+    if (d < bestD) { bestD = d; best = c; }
+  }
+  return best;
+}
+
+// Draw a single leader on a textbox: anchor (auto-picked) -> knee -> tip,
+// with arrow or circle endpoint.
+function drawTextboxLeader(ctx, annotation, leader, strokeColor, lineWidth) {
+  const tipX = leader.tipX;
+  const tipY = leader.tipY;
+  const kneeX = leader.kneeX;
+  const kneeY = leader.kneeY;
+  const anchor = pickAnchorSide(annotation, kneeX, kneeY);
+
+  ctx.save();
+  ctx.strokeStyle = strokeColor;
+  ctx.fillStyle = strokeColor;
+  ctx.lineWidth = lineWidth;
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(anchor.x, anchor.y);
+  ctx.lineTo(kneeX, kneeY);
+  ctx.lineTo(tipX, tipY);
+  ctx.stroke();
+
+  const endStyle = leader.endStyle || 'arrow';
+  if (endStyle === 'circle') {
+    const r = 4;
+    ctx.beginPath();
+    ctx.arc(tipX, tipY, r, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // arrow — filled (closed) by default for textbox leaders
+    const angle = Math.atan2(tipY - kneeY, tipX - kneeX);
+    drawArrowheadOnCanvas(ctx, tipX, tipY, angle, 10, 'closed');
+  }
+  ctx.restore();
 }
 
 // Draw single annotation
@@ -502,9 +619,9 @@ export function drawAnnotation(ctx, annotation) {
         ctx.strokeStyle = annotation.strokeColor || strokeColor;
         ctx.lineWidth = tbLineWidth;
         if (tbBorderStyle === 'dashed') {
-          ctx.setLineDash([8, 4]);
+          ctx.setLineDash([12, 8]);
         } else if (tbBorderStyle === 'dotted') {
-          ctx.setLineDash([2, 2]);
+          ctx.setLineDash([2, 6]);
         } else {
           ctx.setLineDash([]);
         }
@@ -521,6 +638,15 @@ export function drawAnnotation(ctx, annotation) {
       // Draw text content
       drawTextboxContent(ctx, annotation);
       ctx.restore();
+
+      // Draw leaders (multi-leader generalisation of callout)
+      if (Array.isArray(annotation.leaders) && annotation.leaders.length > 0) {
+        const _ldrStroke = annotation.strokeColor || strokeColor || '#000000';
+        const _ldrLw = thinLw(annotation.lineWidth !== undefined ? annotation.lineWidth : 1) || 1;
+        for (const leader of annotation.leaders) {
+          drawTextboxLeader(ctx, annotation, leader, _ldrStroke, _ldrLw);
+        }
+      }
       break;
 
     case 'callout':
@@ -534,9 +660,9 @@ export function drawAnnotation(ctx, annotation) {
       ctx.strokeStyle = annotation.strokeColor || strokeColor;
       ctx.lineWidth = coLineWidth > 0 ? coLineWidth : 1;
       if (coBorderStyle === 'dashed') {
-        ctx.setLineDash([8, 4]);
+        ctx.setLineDash([12, 8]);
       } else if (coBorderStyle === 'dotted') {
-        ctx.setLineDash([2, 2]);
+        ctx.setLineDash([2, 6]);
       } else {
         ctx.setLineDash([]);
       }
@@ -570,9 +696,10 @@ export function drawAnnotation(ctx, annotation) {
       ctx.lineTo(arrowX, arrowY);
       ctx.stroke();
 
-      // Draw arrowhead
+      // Draw arrowhead — filled (closed) by default, but honor explicit per-annotation style if set
       const angle = Math.atan2(arrowY - kneeY, arrowX - kneeX);
-      drawArrowheadOnCanvas(ctx, arrowX, arrowY, angle, 10, 'open');
+      ctx.fillStyle = annotation.strokeColor || strokeColor;
+      drawArrowheadOnCanvas(ctx, arrowX, arrowY, angle, 10, annotation.arrowStyle || 'closed');
 
       ctx.save();
       if (annotation.rotation || annotation.flipX || annotation.flipY) {
@@ -595,9 +722,9 @@ export function drawAnnotation(ctx, annotation) {
         ctx.strokeStyle = annotation.strokeColor || strokeColor;
         ctx.lineWidth = coLineWidth;
         if (coBorderStyle === 'dashed') {
-          ctx.setLineDash([8, 4]);
-        } else if (coBorderStyle === 'dotted') {
-          ctx.setLineDash([2, 2]);
+          ctx.setLineDash([12, 8]);
+        } else if (tbBorderStyle === 'dotted') {
+          ctx.setLineDash([2, 6]);
         } else {
           ctx.setLineDash([]);
         }
@@ -747,22 +874,45 @@ export function drawAnnotation(ctx, annotation) {
         ctx.textBaseline = 'alphabetic';
         ctx.restore();
       } else if (annotation.stampSvg) {
-        // SVG fallback: rasterize on-the-fly when imageId is not yet in cache
-        const blob = new Blob([annotation.stampSvg], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(blob);
-        const fallbackImg = new Image();
-        fallbackImg.onload = () => {
-          URL.revokeObjectURL(url);
-          const cacheId = annotation.imageId || ('stamp_svg_' + annotation.id);
-          imageCache.set(cacheId, fallbackImg);
-          if (!annotation.imageId) annotation.imageId = cacheId;
-          annotation._cachedImg = fallbackImg;  // store directly for next render
-          redrawAnnotations();
-        };
-        fallbackImg.onerror = () => {
-          URL.revokeObjectURL(url);
-        };
-        fallbackImg.src = url;
+        // SVG fallback: rasterize on-the-fly when imageId is not yet in cache.
+        // External <image href=URL> references must be inlined first so the
+        // SVG-as-img security context doesn't show a broken-image placeholder
+        // (e.g. NEN 1414 symbols).
+        (async () => {
+          let svgStr = annotation.stampSvg;
+          if (/<image\b[^>]*\bhref=/i.test(svgStr)) {
+            const hrefRegex = /(<image\b[^>]*\b(?:xlink:href|href)=)(["'])([^"']+)\2/gi;
+            const matches = [...svgStr.matchAll(hrefRegex)];
+            for (const m of matches) {
+              const u = m[3];
+              if (u.startsWith('data:')) continue;
+              try {
+                const res = await fetch(u);
+                const b = await res.blob();
+                const dataUrl = await new Promise((res2, rej) => {
+                  const r = new FileReader();
+                  r.onload = () => res2(r.result);
+                  r.onerror = rej;
+                  r.readAsDataURL(b);
+                });
+                svgStr = svgStr.replace(m[0], m[1] + m[2] + dataUrl + m[2]);
+              } catch (_) {}
+            }
+          }
+          const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+          const url = URL.createObjectURL(blob);
+          const fallbackImg = new Image();
+          fallbackImg.onload = () => {
+            URL.revokeObjectURL(url);
+            const cacheId = annotation.imageId || ('stamp_svg_' + annotation.id);
+            imageCache.set(cacheId, fallbackImg);
+            if (!annotation.imageId) annotation.imageId = cacheId;
+            annotation._cachedImg = fallbackImg;
+            redrawAnnotations();
+          };
+          fallbackImg.onerror = () => URL.revokeObjectURL(url);
+          fallbackImg.src = url;
+        })();
       }
       break;
     }
@@ -792,6 +942,93 @@ export function drawAnnotation(ctx, annotation) {
         ctx.fillText('Signature', annotation.x + annotation.width / 2, annotation.y + annotation.height / 2 + 4);
         ctx.textAlign = 'left';
       }
+      break;
+    }
+
+    case 'parametricSymbol': {
+      // Parametric symbol — driven by a template + params
+      const template = getTemplate(annotation.symbolId);
+      if (!template) {
+        // Unknown symbol: draw a placeholder bbox
+        ctx.save();
+        ctx.strokeStyle = strokeColor;
+        ctx.setLineDash([4, 3]);
+        ctx.strokeRect(annotation.x, annotation.y, annotation.width, annotation.height);
+        ctx.setLineDash([]);
+        ctx.fillStyle = strokeColor;
+        ctx.font = '10px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('? ' + (annotation.symbolId || ''), annotation.x + annotation.width / 2, annotation.y + annotation.height / 2);
+        ctx.textAlign = 'left';
+        ctx.restore();
+        break;
+      }
+      const cmds = template.render(annotation.params || {}, {
+        x: annotation.x, y: annotation.y, width: annotation.width, height: annotation.height
+      }) || [];
+      ctx.save();
+      // Apply rotation around centre (consistent with stamp/signature)
+      const cx = annotation.x + annotation.width / 2;
+      const cy = annotation.y + annotation.height / 2;
+      const rot = (annotation.rotation || 0) * Math.PI / 180;
+      if (rot) {
+        ctx.translate(cx, cy);
+        ctx.rotate(rot);
+        ctx.translate(-cx, -cy);
+      }
+      const lw = thinLw(annotation.lineWidth ?? 1);
+      ctx.lineWidth = lw;
+      ctx.strokeStyle = strokeColor;
+      ctx.fillStyle = strokeColor;
+      for (const c of cmds) {
+        if (!c) continue;
+        switch (c.kind) {
+          case 'line': {
+            ctx.save();
+            if (Array.isArray(c.dash)) ctx.setLineDash(c.dash);
+            ctx.beginPath();
+            ctx.moveTo(c.x1, c.y1);
+            ctx.lineTo(c.x2, c.y2);
+            ctx.stroke();
+            ctx.restore();
+            break;
+          }
+          case 'arc': {
+            ctx.beginPath();
+            ctx.arc(c.cx, c.cy, c.r, c.a0, c.a1, !!c.ccw);
+            ctx.stroke();
+            break;
+          }
+          case 'circle': {
+            ctx.beginPath();
+            ctx.arc(c.cx, c.cy, c.r, 0, Math.PI * 2);
+            ctx.stroke();
+            break;
+          }
+          case 'polyline': {
+            if (!Array.isArray(c.points) || c.points.length < 2) break;
+            ctx.beginPath();
+            ctx.moveTo(c.points[0].x, c.points[0].y);
+            for (let i = 1; i < c.points.length; i++) ctx.lineTo(c.points[i].x, c.points[i].y);
+            if (c.close) ctx.closePath();
+            if (c.fill) ctx.fill();
+            ctx.stroke();
+            break;
+          }
+          case 'text': {
+            ctx.save();
+            ctx.font = `${c.bold ? 'bold ' : ''}${c.size || 12}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(c.text || '', c.x, c.y);
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.restore();
+            break;
+          }
+        }
+      }
+      ctx.restore();
       break;
     }
 
@@ -830,6 +1067,38 @@ export function drawAnnotation(ctx, annotation) {
       if (annotation.measureText) {
         drawCentroidLabel(ctx, annotation.points, annotation.measureText, strokeColor, annotation);
       }
+      break;
+    }
+
+    case 'filledArea': {
+      // User-drawn polygon contour (with optional arc segments and holes),
+      // filled with a solid color and/or hatch pattern.
+      if (!annotation.points || annotation.points.length < 3) break;
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = thinLw(annotation.lineWidth ?? 1);
+      const faHatch = (annotation.hatchPattern && annotation.hatchPattern !== 'none')
+        ? {
+            pattern: annotation.hatchPattern,
+            color: annotation.hatchColor || strokeColor,
+            scale: annotation.hatchScale ?? 100,
+            angle: annotation.hatchAngle ?? 0,
+          }
+        : null;
+      // Treat unset / null fillColor as no fill (we don't want measureArea's
+      // semi-transparent default for an explicit user-drawn fill annotation).
+      const faFill = annotation.fillColor && annotation.fillColor !== 'none' && annotation.fillColor !== 'transparent'
+        ? annotation.fillColor
+        : 'none';
+      drawMeasureAreaShape(
+        ctx,
+        annotation.points,
+        annotation.strokeColor || annotation.color || '#000000',
+        annotation.lineWidth,
+        faFill,
+        annotation.borderStyle || 'solid',
+        annotation.holes,
+        faHatch
+      );
       break;
     }
 
@@ -897,6 +1166,45 @@ export function drawAnnotation(ctx, annotation) {
         ctx.fillStyle = strokeColor;
         ctx.fillText(annotation.measureText, lastPt.x + 8, lastPt.y - 4);
       }
+      break;
+    }
+
+    case 'scaleRegion': {
+      // Scale region: dashed orange boundary, translucent fill, top-left badge.
+      const srX = annotation.x, srY = annotation.y;
+      const srW = annotation.width, srH = annotation.height;
+      const srColor = annotation.color || '#ff9800';
+
+      ctx.save();
+      // Translucent fill
+      ctx.globalAlpha = 0.10 * (annotation.opacity || 1);
+      ctx.fillStyle = srColor;
+      ctx.fillRect(srX, srY, srW, srH);
+      // Dashed border
+      ctx.globalAlpha = annotation.opacity || 1;
+      ctx.setLineDash([6, 3]);
+      ctx.strokeStyle = srColor;
+      ctx.lineWidth = annotation.lineWidth || 1.5;
+      ctx.strokeRect(srX, srY, srW, srH);
+      ctx.setLineDash([]);
+
+      // Badge top-left: "[label · ]1:100 [mm]"
+      const scaleStr = annotation.scaleString || '1:100';
+      const unitStr = annotation.units || 'mm';
+      const labelStr = annotation.label || '';
+      const badgeText = (labelStr ? `${labelStr} · ` : '') + `${scaleStr} [${unitStr}]`;
+      ctx.font = 'bold 11px sans-serif';
+      const badgeW = ctx.measureText(badgeText).width + 10;
+      const badgeH = 16;
+      ctx.fillStyle = srColor;
+      ctx.fillRect(srX, srY - badgeH, badgeW, badgeH);
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(badgeText, srX + 5, srY - badgeH / 2);
+
+      ctx.globalAlpha = 1;
+      ctx.restore();
       break;
     }
 
@@ -1235,6 +1543,10 @@ export function redrawAnnotations(lightweight = false) {
     _lastIndexedCount = annotations.length;
   }
 
+  // Scale-region lookup cache: invalidate per redraw so moves/resizes
+  // are reflected lazily on next draw. O(1) cost.
+  invalidateScaleRegionCache();
+
   annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height);
 
   // Sync the dedicated text-highlight canvas with the annotation canvas.
@@ -1271,9 +1583,10 @@ export function redrawAnnotations(lightweight = false) {
     if (textHighlightCtx) textHighlightCtx.scale(effectiveScale, effectiveScale);
   }
 
-  // Draw grid overlay if enabled
+  // Draw grid overlay if enabled (BEFORE annotations, as a background pass).
+  // Pass effectiveScale so the dot grid hides when too zoomed-out.
   if (state.preferences.showGrid) {
-    drawGrid(annotationCtx, annotationCanvas.width / effectiveScale, annotationCanvas.height / effectiveScale);
+    drawGrid(annotationCtx, annotationCanvas.width / effectiveScale, annotationCanvas.height / effectiveScale, effectiveScale);
   }
 
   // CRITICAL: in vector viewport mode, key the annotation page off
@@ -1352,6 +1665,11 @@ export function redrawAnnotations(lightweight = false) {
 
   // Draw watermarks in front of content
   renderWatermarksInFront(annotationCtx, curPage, annotationCanvas.width / effectiveScale, annotationCanvas.height / effectiveScale);
+
+  // Draw polar ray + tooltip when an active polar snap is engaged
+  if (state.lastSnapResult && state.lastSnapResult.type === 'polar') {
+    _drawPolarOverlay(annotationCtx, state.lastSnapResult, effectiveScale);
+  }
 
   // Draw selection highlight and handles (use selectedAnnotations array as source of truth)
   const _renderDoc = getActiveDocument();

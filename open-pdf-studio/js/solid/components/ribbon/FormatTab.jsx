@@ -1,5 +1,6 @@
 import { For } from 'solid-js';
 import RibbonGroup from './RibbonGroup.jsx';
+import AdaptiveGroups from './AdaptiveGroups.jsx';
 import ColorPickerButton from './ColorPickerButton.jsx';
 import {
   fillColor, strokeColor, fmtLineWidth, opacity, borderStyle, blendMode,
@@ -55,7 +56,7 @@ export default function FormatTab() {
 
   return (
     <div class="ribbon-content active" id="tab-format">
-      <div class="ribbon-groups">
+      <AdaptiveGroups>
         <RibbonGroup label="" wide={true}>
           <div class="ribbon-style-gallery" id="fmt-style-gallery">
             <For each={STYLE_GALLERY}>
@@ -296,7 +297,7 @@ export default function FormatTab() {
             </div>
           </div>
         </RibbonGroup>
-      </div>
+      </AdaptiveGroups>
     </div>
   );
 }

@@ -87,6 +87,27 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         }
       }
 
+      // Textbox leaders: /OPS_LeaderId + /IRT (in-reply-to parent textbox Rect)
+      const opsLidRaw = annotDict.get(PDFName.of('OPS_LeaderId'));
+      if (opsLidRaw) {
+        const lv = context.lookup(opsLidRaw) || opsLidRaw;
+        if (lv && typeof lv.value === 'string') colors.opsLeaderId = lv.value;
+        else if (lv && typeof lv.decodeText === 'function') colors.opsLeaderId = lv.decodeText();
+      }
+      const irtRaw = annotDict.get(PDFName.of('IRT'));
+      if (irtRaw) {
+        const irt = context.lookup(irtRaw);
+        if (irt && typeof irt.get === 'function') {
+          const irtRectRaw = irt.get(PDFName.of('Rect'));
+          if (irtRectRaw) {
+            const irtRect = context.lookup(irtRectRaw) || irtRectRaw;
+            if (irtRect && typeof irtRect.size === 'function' && irtRect.size() >= 4) {
+              colors.irtRectKey = `${pdfNum(irtRect.get(0))},${pdfNum(irtRect.get(1))},${pdfNum(irtRect.get(2))},${pdfNum(irtRect.get(3))}`;
+            }
+          }
+        }
+      }
+
       // Read /OPS_PixelsPerUnit, /OPS_Unit, /OPS_ScaleRatio, /OPS_Divisions, /OPS_TotalUnits (viewport/scaleBar)
       const opsPpuRaw = annotDict.get(PDFName.of('OPS_PixelsPerUnit'));
       if (opsPpuRaw) {
@@ -115,6 +136,26 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         const tu = pdfNum(context.lookup(opsTuRaw) || opsTuRaw);
         if (tu !== null) colors.opsTotalUnits = tu;
       }
+      // Scale region custom keys
+      const opsScaleStringRaw = annotDict.get(PDFName.of('OPS_ScaleString'));
+      if (opsScaleStringRaw) {
+        const ss = context.lookup(opsScaleStringRaw) || opsScaleStringRaw;
+        if (ss && typeof ss.value === 'string') colors.opsScaleString = ss.value;
+        else if (ss && typeof ss.decodeText === 'function') colors.opsScaleString = ss.decodeText();
+      }
+      const opsUnitsRaw = annotDict.get(PDFName.of('OPS_Units'));
+      if (opsUnitsRaw) {
+        const u = context.lookup(opsUnitsRaw) || opsUnitsRaw;
+        if (u && typeof u.value === 'string') colors.opsUnits = u.value;
+        else if (u && typeof u.decodeText === 'function') colors.opsUnits = u.decodeText();
+      }
+      const opsLabelRaw = annotDict.get(PDFName.of('OPS_Label'));
+      if (opsLabelRaw) {
+        const l = context.lookup(opsLabelRaw) || opsLabelRaw;
+        if (l && typeof l.value === 'string') colors.opsLabel = l.value;
+        else if (l && typeof l.decodeText === 'function') colors.opsLabel = l.decodeText();
+      }
+
       const opsLwRaw = annotDict.get(PDFName.of('OPS_LineWidth'));
       if (opsLwRaw) {
         const lw = pdfNum(context.lookup(opsLwRaw) || opsLwRaw);
@@ -132,6 +173,20 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
         const gb = context.lookup(opsGroupByRaw) || opsGroupByRaw;
         if (gb && typeof gb.value === 'string') colors.opsGroupBy = gb.value;
         else if (gb && typeof gb.decodeText === 'function') colors.opsGroupBy = gb.decodeText();
+      }
+
+      // Parametric symbol metadata
+      const opsSymRaw = annotDict.get(PDFName.of('OPS_SymbolId'));
+      if (opsSymRaw) {
+        const s = context.lookup(opsSymRaw) || opsSymRaw;
+        if (s && typeof s.value === 'string') colors.opsSymbolId = s.value;
+        else if (s && typeof s.decodeText === 'function') colors.opsSymbolId = s.decodeText();
+      }
+      const opsParamsRaw = annotDict.get(PDFName.of('OPS_Params'));
+      if (opsParamsRaw) {
+        const p = context.lookup(opsParamsRaw) || opsParamsRaw;
+        if (p && typeof p.value === 'string') colors.opsParams = p.value;
+        else if (p && typeof p.decodeText === 'function') colors.opsParams = p.decodeText();
       }
 
       const opsArRaw = annotDict.get(PDFName.of('OPS_ArcRadius'));
@@ -176,6 +231,100 @@ export async function extractAnnotationColors(pageNum, pdfDoc) {
             }
           }
           if (holes.length > 0) colors.holes = holes;
+        }
+      }
+
+      // Read /OPS_HatchPattern, /OPS_HatchColor, /OPS_HatchScale, /OPS_HatchAngle
+      // (used by 'filledArea' annotations to persist user-controlled hatch fill).
+      const hpRaw = annotDict.get(PDFName.of('OPS_HatchPattern'));
+      if (hpRaw) {
+        const hp = context.lookup(hpRaw) || hpRaw;
+        if (typeof hp.decodeText === 'function') colors.opsHatchPattern = hp.decodeText();
+        else if (typeof hp.value === 'string') colors.opsHatchPattern = hp.value;
+      }
+      const hcRaw = annotDict.get(PDFName.of('OPS_HatchColor'));
+      if (hcRaw) {
+        const hc = context.lookup(hcRaw) || hcRaw;
+        if (typeof hc.decodeText === 'function') colors.opsHatchColor = hc.decodeText();
+        else if (typeof hc.value === 'string') colors.opsHatchColor = hc.value;
+      }
+      const hsRaw = annotDict.get(PDFName.of('OPS_HatchScale'));
+      if (hsRaw) {
+        const hs = pdfNum(context.lookup(hsRaw) || hsRaw);
+        if (hs !== null) colors.opsHatchScale = hs;
+      }
+      const haRaw = annotDict.get(PDFName.of('OPS_HatchAngle'));
+      if (haRaw) {
+        const ha = pdfNum(context.lookup(haRaw) || haRaw);
+        if (ha !== null) colors.opsHatchAngle = ha;
+      }
+
+      // Read /OPS_ArcFlags + /OPS_ArcBulges (parallel arrays, one entry per
+      // outer vertex). Used to round-trip arc-segment metadata for filledArea.
+      const afRaw = annotDict.get(PDFName.of('OPS_ArcFlags'));
+      if (afRaw) {
+        const arr = context.lookup(afRaw) || afRaw;
+        if (arr && typeof arr.size === 'function') {
+          const flags = [];
+          for (let i = 0; i < arr.size(); i++) {
+            const v = pdfNum(context.lookup(arr.get(i)) || arr.get(i));
+            flags.push(v ? 1 : 0);
+          }
+          colors.opsArcFlags = flags;
+        }
+      }
+      const abRaw = annotDict.get(PDFName.of('OPS_ArcBulges'));
+      if (abRaw) {
+        const arr = context.lookup(abRaw) || abRaw;
+        if (arr && typeof arr.size === 'function') {
+          const bulges = [];
+          for (let i = 0; i < arr.size(); i++) {
+            const v = pdfNum(context.lookup(arr.get(i)) || arr.get(i));
+            bulges.push(v != null ? v : 0);
+          }
+          colors.opsArcBulges = bulges;
+        }
+      }
+
+      // Read /OPS_HoleArcFlags + /OPS_HoleArcBulges (array of sub-arrays,
+      // one sub-array per hole, parallel to /OPS_Holes). Round-trip arc
+      // metadata for vertices inside hole contours.
+      const hafRaw = annotDict.get(PDFName.of('OPS_HoleArcFlags'));
+      if (hafRaw) {
+        const arr = context.lookup(hafRaw) || hafRaw;
+        if (arr && typeof arr.size === 'function') {
+          const out = [];
+          for (let i = 0; i < arr.size(); i++) {
+            const sub = context.lookup(arr.get(i)) || arr.get(i);
+            const flags = [];
+            if (sub && typeof sub.size === 'function') {
+              for (let j = 0; j < sub.size(); j++) {
+                const v = pdfNum(context.lookup(sub.get(j)) || sub.get(j));
+                flags.push(v ? 1 : 0);
+              }
+            }
+            out.push(flags);
+          }
+          colors.opsHoleArcFlags = out;
+        }
+      }
+      const habRaw = annotDict.get(PDFName.of('OPS_HoleArcBulges'));
+      if (habRaw) {
+        const arr = context.lookup(habRaw) || habRaw;
+        if (arr && typeof arr.size === 'function') {
+          const out = [];
+          for (let i = 0; i < arr.size(); i++) {
+            const sub = context.lookup(arr.get(i)) || arr.get(i);
+            const bulges = [];
+            if (sub && typeof sub.size === 'function') {
+              for (let j = 0; j < sub.size(); j++) {
+                const v = pdfNum(context.lookup(sub.get(j)) || sub.get(j));
+                bulges.push(v != null ? v : 0);
+              }
+            }
+            out.push(bulges);
+          }
+          colors.opsHoleArcBulges = out;
         }
       }
 
@@ -350,29 +499,42 @@ const result = {};
         }
       }
 
-      // For FreeText, extract border width from /BS or /Border, rotation, and stroke color
-      if (subtypeName === '/FreeText') {
-        // Read /BS (Border Style) dictionary → /W entry
-        const bsRaw = annotDict.get(PDFName.of('BS'));
-        if (bsRaw) {
-          const bs = context.lookup(bsRaw);
-          if (bs) {
-            const wRaw = bs.get(PDFName.of('W'));
-            if (wRaw) {
-              const w = pdfNum(context.lookup(wRaw) || wRaw);
-              if (w !== null) colors.borderWidth = w;
-            }
+      // Extract border width from /BS or /Border for ALL annotation types.
+      // PDF.js's annot.borderStyle?.width sometimes returns 1 (default) when the
+      // PDF actually has /BS<</W 4>> or /Border [0 0 4]. Reading the raw dict
+      // here gives the real value.
+      const bwBsRaw = annotDict.get(PDFName.of('BS'));
+      if (bwBsRaw) {
+        const bwBs = context.lookup(bwBsRaw);
+        if (bwBs) {
+          const wRaw = bwBs.get(PDFName.of('W'));
+          if (wRaw !== undefined && wRaw !== null) {
+            const w = pdfNum(context.lookup(wRaw) || wRaw);
+            if (w !== null) colors.borderWidth = w;
           }
         }
-        // Fallback: /Border array [H V W] - third element is width
-        if (colors.borderWidth === undefined) {
-          const borderRaw = annotDict.get(PDFName.of('Border'));
-          if (borderRaw) {
-            const border = context.lookup(borderRaw) || borderRaw;
-            if (border && typeof border.size === 'function' && border.size() >= 3) {
-              const w = pdfNum(border.get(2));
-              if (w !== null) colors.borderWidth = w;
-            }
+      }
+      // Fallback: /Border array [H V W] - third element is width
+      if (colors.borderWidth === undefined) {
+        const borderRaw = annotDict.get(PDFName.of('Border'));
+        if (borderRaw) {
+          const border = context.lookup(borderRaw) || borderRaw;
+          if (border && typeof border.size === 'function' && border.size() >= 3) {
+            const w = pdfNum(border.get(2));
+            if (w !== null) colors.borderWidth = w;
+          }
+        }
+      }
+
+      // For FreeText, extract additional FreeText-specific properties
+      if (subtypeName === '/FreeText') {
+        // Read standard /Rotate key (PDF X-Change writes this for 90/180/270 rotations)
+        const stdRotRaw = annotDict.get(PDFName.of('Rotate'));
+        if (stdRotRaw) {
+          const sr = pdfNum(context.lookup(stdRotRaw) || stdRotRaw);
+          if (sr !== null) {
+            // PDF spec: /Rotate is CCW degrees in PDF space; we negate for canvas (Y-down)
+            colors.stdRotation = -sr;
           }
         }
 

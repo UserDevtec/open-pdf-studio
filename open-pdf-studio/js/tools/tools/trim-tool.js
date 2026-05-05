@@ -47,31 +47,41 @@ export const trimTool = {
 
     const oldState = cloneAnnotation(target);
 
-    if (ix.t >= -0.01 && ix.t <= 1.01) {
-      // Intersection within target segment — trim: remove side nearest click
-      if (distToStart < distToEnd) {
-        target.startX = ix.x; target.startY = ix.y;
-      } else {
-        target.endX = ix.x; target.endY = ix.y;
-      }
-    } else if (ix.u >= -0.01 && ix.u <= 1.01) {
-      // Intersection outside target but on cutter — extend nearest endpoint
-      if (distToStart < distToEnd) {
-        target.startX = ix.x; target.startY = ix.y;
-      } else {
-        target.endX = ix.x; target.endY = ix.y;
-      }
+    // AutoCAD-style "make corner" — bring BOTH lines together so they share
+    // the intersection point. For each line the endpoint nearest the user's
+    // click is moved to the intersection (works whether the intersection is
+    // inside the segment, requiring a cut, or outside, requiring an extend).
+    const cutter = _trimState.cuttingEdge;
+    const oldCutter = cloneAnnotation(cutter);
+
+    // Move target's nearest endpoint to ix
+    if (distToStart < distToEnd) {
+      target.startX = ix.x; target.startY = ix.y;
     } else {
-      // Intersection not on either segment — do nothing
-      _trimState.cuttingEdge = null;
-      return;
+      target.endX = ix.x; target.endY = ix.y;
+    }
+
+    // Move cutter's nearest endpoint to ix as well (so the two lines meet).
+    // We use the second click's coords (x,y) as the "near" reference for the
+    // cutter too, since the user picked which side to keep on both lines with
+    // a single click — the side furthest from intersection on the cutter is
+    // the one to drop. With one click on the target we approximate by using
+    // the cutter's endpoint nearest the second click.
+    const cDistToStart = Math.hypot(x - cutter.startX, y - cutter.startY);
+    const cDistToEnd = Math.hypot(x - cutter.endX, y - cutter.endY);
+    if (cDistToStart < cDistToEnd) {
+      cutter.startX = ix.x; cutter.startY = ix.y;
+    } else {
+      cutter.endX = ix.x; cutter.endY = ix.y;
     }
 
     target.modifiedAt = new Date().toISOString();
+    cutter.modifiedAt = new Date().toISOString();
     recordModify(target.id, oldState, target);
+    recordModify(cutter.id, oldCutter, cutter);
     redrawAnnotations();
     _trimState.cuttingEdge = null;
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
   },
 
   onDeactivate() { _trimState.cuttingEdge = null; },

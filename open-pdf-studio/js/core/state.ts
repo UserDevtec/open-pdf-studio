@@ -97,6 +97,7 @@ export interface AppState {
   dragCursor: string | null;
   busy: boolean;
   snapPick: boolean;
+  editingContour: string | null;
   panStartX: number;
   panStartY: number;
   panScrollStartX: number;
@@ -262,6 +263,8 @@ export const state = createMutable<AppState>({
   set busy(v) { interactionState.busy = v; },
   get snapPick() { return interactionState.snapPick; },
   set snapPick(v) { interactionState.snapPick = v; },
+  get editingContour() { return interactionState.editingContour; },
+  set editingContour(v) { interactionState.editingContour = v; },
 
   // Backward compat — clipboard-store
   get clipboardAnnotation() { return clipboardState.annotation; },

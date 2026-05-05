@@ -33,10 +33,17 @@ export function createAnnotation(baseProps) {
   };
 
   // Merge defaults with baseProps - baseProps takes precedence
-  return {
+  const result = {
     ...defaults,
     ...baseProps
   };
+
+  // Textbox: ensure leaders array exists (multi-leader feature)
+  if (result.type === 'textbox' && !Array.isArray(result.leaders)) {
+    result.leaders = [];
+  }
+
+  return result;
 }
 
 // Deep clone annotation for undo/restore

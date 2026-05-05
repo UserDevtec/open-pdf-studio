@@ -11,12 +11,14 @@ import { polylineTool, cloudPolylineTool } from './polyline-tool.js';
 import { arcTool } from './arc-tool.js';
 import { splineTool } from './spline-tool.js';
 import { measureDistanceTool, measureAreaTool, measurePerimeterTool, addHoleTool } from './measurement-tool.js';
+import { filledAreaTool } from './filled-area-tool.js';
 import { measureAngleTool } from './angle-tool.js';
 import { commentTool, textTool, stampTool, signatureTool, editTextTool } from './text-tool.js';
 import { calibrationPickTool } from './calibration-pick-tool.js';
 import { pluginClickTool } from './plugin-tool.js';
 import { hoverTranslateTool } from './hover-translate-tool.js';
 import { viewportTool } from './viewport-tool.js';
+import { scaleRegionTool } from './scale-region-tool.js';
 import { scaleBarTool } from './scalebar-tool.js';
 import { trimTool } from './trim-tool.js';
 import { extendTool } from './extend-tool.js';
@@ -40,6 +42,7 @@ export function registerAllTools() {
   registerTool('redaction', shapeTool);
   registerTool('textbox', shapeTool);
   registerTool('callout', shapeTool);
+  registerTool('parametricSymbol', shapeTool);
 
   // Lines
   registerTool('line', lineTool);
@@ -58,6 +61,9 @@ export function registerAllTools() {
   registerTool('measureAngle', measureAngleTool);
   registerTool('addHole', addHoleTool);
 
+  // Filled area (contour with arcs and optional holes; solid or hatched fill)
+  registerTool('filledArea', filledAreaTool);
+
   // Calibration
   registerTool('calibrationPick', calibrationPickTool);
 
@@ -73,6 +79,9 @@ export function registerAllTools() {
 
   // Viewports
   registerTool('viewport', viewportTool);
+
+  // Scale regions (per-region calibration)
+  registerTool('scaleRegion', scaleRegionTool);
 
   // Plugin fallback
   registerTool('_plugin_click', pluginClickTool);

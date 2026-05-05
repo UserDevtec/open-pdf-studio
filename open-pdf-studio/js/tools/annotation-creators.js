@@ -5,6 +5,8 @@ import { snapAngle } from '../utils/helpers.js';
 import { calculateDistance, calculateArea, calculatePerimeter, formatMeasurement, snapDistanceTo10 } from '../annotations/measurement.js';
 import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 import { applyDynamicScaling } from '../annotations/dynamic-scaling.js';
+import { getTemplate, defaultParams } from '../symbols/registry.js';
+import { pendingSymbolId } from '../solid/stores/parametricSymbolStore.js';
 
 /**
  * Build raw annotation properties from tool + coordinates.
@@ -37,13 +39,18 @@ export function buildAnnotationProps(tool, startX, startY, endX, endY, e) {
   switch (tool) {
     case 'draw':
       if (state.currentPath.length > 1) {
+        // Ribbon values take precedence so the live color/width pickers in the
+        // Comment tab actually drive the freehand stroke. prefs.* serves as the
+        // fallback default applied at startup to seed the ribbon signals.
+        const _drawColor = getColorPickerValue() || prefs.drawStrokeColor || '#000000';
+        const _drawWidth = getLineWidthValue() || prefs.drawLineWidth || 2;
         return {
           type: 'draw',
           page: getActiveDocument()?.currentPage || 1,
           path: state.currentPath,
-          color: prefs.drawStrokeColor || getColorPickerValue(),
-          strokeColor: prefs.drawStrokeColor || getColorPickerValue(),
-          lineWidth: prefs.drawLineWidth || getLineWidthValue(),
+          color: _drawColor,
+          strokeColor: _drawColor,
+          lineWidth: _drawWidth,
           opacity: (prefs.drawOpacity || 100) / 100
         };
       }
@@ -234,6 +241,30 @@ export function buildAnnotationProps(tool, startX, startY, endX, endY, e) {
         measureValue: dist.value,
         measureUnit: dist.unit,
         measurePixels: dist.pixels
+      };
+    }
+
+    case 'parametricSymbol': {
+      const symbolId = pendingSymbolId() || 'door';
+      const template = getTemplate(symbolId);
+      let b = bbox(startX, startY, endX, endY);
+      // Click (no real drag): use the template's defaultSize
+      if (b.width < 5 || b.height < 5) {
+        const ds = (template && template.defaultSize) || { width: 80, height: 80 };
+        b = { x: startX, y: startY, width: ds.width, height: ds.height };
+      }
+      const stroke = getColorPickerValue() || '#000000';
+      return {
+        type: 'parametricSymbol',
+        page: getActiveDocument()?.currentPage || 1,
+        ...b,
+        symbolId,
+        params: template ? defaultParams(template) : {},
+        color: stroke,
+        strokeColor: stroke,
+        lineWidth: getLineWidthValue() || 1,
+        rotation: 0,
+        opacity: 1,
       };
     }
 

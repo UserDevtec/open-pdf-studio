@@ -3,6 +3,7 @@ import MobileApp from './MobileApp.jsx';
 import TitleBar from './components/TitleBar.jsx';
 import Ribbon from './components/ribbon/Ribbon.jsx';
 import DocumentTabs from './components/DocumentTabs.jsx';
+import CanvasScrollbars from './components/CanvasScrollbars.jsx';
 import LeftPanel from './components/left-panel/LeftPanel.jsx';
 import FindBar from './components/FindBar.jsx';
 import FormFieldsBar from './components/FormFieldsBar.jsx';
@@ -14,6 +15,8 @@ import AppMenu from './components/app-menu/AppMenu.jsx';
 import DialogHost from './components/DialogHost.jsx';
 import ContextMenu from './components/ContextMenu.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
+import TypeLengthHUD from './components/TypeLengthHUD.jsx';
+import CompareView from './components/compare/CompareView.jsx';
 import { DockedToolPalette, FloatingToolPalette, DockTargets, PaletteContextMenu } from './components/ToolPalette.jsx';
 import { DockedExtPalette, FloatingExtPalette, ExtDockTargets } from './components/ExtensionToolPalette.jsx';
 import { DockedSymbolPalette, FloatingSymbolPalette, SymbolSettingsDialog } from './components/SymbolPalette.jsx';
@@ -102,6 +105,8 @@ function DesktopApp() {
               </div>
               <div id="continuous-container" class="continuous-container"></div>
             </div>
+            <CanvasScrollbars />
+            <CompareView />
           </div>
         </div>
 
@@ -124,6 +129,7 @@ function DesktopApp() {
       <SchedulePanel />
       <ErrorBoundary fallback={null}><AIPanel /></ErrorBoundary>
       <LoadingOverlay />
+      <TypeLengthHUD />
     </>
   );
 }

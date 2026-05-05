@@ -3,7 +3,14 @@
 // The ONLY render path for PDF pages. No fallback, no CSS-scale, no debounce.
 
 import { renderVectorPage } from './vector-renderer.js';
-import { state } from '../core/state.js';
+import { state, getActiveDocument } from '../core/state.js';
+import { findAnnotationAt as _findAnnotationAt } from '../annotations/geometry.js';
+import {
+  computeZoomBucket,
+  getBestAvailableBitmap,
+  ensureBitmap,
+  getCachedBitmap,
+} from './page-bitmap-cache.js';
 
 // ─── Viewport State (singleton via window to survive HMR/dynamic imports) ───
 if (!window.__pdfViewport) {
@@ -73,21 +80,26 @@ export function destroyViewport() {
   _ctx = null;
 }
 
+// Canvas backing-store DPR multiplier. window.devicePixelRatio (1.0–3.0 typical)
+// is multiplied so the canvas pixel grid matches the screen pixel grid, giving
+// crisp rendering on HiDPI displays. CSS dimensions stay logical-px so all
+// existing coordinate math (mouse, panning, zoom) keeps working unchanged.
+function _getDpr() { return window.devicePixelRatio || 1; }
+
 function _resizeCanvas() {
   if (!_canvas) return;
   const container = document.getElementById('pdf-container');
   if (!container) return;
   const w = container.clientWidth;
   const h = container.clientHeight;
-  if (_canvas.width !== w || _canvas.height !== h) {
+  const dpr = _getDpr();
+  const bw = Math.round(w * dpr);
+  const bh = Math.round(h * dpr);
+  if (_canvas.width !== bw || _canvas.height !== bh) {
     // Re-anchor: capture the world (PDF-space) point currently at the canvas
-    // center BEFORE resizing, then restore it AFTER. This keeps the same
-    // point of the page under the user's eye when a side panel toggles or
-    // the window resizes — instead of the page drifting off-center, which
-    // is what happens if we only update canvas size and let the next render
-    // clamp without recentering.
-    const oldVpW = _canvas.width;
-    const oldVpH = _canvas.height;
+    // center BEFORE resizing, then restore it AFTER.
+    const oldVpW = _canvas.width / dpr;
+    const oldVpH = _canvas.height / dpr;
     let worldCenterX = null;
     let worldCenterY = null;
     if (oldVpW > 0 && oldVpH > 0 && viewport.zoom > 0 && viewport.pageW > 0) {
@@ -95,25 +107,26 @@ function _resizeCanvas() {
       worldCenterY = (oldVpH / 2 - viewport.offsetY) / viewport.zoom;
     }
 
-    _canvas.width = w;
-    _canvas.height = h;
-    // Also resize annotation canvas if sibling
+    // Backing store at device-pixel resolution; CSS at logical-pixel size
+    _canvas.width = bw;
+    _canvas.height = bh;
+    _canvas.style.width = w + 'px';
+    _canvas.style.height = h + 'px';
+
+    // Annotation + highlight canvases stay in CSS-pixel backing for now (existing
+    // coordinate math uses canvas.width as CSS pixels). The PDF canvas is the only
+    // one that needs HiDPI backing for crisp rendering.
     const ann = container.querySelector('.annotation-canvas, #annotation-canvas');
     if (ann && (ann.width !== w || ann.height !== h)) {
       ann.width = w;
       ann.height = h;
     }
-    // Keep the text-highlight canvas in lock-step with the annotation canvas
     const hl = container.querySelector('#text-highlight-canvas');
     if (hl && (hl.width !== w || hl.height !== h)) {
       hl.width = w;
       hl.height = h;
     }
 
-    // Restore the world point that was at the canvas center. clampAndCenter
-    // (which runs at the top of the next _render) will then clamp these new
-    // offsets if they go out of bounds, OR center the page if it now fits.
-    // Either way the page stays anchored to the user's view.
     if (worldCenterX !== null) {
       viewport.offsetX = w / 2 - worldCenterX * viewport.zoom;
       viewport.offsetY = h / 2 - worldCenterY * viewport.zoom;
@@ -143,14 +156,29 @@ function _startLoop() {
 // zoom/offset gets corrected before the next paint.
 export function clampAndCenter() {
   if (!_canvas || !viewport.pageW || !viewport.pageH) return;
-  const vpW = _canvas.width;
-  const vpH = _canvas.height;
+  // Use CSS-pixel viewport size (backing is dpr * css)
+  const dpr = _getDpr();
+  const vpW = _canvas.width / dpr;
+  const vpH = _canvas.height / dpr;
   const pageScreenW = viewport.pageW * viewport.zoom;
   const pageScreenH = viewport.pageH * viewport.zoom;
 
+  // When the user has explicitly anchored the view (zoom-to-cursor, pan),
+  // do NOT auto-center even if the page now fits the axis — otherwise the
+  // anchor point drifts back to the viewport center on the very next frame.
+  // Only clamp to keep the page fully on-screen.
+  const anchored = _anchorActive;
+
   if (pageScreenW <= vpW) {
-    // Fits horizontally → center
-    viewport.offsetX = (vpW - pageScreenW) / 2;
+    if (anchored) {
+      const minX = 0;                  // page left can't go past viewport left
+      const maxX = vpW - pageScreenW;  // page right can't go past viewport right
+      if (viewport.offsetX < minX) viewport.offsetX = minX;
+      if (viewport.offsetX > maxX) viewport.offsetX = maxX;
+    } else {
+      // Fits horizontally → center
+      viewport.offsetX = (vpW - pageScreenW) / 2;
+    }
   } else {
     // Doesn't fit → clamp so neither edge crosses the viewport edge
     const minX = vpW - pageScreenW; // page right edge == viewport right edge
@@ -160,7 +188,14 @@ export function clampAndCenter() {
   }
 
   if (pageScreenH <= vpH) {
-    viewport.offsetY = (vpH - pageScreenH) / 2;
+    if (anchored) {
+      const minY = 0;
+      const maxY = vpH - pageScreenH;
+      if (viewport.offsetY < minY) viewport.offsetY = minY;
+      if (viewport.offsetY > maxY) viewport.offsetY = maxY;
+    } else {
+      viewport.offsetY = (vpH - pageScreenH) / 2;
+    }
   } else {
     const minY = vpH - pageScreenH;
     const maxY = 0;
@@ -169,41 +204,54 @@ export function clampAndCenter() {
   }
 }
 
+// Sticky flag set by zoom-to-cursor / pan / setZoomAtPoint. Once the user
+// has positioned the view themselves, clampAndCenter() must NOT auto-center
+// on a fit-axis. Reset by fitToViewport(), page nav, and resize, which are
+// the legitimate "re-center" entry points.
+let _anchorActive = false;
+export function clearAnchor() { _anchorActive = false; }
+export function markAnchored() { _anchorActive = true; }
+
 function _render() {
   if (!_ctx || !_canvas || !viewport.filePath) return;
-  const { width: vpW, height: vpH } = _canvas;
+  // CSS-pixel viewport (backing is dpr-scaled). All math below stays in CSS px;
+  // the dpr multiplier is folded into the canvas transform so output
+  // hits device pixels and stays crisp on HiDPI displays.
+  const dpr = _getDpr();
+  const vpW = _canvas.width / dpr;
+  const vpH = _canvas.height / dpr;
 
   // Always clamp + auto-center BEFORE drawing so a page that fits the
   // viewport ends up centered no matter how we got here (zoom out, resize,
   // page nav, etc.).
   clampAndCenter();
 
-  // Reset transform and clear
+  // Reset transform and clear (in device-pixel space)
   _ctx.setTransform(1, 0, 0, 1, 0, 0);
-  _ctx.clearRect(0, 0, vpW, vpH);
+  _ctx.clearRect(0, 0, _canvas.width, _canvas.height);
 
   // Background (outside page area)
   _ctx.fillStyle = '#e0e0e0';
-  _ctx.fillRect(0, 0, vpW, vpH);
+  _ctx.fillRect(0, 0, _canvas.width, _canvas.height);
 
-  // White page background — SAME transform as vector commands
+  // White page background — SAME transform as vector commands, multiplied by dpr
   _ctx.save();
-  _ctx.setTransform(viewport.zoom, 0, 0, viewport.zoom, viewport.offsetX, viewport.offsetY);
+  _ctx.setTransform(viewport.zoom * dpr, 0, 0, viewport.zoom * dpr, viewport.offsetX * dpr, viewport.offsetY * dpr);
   _ctx.transform(1, 0, 0, -1, 0, viewport.pageH);
   _ctx.translate(-viewport.originX, -viewport.originY); // MediaBox origin offset
   _ctx.fillStyle = '#ffffff';
   _ctx.fillRect(viewport.originX, viewport.originY, viewport.pageW, viewport.pageH);
   _ctx.restore();
 
-  // Now draw the vectors (renderVectorPage does setTransform+transform internally)
+  // Vector content (multiply zoom and offsets by dpr for HiDPI rasterization)
   _ctx.save();
   renderVectorPage(_ctx, viewport.filePath, viewport.pageNum, {
-    a: viewport.zoom,
+    a: viewport.zoom * dpr,
     b: 0,
     c: 0,
-    d: viewport.zoom,
-    e: viewport.offsetX,
-    f: viewport.offsetY,
+    d: viewport.zoom * dpr,
+    e: viewport.offsetX * dpr,
+    f: viewport.offsetY * dpr,
   }, viewport.rotation);
   _ctx.restore();
 
@@ -217,9 +265,19 @@ function _render() {
   if (textLayer) {
     const tx = viewport.offsetX;
     const ty = viewport.offsetY;
+    // The text layer lives in PDF user space (origin top-left after Y flip).
+    // We size spans with --font-height in PDF points and let CSS compute
+    // font-size = --total-scale-factor * --font-height. Setting the factor
+    // to 1 means spans use raw PDF point sizes; the matrix transform below
+    // scales the entire layer to match the canvas zoom. This keeps text
+    // selection pixel-aligned with the rendered glyphs at any zoom level.
+    textLayer.style.setProperty('--total-scale-factor', '1');
+    // Sized to the unscaled PDF page; the matrix transform handles zoom.
     textLayer.style.position = 'absolute';
     textLayer.style.left = '0';
     textLayer.style.top = '0';
+    textLayer.style.width = `${viewport.pageW}px`;
+    textLayer.style.height = `${viewport.pageH}px`;
     textLayer.style.transform = `matrix(${viewport.zoom}, 0, 0, ${viewport.zoom}, ${tx}, ${ty})`;
     textLayer.style.transformOrigin = '0 0';
     // Text layer: keep pointer-events as set by tool manager (don't override)
@@ -298,6 +356,10 @@ export function setPage(filePath, pageNum, pageW, pageH, originX, originY, rotat
 
   if (_suppressNextFit) {
     _suppressNextFit = false;
+    // suppressNextFit() is used by wheel-driven page nav, which then calls
+    // alignPageToTop/Bottom to set its own offset → keep anchor active so
+    // clampAndCenter doesn't auto-center over that explicit positioning.
+    _anchorActive = true;
     viewport.dirty = true;
   } else if (isNewDocument) {
     // First time we're seeing this file → fit to viewport
@@ -305,7 +367,9 @@ export function setPage(filePath, pageNum, pageW, pageH, originX, originY, rotat
   } else {
     // Same document, different page → keep the user's zoom and let
     // clampAndCenter() (in the next _render) center the new page if it
-    // fits, or clamp the old offsets if it doesn't.
+    // fits, or clamp the old offsets if it doesn't. Clear the anchor so
+    // a fitting page actually does re-center on this transition.
+    _anchorActive = false;
     viewport.dirty = true;
   }
 }
@@ -337,12 +401,18 @@ export function computeFitZoom(mode, pageW, pageH, canvasW, canvasH, padding = 0
 
 export function fitToViewport() {
   if (!_canvas || !viewport.pageW) return;
-  // Use the shared fit helper. Padding 0 → page edges flush with canvas edges.
-  viewport.zoom = computeFitZoom('page', viewport.pageW, viewport.pageH, _canvas.width, _canvas.height, 0);
+  // CSS-pixel viewport (backing store is dpr-scaled)
+  const dpr = _getDpr();
+  const cssW = _canvas.width / dpr;
+  const cssH = _canvas.height / dpr;
+  viewport.zoom = computeFitZoom('page', viewport.pageW, viewport.pageH, cssW, cssH, 0);
   const scaledW = viewport.pageW * viewport.zoom;
   const scaledH = viewport.pageH * viewport.zoom;
-  viewport.offsetX = (_canvas.width - scaledW) / 2;
-  viewport.offsetY = (_canvas.height - scaledH) / 2;
+  viewport.offsetX = (cssW - scaledW) / 2;
+  viewport.offsetY = (cssH - scaledH) / 2;
+  // Re-centering reset: discard any prior zoom-to-cursor anchor so
+  // clampAndCenter() resumes auto-centering on fit-axis as before.
+  _anchorActive = false;
   viewport.dirty = true;
 }
 
@@ -385,6 +455,10 @@ function _anchorAt(screenX, screenY, oldZoom, newZoom) {
   viewport.offsetX = screenX - wx * newZoom;
   viewport.offsetY = screenY - wy * newZoom;
   viewport.zoom = newZoom;
+  // The user has explicitly placed the view at this anchor point.
+  // Tell clampAndCenter() not to override it with auto-centering even if
+  // the page fits an axis at the new zoom level.
+  _anchorActive = true;
   viewport.dirty = true;
 }
 
@@ -420,7 +494,8 @@ export function setZoomAtPoint(screenX, screenY, newZoom) {
 // center. Used by the status-bar +/- buttons and the toolbar zoom buttons.
 export function zoomStepAtCenter(direction) {
   if (!_canvas) return;
-  zoomStepAtPoint(_canvas.width / 2, _canvas.height / 2, direction);
+  const dpr = _getDpr();
+  zoomStepAtPoint((_canvas.width / dpr) / 2, (_canvas.height / dpr) / 2, direction);
 }
 
 // ─── Pan ────────────────────────────────────────────────────────────────────
@@ -437,6 +512,9 @@ export function updatePan(screenX, screenY) {
   if (!_isPanning) return;
   viewport.offsetX = screenX - _panStartX;
   viewport.offsetY = screenY - _panStartY;
+  // User has explicitly positioned the view → don't let clampAndCenter
+  // snap a fit-axis back to center on the next frame.
+  _anchorActive = true;
   viewport.dirty = true;
 }
 
@@ -482,14 +560,47 @@ export function wireEvents(canvas) {
   // No body classes, no !important written from this file.
   mainView.addEventListener('pointerdown', (e) => {
     if (!viewport.active) return;
-    if (e.button === 1 || (e.button === 0 && state.currentTool === 'hand')) {
+    // Middle button always pans
+    if (e.button === 1) {
       e.preventDefault();
       e.stopPropagation();
       const rect = canvas.getBoundingClientRect();
       startPan(e.clientX - rect.left, e.clientY - rect.top);
       mainView.setPointerCapture(e.pointerId);
       state.isPanning = true;
-      if (e.button === 1) state.isMiddleButtonPanning = true;
+      state.isMiddleButtonPanning = true;
+      return;
+    }
+    // Hand-tool left-click: only pan if NOT clicking on an annotation.
+    // If the click is on an annotation, let the event fall through to the
+    // annotation-canvas listener so hand-tool.onPointerDown can auto-switch
+    // to Select tool and delegate the click for one-click selection.
+    if (e.button === 0 && state.currentTool === 'hand') {
+      // Hit-test annotations at the click location (in app coords)
+      let isOnAnnotation = false;
+      try {
+        const doc = getActiveDocument();
+        if (doc && doc.annotations && doc.annotations.length > 0) {
+          const rect = canvas.getBoundingClientRect();
+          // Convert client → app coordinates (inverse of viewport transform)
+          const cx = e.clientX - rect.left;
+          const cy = e.clientY - rect.top;
+          const appX = (cx - viewport.offsetX) / viewport.zoom;
+          const appY = (cy - viewport.offsetY) / viewport.zoom;
+          // Lazy-import findAnnotationAt to avoid static cycle
+          const ann = _findAnnotationAt && _findAnnotationAt(appX, appY);
+          if (ann) isOnAnnotation = true;
+        }
+      } catch (_) {}
+      if (!isOnAnnotation) {
+        e.preventDefault();
+        e.stopPropagation();
+        const rect = canvas.getBoundingClientRect();
+        startPan(e.clientX - rect.left, e.clientY - rect.top);
+        mainView.setPointerCapture(e.pointerId);
+        state.isPanning = true;
+      }
+      // else: let the event propagate so hand-tool.onPointerDown can handle it
     }
   }, { capture: true });
 

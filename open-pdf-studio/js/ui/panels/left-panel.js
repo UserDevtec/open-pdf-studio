@@ -287,12 +287,13 @@ export function pauseThumbnails() {
   }, 3000);
 }
 
-// Start the thumbnail processor (with initial delay to not compete with first page render)
+// Start the thumbnail processor (with short initial delay so the current page
+// render gets the Rust backend first; cached thumbnails return instantly so
+// 250ms is enough — the previous 2000ms was visibly slow on small docs).
 function startProcessor() {
   if (processorRunning) return;
   processorRunning = true;
-  // Delay first thumbnail so Rust backend can finish rendering the current page
-  setTimeout(processNextThumbnail, 2000);
+  setTimeout(processNextThumbnail, 250);
 }
 
 // Process the next thumbnail (prioritizes visible pages, then active document)
@@ -310,7 +311,7 @@ async function processNextThumbnail() {
     if (activeDocId && priorityPages.size > 0) {
       const processed = await processPriorityThumbnail(activeDocId);
       if (processed) {
-        setTimeout(processNextThumbnail, 100);
+        setTimeout(processNextThumbnail, 0);
         return;
       }
     }
@@ -318,7 +319,7 @@ async function processNextThumbnail() {
     if (activeDocId && documentState.has(activeDocId)) {
       const processed = await processDocumentThumbnail(activeDocId);
       if (processed) {
-        setTimeout(processNextThumbnail, 100);
+        setTimeout(processNextThumbnail, 0);
         return;
       }
     }
@@ -328,7 +329,7 @@ async function processNextThumbnail() {
 
       const processed = await processDocumentThumbnail(docId);
       if (processed) {
-        setTimeout(processNextThumbnail, 100);
+        setTimeout(processNextThumbnail, 0);
         return;
       }
     }
@@ -476,16 +477,57 @@ async function overlayAnnotationsOnDataURL(dataURL, pageNum, width, height, scal
   }
 }
 
-// Render a single page thumbnail — uses Rust backend for speed when available
+// Render a single page thumbnail — prefers replaying JS-cached vector commands
+// (already extracted by the main viewer) for ~3-6× speedup; falls back to the
+// Rust backend, then PDF.js. Reusing the cache avoids re-parsing the PDF
+// content stream + IPC + JPEG encode + base64 round-trip.
 async function renderThumbnailToDataURL(pdfDoc, pageNum) {
   if (!pdfDoc || pageNum > pdfDoc.numPages) return null;
   const _th0 = performance.now();
 
-  // Try Rust thumbnail rendering first — uses skip_images=true so only
+  const doc = getActiveDocument();
+
+  // ── Fast path: JS replay of cached vector commands ────────────────────────
+  // Only viable if the main viewer has already populated the cache for this
+  // page (e.g. user navigated to it once, or it was prefetched).
+  try {
+    if (doc?.filePath) {
+      const vr = await import('../../pdf/vector-renderer.js');
+      const rotation = (typeof getPageRotation === 'function' ? getPageRotation(pageNum) : 0) || 0;
+      if (vr.hasCachedCommands(doc.filePath, pageNum, rotation)) {
+        const dims = vr.getCachedPageDimensions(doc.filePath, pageNum, rotation);
+        if (dims && dims.w > 0 && dims.h > 0) {
+          // Target 200 px wide thumbnail (matches Rust path).
+          const targetW = 200;
+          const scale = targetW / dims.w;
+          const w = Math.max(1, Math.round(dims.w * scale));
+          const h = Math.max(1, Math.round(dims.h * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          // Paint white background so transparency doesn't bleed to JPEG.
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, w, h);
+          // Replay the cached vector commands at the thumbnail scale.
+          vr.renderVectorPage(ctx, doc.filePath, pageNum, { a: scale, b: 0, c: 0, d: scale, e: 0, f: 0 }, rotation);
+          const dataURL = canvas.toDataURL('image/jpeg', 0.7);
+          // Overlay annotations on top (same as Rust path).
+          try {
+            const composited = await overlayAnnotationsOnDataURL(dataURL, pageNum, w, h, scale);
+            return { dataURL: composited, width: w, height: h };
+          } catch {
+            return { dataURL, width: w, height: h };
+          }
+        }
+      }
+    }
+  } catch (_) { /* fall through to Rust path */ }
+
+  // Try Rust thumbnail rendering — uses skip_images=true so only
   // vector content is rendered (fast). Image decoding is skipped because
   // it can take 17+ seconds per page for complex PDFs, blocking the Rust
   // backend and preventing page navigation.
-  const doc = getActiveDocument();
   if (doc?.filePath && window.__TAURI__) {
     try {
       const { invoke } = window.__TAURI__.core;

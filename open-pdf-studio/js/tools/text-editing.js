@@ -6,6 +6,7 @@ import { cloneAnnotation } from '../annotations/factory.js';
 import { markDocumentModified } from '../ui/chrome/tabs.js';
 import { injectSyntheticTextSpans } from '../text/text-layer.js';
 import { annotationCanvas } from '../ui/dom-elements.js';
+import { viewport as vpState } from '../pdf/pdf-viewport.js';
 import {
   showTextEditOverlay, hideTextEditOverlay,
   getTextEditValue as getTextValue, getTextEditHeightGrowth as getHeightGrowth,
@@ -14,6 +15,12 @@ import {
 
 // Start inline text editing for textbox/callout
 export function startTextEditing(annotation) {
+  // Idempotency guard: if already editing this same annotation, do nothing.
+  // Without this, double-firing handlers (select-tool dblclick + dispatcher dblclick)
+  // call finishTextEditing on a freshly-opened overlay, wiping the existing text.
+  if (state.isEditingText && state.editingAnnotation === annotation) {
+    return;
+  }
   if (state.isEditingText) {
     finishTextEditing();
   }
@@ -31,17 +38,26 @@ export function startTextEditing(annotation) {
   // Get canvas position
   const canvasRect = canvas.getBoundingClientRect();
 
-  // Calculate position based on annotation
+  // Calculate position based on annotation.
+  // Viewport mode (vector renderer): annotations are placed at
+  //   screen = canvasRect + offset + ann_pos * zoom
+  // Legacy mode: annotations are placed at
+  //   screen = canvasRect + ann_pos * scale
+  // The textarea overlay must use the SAME math the annotation canvas uses,
+  // otherwise it appears off-screen and the user can't find/edit the text.
   const doc = getActiveDocument();
-  const scale = doc?.scale || 1.5;
+  const useViewport = vpState && vpState.active;
+  const scale = useViewport ? vpState.zoom : (doc?.scale || 1.5);
+  const offX = useViewport ? vpState.offsetX : 0;
+  const offY = useViewport ? vpState.offsetY : 0;
   const width = annotation.width || 150;
   const height = annotation.height || 50;
   const scaledWidth = width * scale;
   const scaledHeight = height * scale;
 
   // Calculate center position of the annotation
-  const centerX = canvasRect.left + (annotation.x + width / 2) * scale;
-  const centerY = canvasRect.top + (annotation.y + height / 2) * scale;
+  const centerX = canvasRect.left + offX + (annotation.x + width / 2) * scale;
+  const centerY = canvasRect.top + offY + (annotation.y + height / 2) * scale;
 
   // Build style object for the textarea overlay
   const styleObj = {
@@ -98,7 +114,15 @@ export function startTextEditing(annotation) {
     }
 
     if (state._textEditSnapshot && ann.id) {
-      recordModify(ann.id, state._textEditSnapshot, ann);
+      // Formatting toggles (bold/italic/underline/textColor/fontFamily/fontSize)
+      // are recorded by their own panel-edit recordModify calls. The text-edit
+      // session should only record text + height changes, so align the snapshot's
+      // formatting fields with the current annotation before recording.
+      const snap = state._textEditSnapshot;
+      ['fontBold', 'fontItalic', 'fontUnderline', 'textColor', 'fontFamily', 'fontSize',
+       'fillColor', 'strokeColor', 'lineWidth', 'textAlign', 'lineSpacing', 'rotation', 'opacity']
+        .forEach(k => { if (k in ann) snap[k] = ann[k]; });
+      recordModify(ann.id, snap, ann);
     }
 
     state.isEditingText = false;
@@ -165,7 +189,14 @@ export function finishTextEditing() {
   }
 
   if (state._textEditSnapshot && annotation.id) {
-    recordModify(annotation.id, state._textEditSnapshot, annotation);
+    // Align formatting fields with the current annotation so this recordModify
+    // only captures text/height changes — formatting toggles have their own
+    // recordModify entries from the property panel/keyboard shortcuts.
+    const snap = state._textEditSnapshot;
+    ['fontBold', 'fontItalic', 'fontUnderline', 'textColor', 'fontFamily', 'fontSize',
+     'fillColor', 'strokeColor', 'lineWidth', 'textAlign', 'lineSpacing', 'rotation', 'opacity']
+      .forEach(k => { if (k in annotation) snap[k] = annotation[k]; });
+    recordModify(annotation.id, snap, annotation);
   }
 
   hideTextEditOverlay();

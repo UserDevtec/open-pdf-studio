@@ -77,7 +77,7 @@ export const measureAngleTool = {
       ctx.redraw();
 
       // Auto-reset to select tool
-      import('../../tools/manager.js').then(m => m.setTool('select'));
+      import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
     }
   },
 

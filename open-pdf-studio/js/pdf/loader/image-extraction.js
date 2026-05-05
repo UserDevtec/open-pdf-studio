@@ -214,25 +214,18 @@ export async function extractImageFromFormXObject(context, formStream) {
 }
 
 // Parse a PDF color space and return { type, numComponents, palette, baseComponents }
-export function parseColorSpace(context, csRaw) {
+// Async because Indexed palette streams may be FlateDecoded.
+export async function parseColorSpace(context, csRaw) {
   if (!csRaw) return { type: 'rgb', numComponents: 3 };
 
   const cs = context.lookup(csRaw) || csRaw;
   const csStr = cs.toString();
+  const isArray = cs instanceof PDFArray || (cs.size && typeof cs.get === 'function' && !(cs instanceof PDFName));
 
-  // Simple named color spaces
-  if (csStr.includes('DeviceGray') || csStr.includes('CalGray')) {
-    return { type: 'gray', numComponents: 1 };
-  }
-  if (csStr.includes('DeviceCMYK')) {
-    return { type: 'cmyk', numComponents: 4 };
-  }
-  if (csStr.includes('DeviceRGB') || csStr.includes('CalRGB')) {
-    return { type: 'rgb', numComponents: 3 };
-  }
-
-  // Array-based color spaces: [/Name, ...params]
-  if (cs instanceof PDFArray || (cs.size && typeof cs.get === 'function')) {
+  // Array-based color spaces: [/Name, ...params] — must be checked BEFORE simple-name fallback.
+  // Otherwise [/Indexed /DeviceRGB ...] is misclassified as RGB and 1-byte indexed pixels
+  // are decoded as 3-byte RGB triples, producing a "3 horizontal tiles" rendering artifact.
+  if (isArray) {
     const nameObj = cs.get(0);
     const name = nameObj ? (context.lookup(nameObj) || nameObj).toString() : '';
 
@@ -247,31 +240,77 @@ export function parseColorSpace(context, csRaw) {
 
     // Indexed [/Indexed, baseCS, hival, lookupData]
     if (name.includes('Indexed') && cs.size() >= 4) {
-      const baseCS = parseColorSpace(context, cs.get(1));
+      const baseCS = await parseColorSpace(context, cs.get(1));
       const hival = pdfNum(context.lookup(cs.get(2)) || cs.get(2)) || 255;
       let lookupData = null;
       const lookupRaw = cs.get(3);
       const lookupObj = context.lookup(lookupRaw) || lookupRaw;
       if (lookupObj && lookupObj.contents) {
-        // It's a stream
+        // It's a stream — decompress if FlateDecoded so the palette is raw RGB triples.
+        // Without this, indexed colors map to garbage (compressed bytes).
         lookupData = lookupObj.contents;
         const lFilter = lookupObj.dict?.get(PDFName.of('Filter'))?.toString();
         if (lFilter === '/FlateDecode') {
-          // Will be decompressed synchronously below if needed
-          lookupData = lookupObj.contents;
+          const inflated = await inflateBytes(lookupData);
+          if (inflated) lookupData = inflated;
         }
       } else if (lookupObj && typeof lookupObj.toString === 'function') {
-        // Raw bytes encoded as string
-        const str = lookupObj.toString();
-        if (str.startsWith('<')) {
-          // Hex string
-          const hex = str.slice(1, -1);
-          lookupData = new Uint8Array(hex.length / 2);
-          for (let i = 0; i < hex.length; i += 2) {
-            lookupData[i / 2] = parseInt(hex.substring(i, i + 2), 16);
-          }
+        // Raw bytes encoded as string. Prefer pdf-lib's structured accessors
+        // (asBytes / value) so PDF escape sequences are properly decoded.
+        if (typeof lookupObj.asBytes === 'function') {
+          // PDFHexString
+          lookupData = lookupObj.asBytes();
+        } else if (lookupObj.value instanceof Uint8Array) {
+          // PDFString.value (newer pdf-lib)
+          lookupData = lookupObj.value;
+        } else if (typeof lookupObj.value === 'string') {
+          // PDFString.value as string — already unescaped by pdf-lib
+          const s = lookupObj.value;
+          lookupData = new Uint8Array(s.length);
+          for (let i = 0; i < s.length; i++) lookupData[i] = s.charCodeAt(i) & 0xff;
         } else {
-          lookupData = new Uint8Array([...str].map(c => c.charCodeAt(0)));
+          // Fallback: parse the string repr
+          const str = lookupObj.toString();
+          if (str.startsWith('<')) {
+            // Hex string e.g. <DEADBEEF>
+            const hex = str.slice(1, -1).replace(/\s/g, '');
+            lookupData = new Uint8Array(hex.length / 2);
+            for (let i = 0; i < hex.length; i += 2) {
+              lookupData[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+            }
+          } else if (str.startsWith('(')) {
+            // Literal string (...) — unescape PDF escape sequences
+            const inner = str.slice(1, -1);
+            const bytes = [];
+            let i = 0;
+            while (i < inner.length) {
+              const c = inner.charCodeAt(i);
+              if (c === 0x5C && i + 1 < inner.length) { // backslash escape
+                const n = inner[i + 1];
+                if (n === 'n') { bytes.push(10); i += 2; }
+                else if (n === 'r') { bytes.push(13); i += 2; }
+                else if (n === 't') { bytes.push(9); i += 2; }
+                else if (n === 'b') { bytes.push(8); i += 2; }
+                else if (n === 'f') { bytes.push(12); i += 2; }
+                else if (n === '(' || n === ')' || n === '\\') { bytes.push(n.charCodeAt(0)); i += 2; }
+                else if (/[0-7]/.test(n)) {
+                  // Octal escape \nnn (1-3 digits)
+                  let oct = '';
+                  let j = i + 1;
+                  while (j < inner.length && oct.length < 3 && /[0-7]/.test(inner[j])) {
+                    oct += inner[j]; j++;
+                  }
+                  bytes.push(parseInt(oct, 8) & 0xff);
+                  i = j;
+                } else { bytes.push(n.charCodeAt(0) & 0xff); i += 2; }
+              } else {
+                bytes.push(c & 0xff); i++;
+              }
+            }
+            lookupData = new Uint8Array(bytes);
+          } else {
+            lookupData = new Uint8Array([...str].map(c => c.charCodeAt(0) & 0xff));
+          }
         }
       }
       return {
@@ -294,6 +333,18 @@ export function parseColorSpace(context, csRaw) {
       const n = namesArr && namesArr.size ? namesArr.size() : 4;
       return { type: 'devicen', numComponents: n };
     }
+  }
+
+  // Simple named color spaces (only after array detection, since array stringifies
+  // as e.g. "[/Indexed /DeviceRGB ...]" which contains "DeviceRGB" as substring).
+  if (csStr.includes('DeviceGray') || csStr.includes('CalGray')) {
+    return { type: 'gray', numComponents: 1 };
+  }
+  if (csStr.includes('DeviceCMYK')) {
+    return { type: 'cmyk', numComponents: 4 };
+  }
+  if (csStr.includes('DeviceRGB') || csStr.includes('CalRGB')) {
+    return { type: 'rgb', numComponents: 3 };
   }
 
   // Fallback: check string for known patterns
@@ -367,7 +418,7 @@ export async function decodeImageStream(context, streamObj) {
     }
 
     // Parse color space
-    const csInfo = parseColorSpace(context, dict.get(PDFName.of('ColorSpace')));
+    const csInfo = await parseColorSpace(context, dict.get(PDFName.of('ColorSpace')));
 
     // Parse Decode array for value remapping
     let decodeArray = null;

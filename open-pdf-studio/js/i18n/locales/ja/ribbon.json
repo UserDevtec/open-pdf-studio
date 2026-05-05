@@ -156,6 +156,8 @@
     "ellipse": "楕円",
     "polygon": "多角形",
     "cloud": "クラウド",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "テキスト",
     "textBox": "テキストボックス",
     "note": "ノート",

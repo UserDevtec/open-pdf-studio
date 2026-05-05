@@ -274,8 +274,8 @@ export default function PrintDialog(props) {
           ? `${t('print.printingCopy')} ${c + 1} of ${numCopies}...`
           : t('print.sendingToPrinter'));
         await invoke('print_pdf', {
-          printerName: selectedPrinter(),
-          filePath: tempPath,
+          path: tempPath,
+          printer: selectedPrinter(),
         });
       }
 
@@ -327,16 +327,23 @@ export default function PrintDialog(props) {
 
   const footer = (
     <>
-      <div class="print-footer-left">
-        <span class="print-page-info">{pageInfo()}</span>
-      </div>
-      <div class="print-footer-right">
-        <button
-          class="pref-btn pref-btn-primary"
-          disabled={printDisabled()}
-          onClick={executePrint}
-        >{tCommon('print')}</button>
-        <button class="pref-btn pref-btn-secondary" onClick={close}>{tCommon('cancel')}</button>
+      <Show when={statusMessage()}>
+        <div class={`print-status ${statusType()}`}>
+          {statusMessage()}
+        </div>
+      </Show>
+      <div class="print-footer-bar">
+        <div class="print-footer-left">
+          <span class="print-page-info">{pageInfo()}</span>
+        </div>
+        <div class="print-footer-right">
+          <button
+            class="pref-btn pref-btn-primary"
+            disabled={printDisabled()}
+            onClick={executePrint}
+          >{tCommon('print')}</button>
+          <button class="pref-btn pref-btn-secondary" onClick={close}>{tCommon('cancel')}</button>
+        </div>
       </div>
     </>
   );
@@ -545,12 +552,6 @@ export default function PrintDialog(props) {
             </label>
           </div>
         </fieldset>
-
-        <Show when={statusMessage()}>
-          <div class={`print-status ${statusType()}`}>
-            {statusMessage()}
-          </div>
-        </Show>
       </div>
 
       <div class="print-preview-panel">

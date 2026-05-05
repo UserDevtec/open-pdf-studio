@@ -11,7 +11,7 @@ export const commentTool = {
   onPointerDown(ctx) {
     ctx.addComment(ctx.x, ctx.y);
     // Auto-reset to select tool
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
   },
 };
 
@@ -39,7 +39,7 @@ export const stampTool = {
     if (state.toolOverrides?.stampSvg || state.toolOverrides?.stampImage) {
       ctx.placeOverrideStamp(ctx.x, ctx.y);
       // Auto-reset to select tool
-      import('../../tools/manager.js').then(m => m.setTool('select'));
+      import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
     } else {
       ctx.showStampPicker(ctx.x, ctx.y);
     }
@@ -77,7 +77,7 @@ export const signatureTool = {
   onPointerDown(ctx) {
     ctx.showSignatureDialog(ctx.x, ctx.y);
     // Auto-reset to select tool
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
   },
 };
 

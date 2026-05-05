@@ -7,6 +7,8 @@ export function clearSelection(): void {
     doc.selectedAnnotation = null;
     doc.selectedAnnotations = [];
   }
+  // Always exit edit-contour mode when selection is cleared
+  if (state.editingContour) state.editingContour = null;
 }
 
 export function addToSelection(annotation: Annotation): void {
@@ -113,6 +115,7 @@ export function getAnnotationBounds(ann: Annotation): AnnotationBounds | null {
     case 'signature':
     case 'redaction':
     case 'viewport':
+    case 'scaleRegion':
     case 'scaleBar':
     case 'scheduleTable':
       return { x: ann.x!, y: ann.y!, width: ann.width!, height: ann.height! };

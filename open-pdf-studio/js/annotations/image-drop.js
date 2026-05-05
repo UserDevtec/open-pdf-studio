@@ -62,6 +62,7 @@ export async function addImageFromFile(filePath) {
       imageData: url,
       originalWidth: img.naturalWidth,
       originalHeight: img.naturalHeight,
+      lockAspectRatio: true,
       opacity: 1,
       locked: false,
       printable: true,

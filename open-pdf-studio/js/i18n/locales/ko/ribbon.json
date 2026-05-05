@@ -156,6 +156,8 @@
     "ellipse": "타원",
     "polygon": "다각형",
     "cloud": "구름",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "텍스트",
     "textBox": "텍스트 상자",
     "note": "메모",

@@ -100,6 +100,40 @@ export async function closeWindow() {
   }
 }
 
+// Fullscreen
+export async function isWindowFullscreen() {
+  if (!isTauri()) {
+    return !!document.fullscreenElement;
+  }
+  const win = getTauriWindow();
+  if (!win) return false;
+  try {
+    return await win.getCurrentWindow().isFullscreen();
+  } catch { return false; }
+}
+
+export async function setWindowFullscreen(enabled) {
+  if (!isTauri()) {
+    if (enabled) {
+      try { await document.documentElement.requestFullscreen?.(); } catch {}
+    } else if (document.fullscreenElement) {
+      try { await document.exitFullscreen?.(); } catch {}
+    }
+    return;
+  }
+  const win = getTauriWindow();
+  if (!win) return;
+  try {
+    await win.getCurrentWindow().setFullscreen(!!enabled);
+  } catch (e) { console.error('setFullscreen failed', e); }
+}
+
+export async function toggleWindowFullscreen() {
+  const cur = await isWindowFullscreen();
+  await setWindowFullscreen(!cur);
+  return !cur;
+}
+
 // File dialogs - using Tauri commands since plugin APIs may not be globally available
 export async function openFileDialog(extensions) {
   if (isTauri()) {

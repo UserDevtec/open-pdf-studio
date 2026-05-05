@@ -7,7 +7,7 @@ import {
   showTextSelectionMenu, hideMenu,
 } from '../../bridge.js';
 
-export function showContextMenu(e, annotation) {
+export function showContextMenu(e, annotation, vertex = null) {
   e.preventDefault();
   const _cmDoc = getActiveDocument();
   const _cmSel = _cmDoc ? _cmDoc.selectedAnnotations : [];
@@ -15,7 +15,7 @@ export function showContextMenu(e, annotation) {
   if (isMultiSelect) {
     showMultiAnnotationMenu(e.clientX, e.clientY, _cmSel.length);
   } else {
-    showAnnotationMenu(e.clientX, e.clientY, annotation);
+    showAnnotationMenu(e.clientX, e.clientY, annotation, vertex);
   }
 }
 
@@ -76,8 +76,34 @@ export function initContextMenus() {
       const x = (e.clientX - rect.left) / scale;
       const y = (e.clientY - rect.top) / scale;
 
-      import('../../annotations/geometry.js').then(({ findAnnotationAt }) => {
+      import('../../annotations/geometry.js').then(async ({ findAnnotationAt }) => {
         const annotation = findAnnotationAt(x, y);
+        // In edit-contour mode, detect right-click on a vertex/edge handle so the
+        // context menu can offer vertex-specific actions.
+        let vertex = null;
+        const editingId = state.editingContour;
+        if (editingId) {
+          const _doc2 = getActiveDocument();
+          const editAnn = (_doc2?.annotations || []).find(a => a.id === editingId);
+          if (editAnn) {
+            const { findHandleAt } = await import('../../annotations/handles.js');
+            const handleType = findHandleAt(x, y, editAnn, scale);
+            if (typeof handleType === 'string') {
+              const holeNode = handleType.match(/^polyline_node_hole_(\d+)_(\d+)$/);
+              const polyNode = handleType.match(/^polyline_node_(\d+)$/);
+              const holeEdge = handleType.match(/^polyline_edge_hole_(\d+)_(\d+)$/);
+              const polyEdge = handleType.match(/^polyline_edge_(\d+)$/);
+              if (holeNode) vertex = { kind: 'vertex', holeIndex: +holeNode[1], nodeIndex: +holeNode[2], annotationId: editingId };
+              else if (polyNode) vertex = { kind: 'vertex', holeIndex: null, nodeIndex: +polyNode[1], annotationId: editingId };
+              else if (holeEdge) vertex = { kind: 'edge', holeIndex: +holeEdge[1], edgeIndex: +holeEdge[2], annotationId: editingId };
+              else if (polyEdge) vertex = { kind: 'edge', holeIndex: null, edgeIndex: +polyEdge[1], annotationId: editingId };
+              if (vertex) {
+                showContextMenu(e, editAnn, vertex);
+                return;
+              }
+            }
+          }
+        }
         if (annotation) {
           showContextMenu(e, annotation);
         } else {

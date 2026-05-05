@@ -1,7 +1,11 @@
 import { getActiveDocument } from '../../core/state.js';
+import { selectTool } from './select-tool.js';
+import { setTool } from '../manager.js';
 
 /**
- * Hand tool — pan, select, drag, resize annotations
+ * Hand tool — pan; on hover of an annotation, show pointer cursor;
+ * on click of an annotation, auto-switch to Select tool and delegate the
+ * click so the user gets selection + drag in a single click.
  */
 export const handTool = {
   name: 'hand',
@@ -12,8 +16,7 @@ export const handTool = {
     const doc = getActiveDocument();
     const selAnns = doc ? doc.selectedAnnotations : [];
 
-    // Check for resize handle on selected annotation.
-    // Cursor is driven by state.isResizing + state.activeHandle.
+    // Resize handle on selected annotation
     const selAnn = selAnns.length === 1 ? selAnns[0] : null;
     if (selAnn) {
       const handleType = ctx.findHandleAt(x, y, selAnn);
@@ -29,84 +32,63 @@ export const handTool = {
 
     const clickedAnnotation = ctx.findAnnotationAt(x, y);
     if (clickedAnnotation) {
-      if (e.ctrlKey || e.metaKey) {
-        // Re-read after potential addToSelection
-        const selAnns2 = () => doc ? doc.selectedAnnotations : [];
-        // Ctrl+click: initiate Ctrl+drag copy
-        if (ctx.isSelected(clickedAnnotation)) {
-          state.isDragging = true;
-          state._ctrlDragCopy = true;
-          state._ctrlCopiesCreated = false;
-          state.originalAnnotations = selAnns2().map(a => ctx.cloneAnnotation(a));
-          if (selAnns2().length === 1) {
-            state.originalAnnotation = ctx.cloneAnnotation(selAnns2()[0]);
-          }
-          state.dragCursor = 'copy';
-        } else {
-          ctx.addToSelection(clickedAnnotation);
-          state.isDragging = true;
-          state._ctrlDragCopy = true;
-          state._ctrlCopiesCreated = false;
-          state.originalAnnotations = selAnns2().map(a => ctx.cloneAnnotation(a));
-          if (selAnns2().length === 1) {
-            state.originalAnnotation = ctx.cloneAnnotation(selAnns2()[0]);
-          }
-          state.dragCursor = 'copy';
-        }
-        if (selAnns2().length === 1) {
-          ctx.showProperties(selAnns2()[0]);
-        } else if (selAnns2().length > 1) {
-          ctx.showMultiSelectionProperties();
-        } else {
-          ctx.hideProperties();
-        }
-      } else {
-        if (doc) { doc.selectedAnnotations = [clickedAnnotation]; doc.selectedAnnotation = clickedAnnotation; }
-        ctx.showProperties(clickedAnnotation);
-        const isTextMarkup = ['textHighlight', 'textStrikethrough', 'textUnderline'].includes(clickedAnnotation.type);
-        if (!isTextMarkup) {
-          state.isDragging = true;
-          state.dragStartX = x;
-          state.dragStartY = y;
-          state.originalAnnotation = ctx.cloneAnnotation(clickedAnnotation);
-          state.originalAnnotations = [ctx.cloneAnnotation(clickedAnnotation)];
-          state.dragCursor = 'move';
-        }
-      }
-      ctx.redraw();
-    } else {
-      ctx.clearSelection();
-      ctx.hideProperties();
-      if (ctx.viewMode === 'continuous') {
-        ctx.startContinuousPan(e, false);
-      } else {
-        ctx.startPan(e, false);
-      }
-      ctx.redraw();
+      // Switch to Select tool synchronously, then delegate this same click
+      // to select-tool so the user gets selection + drag in one click.
+      setTool('select');
+      // Reset state flags that hand-tool may have set (panning) so select-tool
+      // starts with a clean slate.
+      state.isPanning = false;
+      state.isMiddleButtonPanning = false;
+      selectTool.onPointerDown(ctx, e);
+      return;
     }
+
+    // No annotation under cursor → start panning
+    ctx.clearSelection();
+    ctx.hideProperties();
+    if (ctx.viewMode === 'continuous') {
+      ctx.startContinuousPan(e, false);
+    } else {
+      ctx.startPan(e, false);
+    }
+    ctx.redraw();
   },
 
+  // SINGLE onPointerMove: hover detection drives the cursor.
+  // If cursor is over an annotation → 'pointer' to indicate it's clickable
+  //   (and clicking will auto-switch to Select).
+  // Else → 'grab' (pan affordance).
   onPointerMove(ctx, e) {
     const { x, y, state, canvas } = ctx;
+    if (!canvas) return;
 
-    // Hover state goes into state.hoverHandle / state.hoverAnnotation —
-    // js/ui/cursor.js derives the cursor from these.
+    // Update hover state for the cursor system in js/ui/cursor.js
     const doc = getActiveDocument();
     const selAnns = doc ? doc.selectedAnnotations : [];
-    const hoverAnn = selAnns.length === 1 ? selAnns[0] : null;
+    const selAnn = selAnns.length === 1 ? selAnns[0] : null;
     let hoverHandle = null;
-    if (hoverAnn) {
-      hoverHandle = ctx.findHandleAt(x, y, hoverAnn);
+    if (selAnn) {
+      hoverHandle = ctx.findHandleAt(x, y, selAnn);
     }
     state.hoverHandle = hoverHandle;
     if (hoverHandle) {
       state.hoverAnnotation = null;
       canvas.title = '';
+      // Cursor is set by the cursor system based on hoverHandle
       return;
     }
     const hoverAnnotation = ctx.findAnnotationAt(x, y);
     state.hoverAnnotation = hoverAnnotation || null;
     canvas.title = (hoverAnnotation?.type === 'comment' && !hoverAnnotation.popupOpen && hoverAnnotation.text)
       ? hoverAnnotation.text.split('\n').slice(0, 5).join('\n') : '';
+    // Direct cursor override: pointer over an annotation, grab otherwise.
+    // Set on ALL annotation canvases (continuous mode) and the container.
+    if (!state.isPanning && !state.isDragging && !state.isResizing) {
+      const cur = hoverAnnotation ? 'pointer' : 'grab';
+      canvas.style.cursor = cur;
+      try {
+        document.querySelectorAll('.annotation-canvas, #annotation-canvas').forEach(c => { c.style.cursor = cur; });
+      } catch (_) {}
+    }
   },
 };

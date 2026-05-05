@@ -16,6 +16,15 @@ export default function GeneralSection() {
           <input type="text" value={annotProps.typeDisplay} readonly />
         </div>
 
+        <Show when={annotProps.id}>
+          <div class="property-group">
+            <label>ID</label>
+            <input type="text" value={annotProps.id} readonly
+              style="font-family: monospace; font-size: 11px;"
+              onClick={(e) => e.target.select()} />
+          </div>
+        </Show>
+
         <div class="property-group">
           <label>{t('general.subject')}</label>
           <input type="text" value={annotProps.subject} placeholder={t('general.subjectPlaceholder')}

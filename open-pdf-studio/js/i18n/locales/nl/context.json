@@ -1,4 +1,10 @@
 {
+  "contextMenu": {
+    "deleteVertex": "Hoekpunt verwijderen",
+    "insertVertex": "Hoekpunt hier invoegen",
+    "convertToArc": "Omzetten naar boog",
+    "convertToLine": "Omzetten naar lijn"
+  },
   "annotation": {
     "openPopUpNote": "Pop-upnotitie openen",
     "hidePopUpNote": "Pop-upnotitie verbergen",

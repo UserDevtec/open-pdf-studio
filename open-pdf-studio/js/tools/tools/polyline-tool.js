@@ -1,6 +1,17 @@
-import { getActiveDocument } from '../../core/state.js';
+import { state as appState, getActiveDocument } from '../../core/state.js';
 import { applyToolTransform, getEffectiveScale } from '../tool-context.js';
 import { getAnnotationType } from '../../plugins/annotation-type-registry.js';
+import {
+  enterTypeLengthMode,
+  exitTypeLengthMode,
+  setTypeLengthStart,
+  applyToEndpoint,
+  typeLengthHasBuffer,
+} from '../type-length-input.js';
+
+// Last cursor position seen during onPointerMove — used to compute the
+// direction for an Enter-committed segment.
+const _polyCursor = { x: 0, y: 0 };
 
 /**
  * Polyline tool — multi-click placement, double-click/right-click to finish
@@ -39,11 +50,19 @@ export const polylineTool = {
       return;
     }
 
-    // Single click — add point (with snap)
-    const snap = ctx.snap(x, y, null, state.polylinePoints);
-    let ptX = snap.snapped ? snap.x : x;
-    let ptY = snap.snapped ? snap.y : y;
-
+    // Single click — add point (with snap; honor type-length buffer if active)
+    let ptX, ptY;
+    let usedTypeLength = false;
+    if (typeLengthHasBuffer() && state.polylinePoints.length > 0) {
+      const last = state.polylinePoints[state.polylinePoints.length - 1];
+      const ep = applyToEndpoint(last.x, last.y, x, y);
+      ptX = ep.x; ptY = ep.y;
+      usedTypeLength = true;
+    } else {
+      const snap = ctx.snap(x, y, null, state.polylinePoints);
+      ptX = snap.snapped ? snap.x : x;
+      ptY = snap.snapped ? snap.y : y;
+    }
     // Plugin shift-snap: when shift held + handler exposes snapHook, snap to last vertex.
     // 5th arg = full prior-points list so the handler can compute snaps relative
     // to the last segment direction (e.g. perpendicular/parallel for rect-drawing
@@ -60,6 +79,13 @@ export const polylineTool = {
 
     state.polylinePoints.push({ x: ptX, y: ptY });
     state.isDrawingPolyline = true;
+    // Arm type-length capture for next segment (anchored at the just-placed point)
+    if (state.polylinePoints.length === 1) {
+      enterTypeLengthMode(ptX, ptY);
+      appState._typeLengthCommit = (length) => _commitPolySegmentByLength(ctx);
+    } else {
+      setTypeLengthStart(ptX, ptY);
+    }
     ctx.redraw();
 
     // Draw in-progress polyline
@@ -82,6 +108,7 @@ export const polylineTool = {
 
   onPointerMove(ctx, e) {
     const { x, y, state, canvasCtx, scale } = ctx;
+    _polyCursor.x = x; _polyCursor.y = y;
     if (!state.isDrawingPolyline || state.polylinePoints.length === 0) {
       _drawHoverSnap(ctx, x, y);
       return;
@@ -92,6 +119,13 @@ export const polylineTool = {
     let snapX = snap.snapped ? snap.x : x;
     let snapY = snap.snapped ? snap.y : y;
     state.lastSnapResult = snap.snapped ? snap : null;
+    // Type-length lock: when buffer non-empty, constrain preview endpoint
+    if (typeLengthHasBuffer()) {
+      const last = state.polylinePoints[state.polylinePoints.length - 1];
+      const ep = applyToEndpoint(last.x, last.y, x, y);
+      snapX = ep.x; snapY = ep.y;
+      state.lastSnapResult = null;
+    }
 
     // Plugin shift-snap preview: reflect snapped position before commit so user sees angle feedback.
     if (e?.shiftKey && state.polylinePoints.length > 0) {
@@ -159,8 +193,24 @@ export const polylineTool = {
       state.isDrawingPolyline = false;
       ctx.redraw();
     }
+    exitTypeLengthMode();
+    appState._typeLengthCommit = null;
   },
 };
+
+// Helper: invoked from keyboard handler when user presses Enter while a
+// type-length buffer is active. Adds a polyline vertex at the typed length
+// in the current cursor direction.
+function _commitPolySegmentByLength(ctx) {
+  const pts = appState.polylinePoints;
+  if (!pts || pts.length === 0) return;
+  const last = pts[pts.length - 1];
+  const ep = applyToEndpoint(last.x, last.y, _polyCursor.x, _polyCursor.y);
+  pts.push({ x: ep.x, y: ep.y });
+  // Re-arm type-length for the next segment
+  setTypeLengthStart(ep.x, ep.y);
+  ctx.redraw();
+}
 
 export const cloudPolylineTool = {
   name: 'cloudPolyline',
@@ -198,7 +248,7 @@ export const cloudPolylineTool = {
         state.isDrawingCloudPolyline = false;
         ctx.redraw();
         // Auto-reset to select tool
-        import('../../tools/manager.js').then(m => m.setTool('select'));
+        import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
         return;
       }
     }
@@ -332,6 +382,8 @@ function _finishPolyline(ctx) {
   }
   state.polylinePoints = [];
   state.isDrawingPolyline = false;
+  exitTypeLengthMode();
+  appState._typeLengthCommit = null;
   ctx.redraw();
 
   // Auto-reset to select tool — alleen voor de built-in polyline-tool.
@@ -345,7 +397,7 @@ function _finishPolyline(ctx) {
     return h && h.drawMode === 'polyline';
   })();
   if (!stillPluginPolyline) {
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
   }
 }
 
@@ -359,7 +411,7 @@ function _finishCloudPolyline(ctx) {
   ctx.redraw();
 
   // Auto-reset to select tool
-  import('../../tools/manager.js').then(m => m.setTool('select'));
+  import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 }
 
 function _createCloudPolylineAnnotation(ctx, points) {

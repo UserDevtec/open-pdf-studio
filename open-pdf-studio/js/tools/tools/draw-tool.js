@@ -23,8 +23,10 @@ export const drawTool = {
     canvasCtx.save();
     applyToolTransform(canvasCtx);
     const prefs = state.preferences;
-    canvasCtx.strokeStyle = prefs.drawStrokeColor || ctx.getColorPickerValue();
-    canvasCtx.lineWidth = prefs.drawLineWidth || ctx.getLineWidthValue();
+    // Ribbon picker values win over prefs so the live preview matches what
+    // will be saved (annotation-creators uses the same priority order).
+    canvasCtx.strokeStyle = ctx.getColorPickerValue() || prefs.drawStrokeColor || '#000000';
+    canvasCtx.lineWidth = ctx.getLineWidthValue() || prefs.drawLineWidth || 2;
     canvasCtx.globalAlpha = (prefs.drawOpacity || 100) / 100;
     canvasCtx.lineCap = 'round';
     canvasCtx.lineJoin = 'round';
@@ -50,7 +52,7 @@ export const drawTool = {
     ctx.redraw();
 
     // Auto-reset to select tool
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 
     return true;
   },

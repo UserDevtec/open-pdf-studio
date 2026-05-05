@@ -156,6 +156,8 @@
     "ellipse": "Ellipse",
     "polygon": "Polygone",
     "cloud": "Nuage",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Texte",
     "textBox": "Zone de texte",
     "note": "Note",

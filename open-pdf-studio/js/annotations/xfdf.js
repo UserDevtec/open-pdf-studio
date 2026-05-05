@@ -97,13 +97,49 @@ export function importFromXFDF(xml) {
   const newAnnotations = [];
   const activeDoc = getActiveDocument();
 
-  // Process each annotation element
+  // First pass: parse non-leader annotations and index textboxes by their id (name attr).
+  const textboxByName = new Map();
+  const pendingLeaders = [];
   for (const el of annots.children) {
+    const tag = el.localName || el.tagName;
+    if (tag === 'polyline' && el.getAttribute('opstype') === 'textboxLeader') {
+      pendingLeaders.push(el);
+      continue;
+    }
     const ann = xfdfElementToAnnotation(el);
     if (ann) {
+      // Preserve original id from XFDF "name" attribute for IRT linkage
+      const xfdfName = el.getAttribute('name');
+      if (xfdfName) {
+        ann.id = xfdfName;
+        if (ann.type === 'textbox') textboxByName.set(xfdfName, ann);
+      }
       if (activeDoc) activeDoc.annotations.push(ann);
       newAnnotations.push(ann);
     }
+  }
+  // Second pass: attach leader polylines to their parent textbox.
+  for (const el of pendingLeaders) {
+    const parentName = el.getAttribute('inreplyto');
+    const parent = parentName ? textboxByName.get(parentName) : null;
+    if (!parent) continue;
+    const vertsTxt = el.querySelector('vertices')?.textContent || '';
+    const pts = vertsTxt.split(/[;\s]+/).map(p => {
+      const [x, y] = p.split(',').map(Number);
+      return { x, y };
+    }).filter(p => !isNaN(p.x));
+    if (pts.length < 2) continue;
+    const tail = el.getAttribute('tail');
+    const endStyle = tail === 'Circle' ? 'circle' : 'arrow';
+    if (!Array.isArray(parent.leaders)) parent.leaders = [];
+    parent.leaders.push({
+      id: el.getAttribute('leaderid') || (Date.now().toString(36) + Math.random().toString(36).substr(2, 6)),
+      kneeX: pts[Math.max(0, pts.length - 2)].x,
+      kneeY: pts[Math.max(0, pts.length - 2)].y,
+      tipX: pts[pts.length - 1].x,
+      tipY: pts[pts.length - 1].y,
+      endStyle,
+    });
   }
 
   if (newAnnotations.length > 0) {
@@ -147,6 +183,16 @@ function annotationToXFDF(ann) {
              `      <contents>${escapeXml(ann.subject || '')}</contents>\n` +
              `    </square>\n`;
 
+    case 'scaleRegion':
+      return `    <square ${attrs} color="${colorToXFDF(ann.color || '#ff9800')}"` +
+             ` width="${ann.lineWidth ?? 1.5}"` +
+             ` opstype="scaleRegion"` +
+             ` opsscalestring="${escapeXml(ann.scaleString || '1:100')}"` +
+             ` opsunits="${escapeXml(ann.units || 'mm')}"` +
+             ` opslabel="${escapeXml(ann.label || '')}">\n` +
+             `      <contents>${escapeXml(ann.label || '')}</contents>\n` +
+             `    </square>\n`;
+
     case 'circle':
       return `    <circle ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
              (ann.fillColor ? ` interior-color="${colorToXFDF(ann.fillColor)}"` : '') +
@@ -183,17 +229,46 @@ function annotationToXFDF(ann) {
              `    </text>\n`;
 
     case 'textbox':
-    case 'callout':
-      return `    <freetext ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
+    case 'callout': {
+      let out = `    <freetext ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
              (ann.fillColor ? ` interior-color="${colorToXFDF(ann.fillColor)}"` : '') +
-             ` fontsize="${ann.fontSize || 14}">\n` +
+             ` fontsize="${ann.fontSize || 14}" name="${escapeXml(ann.id)}">\n` +
              `      <contents>${escapeXml(ann.text || '')}</contents>\n` +
              `    </freetext>\n`;
+      if (ann.type === 'textbox' && Array.isArray(ann.leaders)) {
+        for (const l of ann.leaders) {
+          // Approximate anchor at knee (renderer recomputes side on load anyway)
+          const verts = `${l.kneeX},${l.kneeY};${l.kneeX},${l.kneeY};${l.tipX},${l.tipY}`;
+          const xs = [l.kneeX, l.tipX]; const ys = [l.kneeY, l.tipY];
+          const r = `${Math.min(...xs)},${Math.min(...ys)},${Math.max(...xs)},${Math.max(...ys)}`;
+          out += `    <polyline page="${ann.page - 1}" rect="${r}" inreplyto="${escapeXml(ann.id)}"` +
+                 ` color="${colorToXFDF(ann.strokeColor || ann.color || '#000000')}"` +
+                 ` width="${ann.lineWidth ?? 1}" head="None" tail="${l.endStyle === 'circle' ? 'Circle' : 'OpenArrow'}"` +
+                 ` opstype="textboxLeader" leaderid="${escapeXml(l.id)}">\n` +
+                 `      <vertices>${verts}</vertices>\n` +
+                 `    </polyline>\n`;
+        }
+      }
+      return out;
+    }
 
     case 'stamp':
       return `    <stamp ${attrs} icon="${escapeXml(ann.stampName || 'Draft')}">\n` +
              `      <contents>${escapeXml(ann.stampText || '')}</contents>\n` +
              `    </stamp>\n`;
+
+    case 'parametricSymbol': {
+      // Stored as <square> with private OPS attributes so non-supporting viewers
+      // see at least the bbox. The symbol shape is reconstructed on load.
+      const paramsJson = JSON.stringify(ann.params || {});
+      return `    <square ${attrs} color="${colorToXFDF(ann.strokeColor || ann.color)}"` +
+             ` width="${ann.lineWidth ?? 1}"` +
+             ` opstype="parametricSymbol"` +
+             ` opssymbolid="${escapeXml(ann.symbolId || '')}"` +
+             ` opsparams="${escapeXml(paramsJson)}">\n` +
+             `      <contents>${escapeXml(ann.subject || '')}</contents>\n` +
+             `    </square>\n`;
+    }
 
     default:
       return '';
@@ -239,8 +314,43 @@ function xfdfElementToAnnotation(el) {
       return createAnnotation({ ...baseProps, type: 'textStrikethrough', x: rect.x, y: rect.y, width: rect.w, height: rect.h, color, strokeColor: color, replies: replies.length > 0 ? replies : undefined });
     case 'underline':
       return createAnnotation({ ...baseProps, type: 'textUnderline', x: rect.x, y: rect.y, width: rect.w, height: rect.h, color, strokeColor: color, replies: replies.length > 0 ? replies : undefined });
-    case 'square':
+    case 'square': {
+      // Detect parametricSymbol round-trip
+      const opstype = el.getAttribute('opstype');
+      if (opstype === 'scaleRegion') {
+        return createAnnotation({
+          ...baseProps,
+          type: 'scaleRegion',
+          x: rect.x, y: rect.y, width: rect.w, height: rect.h,
+          scaleString: el.getAttribute('opsscalestring') || '1:100',
+          units: el.getAttribute('opsunits') || 'mm',
+          label: el.getAttribute('opslabel') || '',
+          color: color || '#ff9800',
+          lineWidth: width || 1.5,
+          borderStyle: 'dashed',
+          opacity: 1,
+          replies: replies.length > 0 ? replies : undefined
+        });
+      }
+      if (opstype === 'parametricSymbol') {
+        let params = {};
+        try {
+          const raw = el.getAttribute('opsparams');
+          if (raw) params = JSON.parse(raw);
+        } catch (_) { /* ignore */ }
+        return createAnnotation({
+          ...baseProps,
+          type: 'parametricSymbol',
+          x: rect.x, y: rect.y, width: rect.w, height: rect.h,
+          symbolId: el.getAttribute('opssymbolid') || '',
+          params,
+          color, strokeColor: color, lineWidth: width,
+          subject: contents,
+          replies: replies.length > 0 ? replies : undefined
+        });
+      }
       return createAnnotation({ ...baseProps, type: 'box', x: rect.x, y: rect.y, width: rect.w, height: rect.h, color, strokeColor: color, fillColor: interiorColor, lineWidth: width, subject: contents, replies: replies.length > 0 ? replies : undefined });
+    }
     case 'circle':
       return createAnnotation({ ...baseProps, type: 'circle', x: rect.x, y: rect.y, width: rect.w, height: rect.h, color, strokeColor: color, fillColor: interiorColor, lineWidth: width, subject: contents, replies: replies.length > 0 ? replies : undefined });
     case 'line': {

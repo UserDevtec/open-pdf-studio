@@ -6,9 +6,14 @@ const [position, setPosition] = createSignal({ x: 0, y: 0 });
 const [targetAnnotation, setTargetAnnotation] = createSignal(null);
 const [multiSelectCount, setMultiSelectCount] = createSignal(0);
 const [targetPage, setTargetPage] = createSignal(null);
+// For edit-contour mode: when right-clicking on a vertex handle, this holds
+// { handleType, holeIndex|null, nodeIndex } so the context menu can offer
+// vertex-specific actions (delete, insert before/after).
+const [vertexContext, setVertexContext] = createSignal(null);
 
-export function showAnnotationMenu(x, y, annotation) {
+export function showAnnotationMenu(x, y, annotation, vertex = null) {
   setTargetAnnotation(annotation);
+  setVertexContext(vertex);
   setMenuType('annotation');
   setPosition({ x, y });
   setVisible(true);
@@ -51,5 +56,5 @@ export function hideMenu() {
 }
 
 export {
-  visible, menuType, position, targetAnnotation, multiSelectCount, targetPage
+  visible, menuType, position, targetAnnotation, multiSelectCount, targetPage, vertexContext
 };

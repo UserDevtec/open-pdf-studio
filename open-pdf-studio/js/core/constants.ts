@@ -21,9 +21,23 @@ export const HANDLE_TYPES = {
   CALLOUT_KNEE: 'callout_knee',
   CALLOUT_MOVE: 'callout_move',
   POLYLINE_NODE: 'polyline_node',
+  POLYLINE_EDGE: 'polyline_edge',
   LEADER_START: 'leader_start',
   LEADER_END: 'leader_end',
-  LABEL_MOVE: 'label_move'
+  LABEL_MOVE: 'label_move',
+  // Textbox multi-leader handles. <id> is appended to encode the leader.
+  LEADER_ADD: 'leader_add',
+  LEADER_TIP: 'leader_tip',
+  LEADER_KNEE: 'leader_knee',
+  LEADER_DELETE: 'leader_delete',
+  // ─── Grippoints (CAD-style stretch grips) ──────────────────────────────
+  // These are emitted in addition to (or in place of) the resize handles
+  // above. They drive the "grip stretch" interaction in select-tool: click
+  // a grip → enter stretch mode anchored at the grip's original location.
+  LINE_MID: 'line_mid',           // line/arrow midpoint → move whole line
+  RECT_CENTER: 'rect_center',     // box/rect/textbox center → move whole shape
+  CIRCLE_CENTER: 'circle_center', // circle center → move whole circle
+  POLYLINE_EDGE_MID: 'polyline_edge_mid',
 } as const;
 
 // Default application preferences
@@ -38,10 +52,16 @@ export const DEFAULT_PREFERENCES: Preferences = {
   angleSnapDegrees: 30,
   enableAngleSnap: true,
 
-  // Grid snapping
+  // Grid snapping (gridSize is in user units = mm by default — converted to
+  // app pixels via getMeasureScale at draw / snap time)
   gridSize: 10,
   enableGridSnap: false,
   showGrid: false,
+
+  // Polar tracking (CAD-style angular guide while drawing)
+  polarTrackingEnabled: false,
+  polarIncrement: 45,        // degrees
+  polarTolerance: 3,         // degrees of tolerance to engage snap
 
   // Object snapping
   enableObjectSnap: true,
@@ -51,13 +71,20 @@ export const DEFAULT_PREFERENCES: Preferences = {
   snapToEdges: false,
   snapToIntersections: true,
   snapToPerpendicular: false,
+  snapToQuadrant: false,
+  snapToTangent: false,
+  snapToNearest: false,
   showSnapTypeLabel: true,
-  objectSnapRadius: 10,
+  objectSnapRadius: 12,
   snapToPdfContent: true,
+  // CAD behavior — keep drawing tool active after committing one annotation
+  // so the user can place multiple in a row without re-selecting the tool.
+  // Esc returns to select.
+  keepToolActive: true,
 
   // Appearance
   defaultAnnotationColor: '#FF0000',
-  defaultLineWidth: 1,
+  defaultLineWidth: 2,
   defaultFontSize: 16,
   highlightOpacity: 50,
 
@@ -99,7 +126,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   arrowFillColor: '#FF0000',
   arrowFillNone: true,
   arrowStrokeColor: '#FF0000',
-  arrowLineWidth: 1,
+  arrowLineWidth: 2,
   arrowBorderStyle: 'solid',
   arrowStartHead: 'none',
   arrowEndHead: 'open',
@@ -108,12 +135,12 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
   // Draw/Freehand defaults
   drawStrokeColor: '#FF0000',
-  drawLineWidth: 1,
+  drawLineWidth: 2,
   drawOpacity: 100,
 
   // Line defaults
   lineStrokeColor: '#FF0000',
-  lineLineWidth: 1,
+  lineLineWidth: 2,
   lineBorderStyle: 'solid',
   lineOpacity: 100,
 
@@ -124,7 +151,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   polygonFillColor: '#FFFBEB',
   polygonFillNone: true,
   polygonStrokeColor: '#FF0000',
-  polygonLineWidth: 1,
+  polygonLineWidth: 2,
   polygonBorderStyle: 'solid',
   polygonOpacity: 100,
 
@@ -132,13 +159,13 @@ export const DEFAULT_PREFERENCES: Preferences = {
   cloudFillColor: '#FFFBEB',
   cloudFillNone: true,
   cloudStrokeColor: '#FF0000',
-  cloudLineWidth: 1,
+  cloudLineWidth: 2,
   cloudBorderStyle: 'solid',
   cloudOpacity: 100,
 
   // Cloud Polyline defaults
   cloudPolylineStrokeColor: '#FF0000',
-  cloudPolylineLineWidth: 1,
+  cloudPolylineLineWidth: 2,
   cloudPolylineOpacity: 100,
 
   // Comment/Note defaults
@@ -147,7 +174,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
   // Polyline defaults
   polylineStrokeColor: '#FF0000',
-  polylineLineWidth: 1,
+  polylineLineWidth: 2,
   polylineBorderStyle: 'solid',
   polylineOpacity: 100,
 
@@ -160,7 +187,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
   // Measure Distance defaults
   measureDistStrokeColor: '#FF0000',
-  measureDistLineWidth: 1,
+  measureDistLineWidth: 2,
   measureDistBorderStyle: 'solid',
   measureDistOpacity: 100,
   measureDistStartHead: 'openCircle',
@@ -174,16 +201,28 @@ export const DEFAULT_PREFERENCES: Preferences = {
   measureAreaStrokeColor: '#0000FF',
   measureAreaFillColor: '#0000FF',
   measureAreaFillNone: true,
-  measureAreaLineWidth: 1,
+  measureAreaLineWidth: 2,
   measureAreaBorderStyle: 'solid',
   measureAreaOpacity: 100,
   measureAreaDimScale: 1,
   measureAreaDimUnit: 'mm',
   measureAreaDimPrecision: 2,
 
+  // Filled Area defaults (user-drawn contour with arcs + holes, solid + hatch fill)
+  filledAreaStrokeColor: '#000000',
+  filledAreaFillColor: '#cccccc',
+  filledAreaFillNone: false,
+  filledAreaLineWidth: 1,
+  filledAreaBorderStyle: 'solid',
+  filledAreaOpacity: 100,
+  filledAreaHatchPattern: 'none',
+  filledAreaHatchColor: '#000000',
+  filledAreaHatchScale: 100,
+  filledAreaHatchAngle: 0,
+
   // Measure Perimeter defaults
   measurePerimStrokeColor: '#0000FF',
-  measurePerimLineWidth: 1,
+  measurePerimLineWidth: 2,
   measurePerimBorderStyle: 'solid',
   measurePerimOpacity: 100,
   measurePerimStartHead: 'none',
@@ -207,6 +246,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
 
   // View
   thinLines: false,
+  showScrollbars: false,
 
   // Panels
   propertiesPanelVisible: true,

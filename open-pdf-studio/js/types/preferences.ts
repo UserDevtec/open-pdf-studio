@@ -14,6 +14,11 @@ export interface Preferences {
   enableGridSnap: boolean;
   showGrid: boolean;
 
+  // Polar tracking
+  polarTrackingEnabled: boolean;
+  polarIncrement: number;
+  polarTolerance: number;
+
   // Object snapping
   enableObjectSnap: boolean;
   snapToEndpoints: boolean;
@@ -22,9 +27,13 @@ export interface Preferences {
   snapToEdges: boolean;
   snapToIntersections: boolean;
   snapToPerpendicular: boolean;
+  snapToQuadrant: boolean;
+  snapToTangent: boolean;
+  snapToNearest: boolean;
   showSnapTypeLabel: boolean;
   objectSnapRadius: number;
   snapToPdfContent: boolean;
+  keepToolActive: boolean;
 
   // Appearance
   defaultAnnotationColor: string;
@@ -171,6 +180,7 @@ export interface Preferences {
 
   // View
   thinLines: boolean;
+  showScrollbars: boolean;
 
   // Panels
   propertiesPanelVisible: boolean;

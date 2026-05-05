@@ -1,5 +1,6 @@
 import { HANDLE_SIZE, HANDLE_TYPES } from '../core/constants.js';
 import { annotationCtx } from '../ui/dom-elements.js';
+import { state } from '../core/state.js';
 
 // Rotate a point around a center point
 function rotatePoint(x, y, centerX, centerY, rotationDegrees) {
@@ -33,6 +34,7 @@ function getAnnotationCenter(annotation) {
     case 'scaleBar':
     case 'scheduleTable':
     case 'redaction':
+    case 'parametricSymbol':
       return {
         x: annotation.x + annotation.width / 2,
         y: annotation.y + annotation.height / 2
@@ -87,8 +89,72 @@ export function getAnnotationHandles(annotation, scale = 1) {
       handles.push({ type: HANDLE_TYPES.BOTTOM, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y + annotation.height - hs/2 });
       handles.push({ type: HANDLE_TYPES.LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
       handles.push({ type: HANDLE_TYPES.RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y + annotation.height/2 - hs/2 });
+      // Center grip → move whole shape
+      handles.push({
+        type: HANDLE_TYPES.RECT_CENTER,
+        x: annotation.x + annotation.width/2 - hs/2,
+        y: annotation.y + annotation.height/2 - hs/2,
+        isGrip: true,
+        isCenterGrip: true,
+      });
       // Rotation handle (above the shape)
       handles.push({ type: HANDLE_TYPES.ROTATE, x: annotation.x + annotation.width/2 - hs/2, y: annotation.y - 25 / scale - hs/2 });
+
+      // Textbox leader handles + add button
+      if (annotation.type === 'textbox') {
+        // 16x16 button at top-right outside the box
+        const btnSize = 16 / scale;
+        const btnGap = 16 / scale;
+        const addX = annotation.x + annotation.width + btnGap;
+        const addY = annotation.y - btnSize - 4 / scale;
+        handles.push({
+          type: HANDLE_TYPES.LEADER_ADD,
+          x: addX,
+          y: addY,
+          w: btnSize,
+          h: btnSize,
+          isLeaderUI: true,
+        });
+
+        if (Array.isArray(annotation.leaders)) {
+          for (const leader of annotation.leaders) {
+            // Tip handle (square)
+            handles.push({
+              type: `${HANDLE_TYPES.LEADER_TIP}_${leader.id}`,
+              x: leader.tipX - hs / 2,
+              y: leader.tipY - hs / 2,
+              isLeaderHandle: true,
+              leaderId: leader.id,
+            });
+            // Knee handle (slightly smaller — same width but flagged)
+            handles.push({
+              type: `${HANDLE_TYPES.LEADER_KNEE}_${leader.id}`,
+              x: leader.kneeX - hs / 2,
+              y: leader.kneeY - hs / 2,
+              isLeaderHandle: true,
+              isLeaderKnee: true,
+              leaderId: leader.id,
+            });
+            // Delete (×) button at tip + 14 px along (tip - knee) direction
+            const dx = leader.tipX - leader.kneeX;
+            const dy = leader.tipY - leader.kneeY;
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            const off = 14 / scale;
+            const dxX = leader.tipX + (dx / len) * off;
+            const dxY = leader.tipY + (dy / len) * off;
+            const delSize = 14 / scale;
+            handles.push({
+              type: `${HANDLE_TYPES.LEADER_DELETE}_${leader.id}`,
+              x: dxX - delSize / 2,
+              y: dxY - delSize / 2,
+              w: delSize,
+              h: delSize,
+              isLeaderUI: true,
+              leaderId: leader.id,
+            });
+          }
+        }
+      }
       break;
 
     case 'callout':
@@ -127,20 +193,42 @@ export function getAnnotationHandles(annotation, scale = 1) {
       handles.push({ type: HANDLE_TYPES.BOTTOM, x: circX + circW/2 - hs/2, y: circY + circH - hs/2 });
       handles.push({ type: HANDLE_TYPES.LEFT, x: circX - hs/2, y: circY + circH/2 - hs/2 });
       handles.push({ type: HANDLE_TYPES.RIGHT, x: circX + circW - hs/2, y: circY + circH/2 - hs/2 });
+      // Center grip → move whole circle
+      handles.push({
+        type: HANDLE_TYPES.CIRCLE_CENTER,
+        x: circX + circW/2 - hs/2,
+        y: circY + circH/2 - hs/2,
+        isGrip: true,
+        isCenterGrip: true,
+      });
       // Rotation handle (above the shape)
       handles.push({ type: HANDLE_TYPES.ROTATE, x: circX + circW/2 - hs/2, y: circY - 25 / scale - hs/2 });
       break;
 
     case 'line':
-      // Endpoint handles
-      handles.push({ type: HANDLE_TYPES.LINE_START, x: annotation.startX - hs/2, y: annotation.startY - hs/2 });
-      handles.push({ type: HANDLE_TYPES.LINE_END, x: annotation.endX - hs/2, y: annotation.endY - hs/2 });
+      // Endpoint handles + midpoint grip (move whole line)
+      handles.push({ type: HANDLE_TYPES.LINE_START, x: annotation.startX - hs/2, y: annotation.startY - hs/2, isGrip: true });
+      handles.push({ type: HANDLE_TYPES.LINE_END, x: annotation.endX - hs/2, y: annotation.endY - hs/2, isGrip: true });
+      handles.push({
+        type: HANDLE_TYPES.LINE_MID,
+        x: (annotation.startX + annotation.endX)/2 - hs/2,
+        y: (annotation.startY + annotation.endY)/2 - hs/2,
+        isGrip: true,
+        isCenterGrip: true,
+      });
       break;
 
     case 'arrow':
-      // Arrow uses same endpoint handles as line
-      handles.push({ type: HANDLE_TYPES.LINE_START, x: annotation.startX - hs/2, y: annotation.startY - hs/2 });
-      handles.push({ type: HANDLE_TYPES.LINE_END, x: annotation.endX - hs/2, y: annotation.endY - hs/2 });
+      // Arrow uses same endpoint handles as line + midpoint grip
+      handles.push({ type: HANDLE_TYPES.LINE_START, x: annotation.startX - hs/2, y: annotation.startY - hs/2, isGrip: true });
+      handles.push({ type: HANDLE_TYPES.LINE_END, x: annotation.endX - hs/2, y: annotation.endY - hs/2, isGrip: true });
+      handles.push({
+        type: HANDLE_TYPES.LINE_MID,
+        x: (annotation.startX + annotation.endX)/2 - hs/2,
+        y: (annotation.startY + annotation.endY)/2 - hs/2,
+        isGrip: true,
+        isCenterGrip: true,
+      });
       break;
 
     case 'measureDistance':
@@ -199,20 +287,67 @@ export function getAnnotationHandles(annotation, scale = 1) {
     case 'cloudPolyline':
     case 'measureArea':
     case 'measurePerimeter':
+    case 'filledArea':
       // Per-node handles for polyline
       if (annotation.points && annotation.points.length > 0) {
         annotation.points.forEach((p, i) => {
           handles.push({ type: HANDLE_TYPES.POLYLINE_NODE, x: p.x - hs/2, y: p.y - hs/2, nodeIndex: i });
         });
       }
-      // Per-node handles for holes in measureArea
-      if (annotation.type === 'measureArea' && annotation.holes && annotation.holes.length > 0) {
+      // Per-node handles for holes in measureArea / filledArea
+      if ((annotation.type === 'measureArea' || annotation.type === 'filledArea') && annotation.holes && annotation.holes.length > 0) {
         annotation.holes.forEach((hole, holeIdx) => {
           if (!hole) return;
           hole.forEach((p, nodeIdx) => {
             handles.push({ type: `${HANDLE_TYPES.POLYLINE_NODE}_hole_${holeIdx}`, x: p.x - hs/2, y: p.y - hs/2, nodeIndex: nodeIdx, isHole: true });
           });
         });
+      }
+      // Edge-midpoint handles only in edit-contour mode for filledArea
+      if (annotation.type === 'filledArea' && state?.editingContour === annotation.id) {
+        const ehs = (HANDLE_SIZE - 2) / scale; // slightly smaller open circle visual
+        if (annotation.points && annotation.points.length >= 2) {
+          const n = annotation.points.length;
+          // Closed polygon: include edge from last vertex back to first
+          for (let i = 0; i < n; i++) {
+            const a = annotation.points[i];
+            const b = annotation.points[(i + 1) % n];
+            const mx = (a.x + b.x) / 2;
+            const my = (a.y + b.y) / 2;
+            handles.push({
+              type: `${HANDLE_TYPES.POLYLINE_EDGE}_${i}`,
+              x: mx - ehs/2,
+              y: my - ehs/2,
+              w: ehs,
+              h: ehs,
+              edgeIndex: i,
+              isEdgeMid: true,
+            });
+          }
+        }
+        if (annotation.holes && annotation.holes.length > 0) {
+          annotation.holes.forEach((hole, holeIdx) => {
+            if (!hole || hole.length < 2) return;
+            const hn = hole.length;
+            for (let i = 0; i < hn; i++) {
+              const a = hole[i];
+              const b = hole[(i + 1) % hn];
+              const mx = (a.x + b.x) / 2;
+              const my = (a.y + b.y) / 2;
+              handles.push({
+                type: `${HANDLE_TYPES.POLYLINE_EDGE}_hole_${holeIdx}_${i}`,
+                x: mx - ehs/2,
+                y: my - ehs/2,
+                w: ehs,
+                h: ehs,
+                edgeIndex: i,
+                holeIndex: holeIdx,
+                isEdgeMid: true,
+                isHole: true,
+              });
+            }
+          });
+        }
       }
       // Label drag handle for measureArea (at label position or centroid)
       if (annotation.type === 'measureArea' && annotation.points && annotation.points.length >= 3 && annotation.measureText) {
@@ -231,7 +366,8 @@ export function getAnnotationHandles(annotation, scale = 1) {
       break;
 
     case 'viewport':
-      // Viewport: corner + edge handles, no rotation
+    case 'scaleRegion':
+      // Viewport / scale region: corner + edge handles, no rotation
       handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: annotation.x - hs/2, y: annotation.y - hs/2 });
       handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y - hs/2 });
       handles.push({ type: HANDLE_TYPES.BOTTOM_LEFT, x: annotation.x - hs/2, y: annotation.y + annotation.height - hs/2 });
@@ -247,6 +383,7 @@ export function getAnnotationHandles(annotation, scale = 1) {
     case 'signature':
     case 'scaleBar':
     case 'scheduleTable':
+    case 'parametricSymbol':
       // Corner + edge + rotation handles
       handles.push({ type: HANDLE_TYPES.TOP_LEFT, x: annotation.x - hs/2, y: annotation.y - hs/2 });
       handles.push({ type: HANDLE_TYPES.TOP_RIGHT, x: annotation.x + annotation.width - hs/2, y: annotation.y - hs/2 });
@@ -317,6 +454,8 @@ export function getAnnotationHandles(annotation, scale = 1) {
     const center = getAnnotationCenter(annotation);
     if (center) {
       for (const handle of handles) {
+        // Leader UI / handles live in absolute (unrotated) document space
+        if (handle.isLeaderUI || handle.isLeaderHandle) continue;
         const handleCenterX = handle.x + hs / 2;
         const handleCenterY = handle.y + hs / 2;
         const rotated = rotatePoint(handleCenterX, handleCenterY, center.x, center.y, annotation.rotation);
@@ -343,11 +482,13 @@ export function findHandleAt(x, y, annotation, scale = 1) {
   let bestDist = Infinity;
 
   for (const handle of handles) {
-    if (x >= handle.x - hitPad && x <= handle.x + hs + hitPad &&
-        y >= handle.y - hitPad && y <= handle.y + hs + hitPad) {
+    const hw = handle.w !== undefined ? handle.w : hs;
+    const hh = handle.h !== undefined ? handle.h : hs;
+    if (x >= handle.x - hitPad && x <= handle.x + hw + hitPad &&
+        y >= handle.y - hitPad && y <= handle.y + hh + hitPad) {
       // Distance from click to handle center
-      const hcx = handle.x + hs / 2;
-      const hcy = handle.y + hs / 2;
+      const hcx = handle.x + hw / 2;
+      const hcy = handle.y + hh / 2;
       const dist = (x - hcx) * (x - hcx) + (y - hcy) * (y - hcy);
       if (dist < bestDist) {
         bestDist = dist;
@@ -365,6 +506,7 @@ export function findHandleAt(x, y, annotation, scale = 1) {
   if (typeof bestHandle.type === 'string' && bestHandle.type.startsWith(HANDLE_TYPES.POLYLINE_NODE + '_hole_')) {
     return `${bestHandle.type}_${bestHandle.nodeIndex}`;
   }
+  // Edge-midpoint handles already encode the index in the type string at build time
   return bestHandle.type;
 }
 
@@ -458,6 +600,10 @@ export function getCursorForHandle(handleType, rotation, annotation) {
     case HANDLE_TYPES.LEADER_START:
     case HANDLE_TYPES.LEADER_END:
       return 'crosshair';
+    case HANDLE_TYPES.LINE_MID:
+    case HANDLE_TYPES.RECT_CENTER:
+    case HANDLE_TYPES.CIRCLE_CENTER:
+      return 'move';
     case HANDLE_TYPES.MOVE:
       return 'move';
     case HANDLE_TYPES.ROTATE:

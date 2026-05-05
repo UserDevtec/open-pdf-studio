@@ -1,4 +1,5 @@
 import RibbonGroup from './RibbonGroup.jsx';
+import AdaptiveGroups from './AdaptiveGroups.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
 import { state, getActiveDocument } from '../../../core/state.js';
@@ -24,7 +25,7 @@ export default function ArrangeTab() {
 
   return (
     <div class="ribbon-content active" id="tab-arrange">
-      <div class="ribbon-groups">
+      <AdaptiveGroups>
         <RibbonGroup label={t('arrange.alignment')}>
           <div class="ribbon-grid-col">
             <button class="ribbon-row-btn" id="arr-align-left" title={t('arrange.alignLeft')} disabled={isPdfAReadOnly()} onClick={alignLeft}>
@@ -187,7 +188,7 @@ export default function ArrangeTab() {
           </div>
         </RibbonGroup>
 
-      </div>
+      </AdaptiveGroups>
     </div>
   );
 }

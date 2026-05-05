@@ -1,5 +1,6 @@
 import { Show, createSignal, createMemo } from 'solid-js';
 import RibbonGroup from './RibbonGroup.jsx';
+import AdaptiveGroups from './AdaptiveGroups.jsx';
 import RibbonButton from './RibbonButton.jsx';
 import RibbonButtonStack from './RibbonButtonStack.jsx';
 import { setTool } from '../../../tools/manager.js';
@@ -179,7 +180,7 @@ export default function MeasureTab() {
 
   return (
     <div class="ribbon-content active" id="tab-measure">
-      <div class="ribbon-groups">
+      <AdaptiveGroups>
 
         <RibbonGroup label={t('measure.scale') || 'SCHAAL'}>
           <div class="measure-scale-row">
@@ -309,7 +310,7 @@ export default function MeasureTab() {
             onClick={toggleSchedule} />
         </RibbonGroup>
 
-      </div>
+      </AdaptiveGroups>
     </div>
   );
 }

@@ -138,6 +138,25 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
     }
 
     case 'Square': {
+      // Parametric symbol: stored as Square + private OPS metadata
+      if (extraColors.opsSubtype === 'parametricSymbol') {
+        const psRect = convertRect(annot.rect);
+        let params = {};
+        try { if (extraColors.opsParams) params = JSON.parse(extraColors.opsParams); } catch (_) {}
+        return createAnnotation({
+          ...baseProps,
+          type: 'parametricSymbol',
+          x: psRect.x,
+          y: psRect.y,
+          width: psRect.width,
+          height: psRect.height,
+          symbolId: extraColors.opsSymbolId || '',
+          params,
+          color: colorArrayToHex(annot.color, '#000000'),
+          strokeColor: colorArrayToHex(annot.color, '#000000'),
+          lineWidth: annot.borderStyle?.width || 1,
+        });
+      }
       // Check for scheduleTable custom type
       if (extraColors.opsSubtype === 'scheduleTable') {
         const stRect = convertRect(annot.rect);
@@ -157,6 +176,25 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           color: '#000000',
           lineWidth: 0.5,
           opacity: 1,
+        });
+      }
+      // Check for scaleRegion custom type
+      if (extraColors.opsSubtype === 'scaleRegion') {
+        const srRect = convertRect(annot.rect);
+        return createAnnotation({
+          ...baseProps,
+          type: 'scaleRegion',
+          x: srRect.x,
+          y: srRect.y,
+          width: srRect.width,
+          height: srRect.height,
+          scaleString: extraColors.opsScaleString || '1:100',
+          units: extraColors.opsUnits || 'mm',
+          label: extraColors.opsLabel || annot.contentsObj?.str || '',
+          color: colorArrayToHex(annot.color, '#ff9800'),
+          lineWidth: extraColors.opsLineWidth || 1.5,
+          opacity: annot.opacity ?? 1,
+          borderStyle: 'dashed',
         });
       }
       // Check for viewport or scaleBar custom types
@@ -227,7 +265,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         color: colorArrayToHex(annot.color, '#000000'),
         strokeColor: colorArrayToHex(annot.color, '#000000'),
         fillColor: extraColors.ic || null,
-        lineWidth: annot.borderStyle?.width || 2,
+        lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 2,
         borderStyle: mapBorderStyle(annot, extraColors)
       };
       if (sqRotation) sqProps.rotation = sqRotation;
@@ -263,7 +301,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         color: colorArrayToHex(annot.color, '#000000'),
         strokeColor: colorArrayToHex(annot.color, '#000000'),
         fillColor: extraColors.ic || null,
-        lineWidth: annot.borderStyle?.width || 2,
+        lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 2,
         borderStyle: mapBorderStyle(annot, extraColors)
       };
       if (crRotation) crProps.rotation = crRotation;
@@ -292,7 +330,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
             endY: ley,
             color: colorArrayToHex(annot.color, '#ff0000'),
             strokeColor: colorArrayToHex(annot.color, '#ff0000'),
-            lineWidth: annot.borderStyle?.width || 1,
+            lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 1,
           };
           // Store per-annotation scale/unit/precision from PDF Measure dictionary
           if (extraColors.measureScale) {
@@ -397,7 +435,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           color: colorArrayToHex(annot.color, '#000000'),
           strokeColor: colorArrayToHex(annot.color, '#000000'),
           fillColor: extraColors.ic || undefined,
-          lineWidth: annot.borderStyle?.width || 2,
+          lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 2,
           borderStyle: mapBorderStyle(annot, extraColors),
           startHead: startHead,
           endHead: endHead,
@@ -421,7 +459,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           path: path,
           color: colorArrayToHex(annot.color, '#000000'),
           strokeColor: colorArrayToHex(annot.color, '#000000'),
-          lineWidth: annot.borderStyle?.width || 2,
+          lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 2,
           borderStyle: mapBorderStyle(annot, extraColors)
         });
       }
@@ -433,6 +471,28 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         for (let i = 0; i < annot.vertices.length; i += 2) {
           const [plx, ply] = convertPoint(annot.vertices[i], annot.vertices[i + 1]);
           plPoints.push({ x: plx, y: ply });
+        }
+
+        // Textbox leader: PolyLine with our custom OPS_Subtype linked via IRT.
+        // Anchor (first vertex) is recomputed at render time; keep knee + tip.
+        if (extraColors.opsSubtype === 'textboxLeader' && plPoints.length >= 3 &&
+            extraColors.irtRectKey) {
+          // LE entry: ['/None', '/Circle' or '/OpenArrow' etc.]
+          const le = annot.lineEndings || [];
+          const endStyle = (le[1] === 'Circle') ? 'circle' : 'arrow';
+          return {
+            __textboxLeader: true,
+            page: pageNum,
+            irtRectKey: extraColors.irtRectKey,
+            leader: {
+              id: extraColors.opsLeaderId || (Date.now().toString(36) + Math.random().toString(36).substr(2, 6)),
+              kneeX: plPoints[1].x,
+              kneeY: plPoints[1].y,
+              tipX: plPoints[plPoints.length - 1].x,
+              tipY: plPoints[plPoints.length - 1].y,
+              endStyle,
+            },
+          };
         }
 
         // Check if this is an angle measurement
@@ -454,7 +514,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
             measureText: angleDeg.toFixed(1) + '\u00B0',
             color: colorArrayToHex(annot.color, '#ff0000'),
             strokeColor: colorArrayToHex(annot.color, '#ff0000'),
-            lineWidth: annot.borderStyle?.width || 1,
+            lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 1,
           });
         }
 
@@ -475,7 +535,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
             points: plPoints,
             color: colorArrayToHex(annot.color, '#ff0000'),
             strokeColor: colorArrayToHex(annot.color, '#ff0000'),
-            lineWidth: annot.borderStyle?.width || 1,
+            lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 1,
             borderStyle: mapBorderStyle(annot, extraColors),
             measureText: mpText,
           };
@@ -524,7 +584,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
             controlPoints: splineControlPts,
             color: colorArrayToHex(annot.color, '#000000'),
             strokeColor: colorArrayToHex(annot.color, '#000000'),
-            lineWidth: annot.borderStyle?.width || 1,
+            lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 1,
             borderStyle: mapBorderStyle(annot, extraColors),
           });
         }
@@ -535,7 +595,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           points: plPoints,
           color: colorArrayToHex(annot.color, '#000000'),
           strokeColor: colorArrayToHex(annot.color, '#000000'),
-          lineWidth: annot.borderStyle?.width || 2,
+          lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 2,
           borderStyle: mapBorderStyle(annot, extraColors)
         });
       }
@@ -553,6 +613,56 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           maxX = Math.max(maxX, pvx);
           minY = Math.min(minY, pvy);
           maxY = Math.max(maxY, pvy);
+        }
+
+        // Check if this is a filled-area annotation (our private subtype).
+        if (extraColors.opsSubtype === 'filledArea') {
+          // Re-attach arc/bulge metadata to the outer points so rendering and
+          // hit-testing reproduce the original curves.
+          if (extraColors.opsArcFlags && extraColors.opsArcFlags.length === polyPoints.length) {
+            for (let i = 0; i < polyPoints.length; i++) {
+              if (extraColors.opsArcFlags[i]) {
+                polyPoints[i].arc = true;
+                polyPoints[i].bulge = (extraColors.opsArcBulges && extraColors.opsArcBulges[i] != null)
+                  ? extraColors.opsArcBulges[i]
+                  : 0.3;
+              }
+            }
+          }
+          const faProps = {
+            ...baseProps,
+            type: 'filledArea',
+            points: polyPoints,
+            color: colorArrayToHex(annot.color, '#000000'),
+            strokeColor: colorArrayToHex(annot.color, '#000000'),
+            fillColor: extraColors.ic || null,
+            lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 1,
+            borderStyle: mapBorderStyle(annot, extraColors),
+            x: minX, y: minY,
+            width: maxX - minX, height: maxY - minY,
+            hatchPattern: extraColors.opsHatchPattern || 'none',
+            hatchColor: extraColors.opsHatchColor || '#000000',
+            hatchScale: extraColors.opsHatchScale ?? 100,
+            hatchAngle: extraColors.opsHatchAngle ?? 0,
+          };
+          if (extraColors.holes && extraColors.holes.length > 0) {
+            const holeArcFlags = extraColors.opsHoleArcFlags || [];
+            const holeArcBulges = extraColors.opsHoleArcBulges || [];
+            faProps.holes = extraColors.holes.map((hole, hi) => {
+              const flags = holeArcFlags[hi];
+              const bulges = holeArcBulges[hi];
+              return hole.map((pt, pi) => {
+                const [hx, hy] = convertPoint(pt.x, pt.y);
+                const out = { x: hx, y: hy };
+                if (flags && flags[pi]) {
+                  out.arc = true;
+                  out.bulge = (bulges && bulges[pi] != null) ? bulges[pi] : 0.3;
+                }
+                return out;
+              });
+            });
+          }
+          return createAnnotation(faProps);
         }
 
         // Check if this is an area measurement (use pdf.js IT + colorMap fallback)
@@ -573,7 +683,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
             color: colorArrayToHex(annot.color, '#ff0000'),
             strokeColor: colorArrayToHex(annot.color, '#ff0000'),
             fillColor: extraColors.ic || 'none',
-            lineWidth: annot.borderStyle?.width || 1,
+            lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 1,
             borderStyle: mapBorderStyle(annot, extraColors),
             measureText: maText,
           };
@@ -613,7 +723,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
           color: colorArrayToHex(annot.color, '#000000'),
           strokeColor: colorArrayToHex(annot.color, '#000000'),
           fillColor: extraColors.ic || null,
-          lineWidth: annot.borderStyle?.width || 2,
+          lineWidth: extraColors.borderWidth ?? annot.borderStyle?.width ?? 2,
           borderStyle: mapBorderStyle(annot, extraColors)
         };
 
@@ -727,15 +837,29 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
       const borderStyle = bsStyle === 2 ? 'dashed' : (bsStyle === 3 || bsStyle === 4 ? 'dotted' : 'solid');
       const borderWidth = extraColors.borderWidth !== undefined ? extraColors.borderWidth : (annot.borderStyle?.width || 1);
 
-      // Derive rotation: check /Rotation key first (our format), then AP/N Matrix
+      // Derive rotation. Priority:
+      // 1. OPS_Rotation (our custom key, exact value)
+      // 2. AP/N Matrix angle, with convention detection based on BBox orientation
       let ftRotation = 0;
       if (extraColors.rotation !== undefined && extraColors.rotation !== 0) {
         ftRotation = Math.round(extraColors.rotation);
       }
       if (ftRotation === 0 && extraColors.matrixAngle !== undefined) {
         const ma = extraColors.matrixAngle;
-        const baseAngle = Math.round(ma / 90) * 90;
-        ftRotation = -(ma - baseAngle);
+        // Combined formula: visual rotation = -(annot.rotation + matrixAngle).
+        // - annot.rotation comes from PDF.js (parses /Rotate / /Rotation key).
+        // - matrixAngle comes from the AP/N Matrix (or auto-generated AP).
+        // Together they encode the full transform; their sum mod 360 (negated for
+        // canvas Y-down) gives the actual visual rotation.
+        // Verified against PDF X-Change output:
+        //   /Rotate 90  + matrix -90 → visual 0 (horizontal)
+        //   /Rotate 270 + matrix +90 → visual 0 (horizontal)
+        //   /Rotate 270 + matrix 180 → visual -90 (vertical)
+        //   /Rotate 270 + matrix 120 → visual -30 (diagonal)
+        const annotRot = (typeof annot.rotation === 'number') ? annot.rotation : 0;
+        ftRotation = -(annotRot + ma);
+        while (ftRotation > 180) ftRotation -= 360;
+        while (ftRotation < -180) ftRotation += 360;
         ftRotation = Math.round(ftRotation);
         if (Math.abs(ftRotation) <= 1) ftRotation = 0;
       }
@@ -744,13 +868,9 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
       const rectW = rect[2] - rect[0];
       const rectH = rect[3] - rect[1];
       let ftWidth, ftHeight;
-      const isStdRot = ftRotation !== 0 && ftRotation % 90 === 0;
-      if (isStdRot) {
-        // Standard rotation: Rect has original (non-expanded) dimensions
-        ftWidth = rectW;
-        ftHeight = rectH;
-      } else if (ftRotation !== 0) {
-        // Arbitrary angle: Rect is the expanded bounding box, recover original dims
+      if (ftRotation !== 0) {
+        // Any rotation: Rect is the (possibly expanded) axis-aligned bounding box.
+        // Recover original dims via inverse rotation: rectW = |w*cos| + |h*sin|, rectH = |w*sin| + |h*cos|
         const c = Math.abs(Math.cos(ftRotation * Math.PI / 180));
         const s = Math.abs(Math.sin(ftRotation * Math.PI / 180));
         const det = c * c - s * s;
@@ -843,7 +963,7 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         });
       }
 
-      return createAnnotation({
+      const _tbAnn = createAnnotation({
         ...baseProps,
         type: 'textbox',
         x: ftX,
@@ -866,6 +986,14 @@ export async function convertPdfAnnotation(annot, pageNum, viewport, stampImageM
         fontUnderline: fontUnderline,
         fontStrikethrough: fontStrikethrough
       });
+      // Stash raw PDF Rect so loader can resolve IRT-linked leader PolyLines.
+      // Cleared by loader after leader-attach pass.
+      try {
+        if (annot.rect && annot.rect.length >= 4) {
+          _tbAnn._pdfRectKey = `${annot.rect[0]},${annot.rect[1]},${annot.rect[2]},${annot.rect[3]}`;
+        }
+      } catch (_) {}
+      return _tbAnn;
     }
 
     case 'Stamp': {

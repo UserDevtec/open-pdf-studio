@@ -655,7 +655,10 @@ export async function savePDF(saveAsPath = null) {
             const textColorCss = ann.textColor || '#000000';
             const dsFontFamily = ann.fontFamily || 'Arial';
             const dsLineHeight = ann.lineSpacing ? `line-height:${Math.round(fontSize * ann.lineSpacing * 100) / 100};` : '';
-            const dsStr = `font-family:${dsFontFamily};font-size:${fontSize}pt;color:${textColorCss};${dsLineHeight}`;
+            const dsFontWeight = ann.fontBold ? 'font-weight:bold;' : '';
+            const dsFontStyle = ann.fontItalic ? 'font-style:italic;' : '';
+            const dsTextDecoration = ann.fontUnderline ? 'text-decoration:underline;' : '';
+            const dsStr = `font-family:${dsFontFamily};font-size:${fontSize}pt;color:${textColorCss};${dsFontWeight}${dsFontStyle}${dsTextDecoration}${dsLineHeight}`;
 
             const annDictObj = {
               Type: 'Annot',
@@ -1086,6 +1089,35 @@ export async function savePDF(saveAsPath = null) {
             break;
           }
 
+          case 'scaleRegion': {
+            const srx1 = convertX(ann.x);
+            const sry1 = convertY(ann.y + ann.height);
+            const srx2 = convertX(ann.x + ann.width);
+            const sry2 = convertY(ann.y);
+            const srDict = {
+              Type: 'Annot',
+              Subtype: 'Square',
+              Rect: [srx1, sry1, srx2, sry2],
+              C: hexToColorArray(ann.color || '#ff9800'),
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of(ann.label || ''),
+              M: PDFString.of(new Date().toISOString()),
+              OPS_Subtype: PDFString.of('scaleRegion'),
+              OPS_ScaleString: PDFString.of(ann.scaleString || '1:100'),
+              OPS_Units: PDFString.of(ann.units || 'mm'),
+              F: computeAnnotFlags(ann)
+            };
+            if (ann.label) srDict.OPS_Label = PDFString.of(ann.label);
+            // Numeric ratio for forward-compat (denominator of 1:N)
+            const m = String(ann.scaleString || '').match(/1\s*[:/]\s*(\d+(?:\.\d+)?)/);
+            if (m) srDict.OPS_ScaleRatio = 1 / parseFloat(m[1]);
+            if (ann.lineWidth) srDict.OPS_LineWidth = ann.lineWidth;
+            annotDict = context.obj(srDict);
+            annotDict.set(PDFName.of('BS'), buildBorderStyle(context, ann.lineWidth || 1.5, 'dashed'));
+            break;
+          }
+
           case 'viewport': {
             const vpx1 = convertX(ann.x);
             const vpy1 = convertY(ann.y + ann.height);
@@ -1346,6 +1378,101 @@ export async function savePDF(saveAsPath = null) {
             break;
           }
 
+          case 'filledArea': {
+            // User-drawn filled area: persisted as a /Polygon with our private
+            // OPS_Subtype='filledArea' marker, fill color (IC), hatch metadata,
+            // optional /OPS_Holes for cutouts, and parallel arrays
+            // /OPS_ArcFlags + /OPS_ArcBulges to round-trip arc-segment metadata.
+            if (!ann.points || ann.points.length < 3) continue;
+            const faVertices = [];
+            const faArcFlags = [];
+            const faArcBulges = [];
+            let faMinX = Infinity, faMinY = Infinity, faMaxX = -Infinity, faMaxY = -Infinity;
+            let anyArc = false;
+            for (const pt of ann.points) {
+              const px = convertX(pt.x);
+              const py = convertY(pt.y);
+              faVertices.push(px, py);
+              const isArc = pt.arc === true;
+              faArcFlags.push(isArc ? 1 : 0);
+              faArcBulges.push(isArc ? (typeof pt.bulge === 'number' ? pt.bulge : 0.3) : 0);
+              if (isArc) anyArc = true;
+              faMinX = Math.min(faMinX, px); faMaxX = Math.max(faMaxX, px);
+              faMinY = Math.min(faMinY, py); faMaxY = Math.max(faMaxY, py);
+            }
+            const faDict = {
+              Type: 'Annot',
+              Subtype: 'Polygon',
+              Rect: [faMinX - 2, faMinY - 2, faMaxX + 2, faMaxY + 2],
+              Vertices: faVertices,
+              C: hexToColorArray(ann.strokeColor || ann.color || '#000000'),
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of(ann.subject || ''),
+              M: PDFString.of(new Date().toISOString()),
+              OPS_Subtype: PDFString.of('filledArea'),
+              F: computeAnnotFlags(ann),
+            };
+            if (ann.fillColor && ann.fillColor !== 'none' && ann.fillColor !== 'transparent') {
+              faDict.IC = hexToColorArray(ann.fillColor);
+            }
+            annotDict = context.obj(faDict);
+            annotDict.set(PDFName.of('BS'), buildBorderStyle(context, borderWidth, ann.borderStyle));
+            // Hatch metadata
+            if (ann.hatchPattern && ann.hatchPattern !== 'none') {
+              annotDict.set(PDFName.of('OPS_HatchPattern'), PDFString.of(ann.hatchPattern));
+              if (ann.hatchColor) {
+                annotDict.set(PDFName.of('OPS_HatchColor'), PDFString.of(ann.hatchColor));
+              }
+              if (ann.hatchScale != null) {
+                annotDict.set(PDFName.of('OPS_HatchScale'), context.obj(ann.hatchScale));
+              }
+              if (ann.hatchAngle != null) {
+                annotDict.set(PDFName.of('OPS_HatchAngle'), context.obj(ann.hatchAngle));
+              }
+            }
+            // Holes (re-uses existing OPS_Holes loader path).
+            // Also persist per-hole arc metadata as parallel arrays
+            // /OPS_HoleArcFlags + /OPS_HoleArcBulges (array of sub-arrays,
+            // one entry per hole, each entry one flag/bulge per hole vertex).
+            if (ann.holes && ann.holes.length > 0) {
+              const holesArr = ann.holes.map(hole => {
+                const hv = [];
+                for (const pt of hole) { hv.push(convertX(pt.x)); hv.push(convertY(pt.y)); }
+                return context.obj(hv);
+              });
+              annotDict.set(PDFName.of('OPS_Holes'), context.obj(holesArr));
+              let anyHoleArc = false;
+              const holeFlagsArr = ann.holes.map(hole => {
+                const flags = [];
+                for (const pt of hole) {
+                  const isArc = pt && pt.arc === true;
+                  if (isArc) anyHoleArc = true;
+                  flags.push(isArc ? 1 : 0);
+                }
+                return context.obj(flags);
+              });
+              const holeBulgesArr = ann.holes.map(hole => {
+                const bulges = [];
+                for (const pt of hole) {
+                  const isArc = pt && pt.arc === true;
+                  bulges.push(isArc ? (typeof pt.bulge === 'number' ? pt.bulge : 0.3) : 0);
+                }
+                return context.obj(bulges);
+              });
+              if (anyHoleArc) {
+                annotDict.set(PDFName.of('OPS_HoleArcFlags'), context.obj(holeFlagsArr));
+                annotDict.set(PDFName.of('OPS_HoleArcBulges'), context.obj(holeBulgesArr));
+              }
+            }
+            // Arc segment data — only emit when at least one vertex is an arc.
+            if (anyArc) {
+              annotDict.set(PDFName.of('OPS_ArcFlags'), context.obj(faArcFlags));
+              annotDict.set(PDFName.of('OPS_ArcBulges'), context.obj(faArcBulges));
+            }
+            break;
+          }
+
           case 'measurePerimeter': {
             // Save as PolyLine annotation with measurement data
             if (!ann.points || ann.points.length < 2) continue;
@@ -1398,6 +1525,50 @@ export async function savePDF(saveAsPath = null) {
             break;
           }
 
+          case 'parametricSymbol': {
+            // Persist as /Square with private OPS metadata so the bbox is
+            // visible in non-supporting viewers and the symbol can be
+            // reconstructed when re-opened in this app.
+            let psx1 = convertX(ann.x);
+            let psy1 = convertY(ann.y + ann.height);
+            let psx2 = convertX(ann.x + ann.width);
+            let psy2 = convertY(ann.y);
+            if (ann.rotation) {
+              const rad = ann.rotation * Math.PI / 180;
+              const cos = Math.abs(Math.cos(rad));
+              const sin = Math.abs(Math.sin(rad));
+              const pw = Math.abs(psx2 - psx1);
+              const ph = Math.abs(psy2 - psy1);
+              const newW = pw * cos + ph * sin;
+              const newH = pw * sin + ph * cos;
+              const cx = (psx1 + psx2) / 2;
+              const cy = (psy1 + psy2) / 2;
+              psx1 = cx - newW / 2;
+              psx2 = cx + newW / 2;
+              psy1 = cy - newH / 2;
+              psy2 = cy + newH / 2;
+            }
+            const strokeColorArr = ann.strokeColor ? hexToColorArray(ann.strokeColor) : colorArr;
+            const psDict = {
+              Type: 'Annot',
+              Subtype: 'Square',
+              Rect: [psx1, psy1, psx2, psy2],
+              C: strokeColorArr,
+              CA: opacity,
+              T: PDFString.of(ann.author || 'User'),
+              Contents: PDFString.of(ann.subject || ''),
+              M: PDFString.of(new Date().toISOString()),
+              F: computeAnnotFlags(ann),
+              OPS_Subtype: PDFString.of('parametricSymbol'),
+              OPS_SymbolId: PDFString.of(ann.symbolId || ''),
+              OPS_Params: PDFString.of(JSON.stringify(ann.params || {})),
+            };
+            psDict.BS = buildBorderStyle(context, borderWidth, ann.borderStyle);
+            if (ann.rotation) psDict.OPS_Rotation = ann.rotation;
+            annotDict = context.obj(psDict);
+            break;
+          }
+
           default: {
             // Plugin-registered annotation types: delegate to the handler's
             // optional serializeToPdf method. Unknown types without a handler
@@ -1432,9 +1603,64 @@ export async function savePDF(saveAsPath = null) {
         }
 
         // Add annotation to page
+        let parentAnnotRef = null;
         if (annotDict) {
-          const annotRef = context.register(annotDict);
-          annotsArray.push(annotRef);
+          parentAnnotRef = context.register(annotDict);
+          annotsArray.push(parentAnnotRef);
+        }
+
+        // Textbox leaders: emit one PolyLine annotation per leader, linked
+        // back to the textbox via /IRT for round-trip support.
+        if (parentAnnotRef && ann.type === 'textbox' &&
+            Array.isArray(ann.leaders) && ann.leaders.length > 0) {
+          const _bw = ann.width || 150;
+          const _bh = ann.height || 50;
+          const _box = { x: ann.x, y: ann.y, width: _bw, height: _bh };
+          const _lwLdr = ann.lineWidth !== undefined ? ann.lineWidth : 1;
+          const _strokeArr = ann.strokeColor && ann.strokeColor !== 'none'
+            ? hexToColorArray(ann.strokeColor)
+            : (ann.color ? hexToColorArray(ann.color) : [0, 0, 0]);
+          for (const leader of ann.leaders) {
+            // Pick anchor side (top/right/bottom/left midpoint nearest knee) — same as renderer
+            const cs = [
+              { x: _box.x + _bw / 2, y: _box.y },
+              { x: _box.x + _bw,     y: _box.y + _bh / 2 },
+              { x: _box.x + _bw / 2, y: _box.y + _bh },
+              { x: _box.x,           y: _box.y + _bh / 2 },
+            ];
+            let aBest = cs[0], bestD = Infinity;
+            for (const c of cs) {
+              const d = (c.x - leader.kneeX) * (c.x - leader.kneeX) + (c.y - leader.kneeY) * (c.y - leader.kneeY);
+              if (d < bestD) { bestD = d; aBest = c; }
+            }
+            const aPdf = [convertX(aBest.x), convertY(aBest.y)];
+            const kPdf = [convertX(leader.kneeX), convertY(leader.kneeY)];
+            const tPdf = [convertX(leader.tipX), convertY(leader.tipY)];
+            const verts = [aPdf[0], aPdf[1], kPdf[0], kPdf[1], tPdf[0], tPdf[1]];
+            const minX = Math.min(aPdf[0], kPdf[0], tPdf[0]) - _lwLdr - 4;
+            const maxX = Math.max(aPdf[0], kPdf[0], tPdf[0]) + _lwLdr + 4;
+            const minY = Math.min(aPdf[1], kPdf[1], tPdf[1]) - _lwLdr - 4;
+            const maxY = Math.max(aPdf[1], kPdf[1], tPdf[1]) + _lwLdr + 4;
+            const endStyle = leader.endStyle === 'circle' ? 'Circle' : 'OpenArrow';
+            const ldrDict = context.obj({
+              Type: 'Annot',
+              Subtype: 'PolyLine',
+              Rect: [minX, minY, maxX, maxY],
+              Vertices: verts,
+              C: _strokeArr,
+              CA: ann.opacity !== undefined ? ann.opacity : 1,
+              T: PDFString.of(ann.author || 'User'),
+              M: PDFString.of(new Date().toISOString()),
+              F: computeAnnotFlags(ann),
+              OPS_Subtype: PDFString.of('textboxLeader'),
+              OPS_LeaderId: PDFString.of(leader.id || ''),
+            });
+            ldrDict.set(PDFName.of('LE'), context.obj([PDFName.of('None'), PDFName.of(endStyle)]));
+            ldrDict.set(PDFName.of('IRT'), parentAnnotRef);
+            ldrDict.set(PDFName.of('BS'), buildBorderStyle(context, _lwLdr, ann.borderStyle));
+            const ldrRef = context.register(ldrDict);
+            annotsArray.push(ldrRef);
+          }
         }
       }
 

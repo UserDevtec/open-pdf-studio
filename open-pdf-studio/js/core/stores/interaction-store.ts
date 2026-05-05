@@ -52,6 +52,12 @@ export interface InteractionState {
   busy: boolean;
   /** Snap calibration / pick mode — shows the crosshair cursor. */
   snapPick: boolean;
+  /**
+   * When non-null, a filledArea (or compatible polygon-with-points annotation) is in
+   * "edit contour" mode: vertex/edge handles are exposed for direct contour editing.
+   * Holds the annotation id of the annotation being edited.
+   */
+  editingContour: string | null;
 }
 
 export const interactionState = createMutable<InteractionState>({
@@ -98,6 +104,7 @@ export const interactionState = createMutable<InteractionState>({
   dragCursor: null,
   busy: false,
   snapPick: false,
+  editingContour: null,
 });
 
 export function resetDrawing(): void {

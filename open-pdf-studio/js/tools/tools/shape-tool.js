@@ -55,6 +55,9 @@ export const shapeTool = {
       endY = state.startY - 40;
     } else if (isClick && (tool === 'comment' || tool === 'stamp' || tool === 'signature')) {
       // These already handle single click
+    } else if (isClick && tool === 'parametricSymbol') {
+      // Single click: use template default size
+      // (handled inside buildAnnotationProps via b.width/height fallback)
     } else if (isClick) {
       // Other shapes: too small to be useful, skip creation
       ctx.redraw();
@@ -78,7 +81,7 @@ export const shapeTool = {
     }
 
     // Auto-reset to select tool
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 
     return true;
   },

@@ -342,8 +342,15 @@ export function renderVectorPage(ctx, filePath, pageNum, transform, rotation) {
 
         const bitmap = _imageCache.get(imgPos);
         if (bitmap) {
+          // High-quality bilinear/bicubic interpolation for embedded raster images
+          const prevSmoothing = ctx.imageSmoothingEnabled;
+          const prevQuality = ctx.imageSmoothingQuality;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           // Draw image in the 1×1 PDF unit square (CTM maps to correct page position)
           ctx.drawImage(bitmap, 0, 0, 1, 1);
+          ctx.imageSmoothingEnabled = prevSmoothing;
+          ctx.imageSmoothingQuality = prevQuality;
         }
         break;
       }

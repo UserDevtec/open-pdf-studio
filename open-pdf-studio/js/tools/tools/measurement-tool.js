@@ -3,6 +3,17 @@ import { cloneAnnotation } from '../../annotations/factory.js';
 import { recordModify } from '../../core/undo-manager.js';
 import { calculateArea, formatMeasurement, arcControlPoint, expandArcPoints } from '../../annotations/measurement.js';
 import { applyToolTransform } from '../tool-context.js';
+import {
+  enterTypeLengthMode,
+  exitTypeLengthMode,
+  setTypeLengthStart,
+  applyToEndpoint,
+  typeLengthHasBuffer,
+} from '../type-length-input.js';
+
+// Last cursor position for measurement tools — used when Enter commits at
+// typed length so we know the direction.
+const _measureCursor = { x: 0, y: 0 };
 
 // Default hatch options for area measurement preview (red diagonal lines at 45°)
 const DEFAULT_AREA_HATCH = { pattern: 'diagonal-left', color: '#ff0000', scale: 100, angle: 0 };
@@ -36,9 +47,22 @@ export const measureDistanceTool = {
       // Click 1: first measurement point
       state.dimPoints.push({ x: dimX, y: dimY });
       state.isDrawingDimension = true;
+      enterTypeLengthMode(dimX, dimY);
+      state._typeLengthCommit = (length) => _commitMeasureDistanceClick2(ctx, e);
     } else if (state.dimPoints.length === 1) {
       // Click 2: second measurement point
       let pt2X = dimX, pt2Y = dimY;
+      // Honor typed length if buffer active
+      if (typeLengthHasBuffer()) {
+        const last = state.dimPoints[0];
+        const ep = applyToEndpoint(last.x, last.y, x, y);
+        pt2X = ep.x; pt2Y = ep.y;
+        // Skip further snap-modifications
+        state.dimPoints.push({ x: pt2X, y: pt2Y });
+        exitTypeLengthMode();
+        state._typeLengthCommit = null;
+        return;
+      }
       // Apply Shift+angle snap (same logic as preview)
       const prefs = state.preferences;
       if (!snap.snapped && e.shiftKey && prefs.enableAngleSnap) {
@@ -113,12 +137,13 @@ export const measureDistanceTool = {
       ctx.redraw();
 
       // Auto-reset to select tool
-      import('../../tools/manager.js').then(m => m.setTool('select'));
+      import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
     }
   },
 
   onPointerMove(ctx, e) {
     const { x, y, state, canvasCtx, scale } = ctx;
+    _measureCursor.x = x; _measureCursor.y = y;
     if (!state.isDrawingDimension || state.dimPoints.length === 0) {
       _drawHoverSnap(ctx, x, y);
       return;
@@ -130,6 +155,13 @@ export const measureDistanceTool = {
     let dimSnapX = snap.snapped ? snap.x : x;
     let dimSnapY = snap.snapped ? snap.y : y;
     state.lastSnapResult = snap.snapped ? snap : null;
+    // Type-length lock for click-2 preview (only when 1 point set)
+    if (typeLengthHasBuffer() && state.dimPoints.length === 1) {
+      const last = state.dimPoints[0];
+      const ep = applyToEndpoint(last.x, last.y, x, y);
+      dimSnapX = ep.x; dimSnapY = ep.y;
+      state.lastSnapResult = null;
+    }
 
     // Shift+snap angle constraint
     if (!snap.snapped && e.shiftKey && prefs.enableAngleSnap) {
@@ -212,8 +244,22 @@ export const measureDistanceTool = {
       state.isDrawingDimension = false;
       ctx.redraw();
     }
+    exitTypeLengthMode();
+    state._typeLengthCommit = null;
   },
 };
+
+// Helper: Enter pressed in measureDistance with one point + buffered length.
+function _commitMeasureDistanceClick2(ctx, e) {
+  const { state } = ctx;
+  if (!state.dimPoints || state.dimPoints.length !== 1) return;
+  const last = state.dimPoints[0];
+  const ep = applyToEndpoint(last.x, last.y, _measureCursor.x, _measureCursor.y);
+  state.dimPoints.push({ x: ep.x, y: ep.y });
+  exitTypeLengthMode();
+  state._typeLengthCommit = null;
+  ctx.redraw();
+}
 
 export const measureAreaTool = {
   name: 'measureArea',
@@ -298,6 +344,14 @@ function _measureMultiClickDown(ctx, e, toolType) {
   let ptX = snap.snapped ? snap.x : x;
   let ptY = snap.snapped ? snap.y : y;
 
+  // Type-length lock: when buffer is non-empty and we have a previous point,
+  // constrain this click to the typed length in the cursor direction.
+  if (typeLengthHasBuffer() && state.measurePoints.length > 0) {
+    const last = state.measurePoints[state.measurePoints.length - 1];
+    const ep = applyToEndpoint(last.x, last.y, x, y);
+    ptX = ep.x; ptY = ep.y;
+  }
+
   // Angle snap when Shift held
   if (!snap.snapped && e.shiftKey && prefs.enableAngleSnap && state.measurePoints.length > 0) {
     const last = state.measurePoints[state.measurePoints.length - 1];
@@ -338,6 +392,13 @@ function _measureMultiClickDown(ctx, e, toolType) {
     arcState.active = false; // reset arc mode after placing point
   } else {
     state.measurePoints.push({ x: ptX, y: ptY });
+  }
+  // Arm/refresh type-length anchor for next segment
+  if (state.measurePoints.length === 1) {
+    enterTypeLengthMode(ptX, ptY);
+    state._typeLengthCommit = (length) => _commitMeasureSegmentByLength(ctx, toolType);
+  } else {
+    setTypeLengthStart(ptX, ptY);
   }
   ctx.redraw();
 
@@ -385,10 +446,12 @@ function _finishMeasureWithHoles(ctx) {
   state.measurePhase = 'outer';
   state.measureOuterPoints = null;
   state.measureHoles = [];
+  exitTypeLengthMode();
+  state._typeLengthCommit = null;
   ctx.redraw();
 
   // Auto-reset to select tool
-  import('../../tools/manager.js').then(m => m.setTool('select'));
+  import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 }
 
 // Collect all in-progress points for snap exclusion
@@ -408,6 +471,7 @@ function _getAllInProgressPoints(state, isArea) {
 
 function _measureMultiClickMove(ctx, e, toolType) {
   const { x, y, state, canvasCtx, scale } = ctx;
+  _measureCursor.x = x; _measureCursor.y = y;
   const isArea = toolType === 'measureArea';
   const inHolesPhase = isArea && state.measurePhase === 'holes';
 
@@ -436,6 +500,14 @@ function _measureMultiClickMove(ctx, e, toolType) {
   let snapX = snap.snapped ? snap.x : x;
   let snapY = snap.snapped ? snap.y : y;
   let nearFirst = false;
+
+  // Type-length lock for preview
+  if (typeLengthHasBuffer() && state.measurePoints.length > 0) {
+    const last = state.measurePoints[state.measurePoints.length - 1];
+    const ep = applyToEndpoint(last.x, last.y, x, y);
+    snapX = ep.x; snapY = ep.y;
+    state.lastSnapResult = null;
+  }
 
   // Snap to first point when near (close shape hint) for measureArea
   if (isArea && state.measurePoints.length >= 3) {
@@ -612,10 +684,12 @@ function _finishMeasure(ctx, toolType) {
   state.measurePhase = 'outer';
   state.measureOuterPoints = null;
   state.measureHoles = [];
+  exitTypeLengthMode();
+  state._typeLengthCommit = null;
   ctx.redraw();
 
   // Auto-reset to select tool
-  import('../../tools/manager.js').then(m => m.setTool('select'));
+  import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 }
 
 function _measureDeactivate(ctx) {
@@ -627,6 +701,20 @@ function _measureDeactivate(ctx) {
     state.measureHoles = [];
     ctx.redraw();
   }
+  exitTypeLengthMode();
+  state._typeLengthCommit = null;
+}
+
+// Helper: Enter pressed during measureArea/measurePerimeter — append the
+// next vertex at the typed length in the current cursor direction.
+function _commitMeasureSegmentByLength(ctx, toolType) {
+  const { state } = ctx;
+  if (!state.measurePoints || state.measurePoints.length === 0) return;
+  const last = state.measurePoints[state.measurePoints.length - 1];
+  const ep = applyToEndpoint(last.x, last.y, _measureCursor.x, _measureCursor.y);
+  state.measurePoints.push({ x: ep.x, y: ep.y });
+  setTypeLengthStart(ep.x, ep.y);
+  ctx.redraw();
 }
 
 function _drawMeasureInProgress(ctx, toolType) {
@@ -685,9 +773,43 @@ export { arcState };
  * Draws a polygon that gets added as a hole to the target annotation.
  * Right-click or clicking near the first point closes the hole.
  */
+// Arc-mode toggle for the addHole flow ('A' toggles, mouse wheel adjusts bulge).
+const addHoleArcState = { active: false, bulge: 0.3 };
+
 export const addHoleTool = {
   name: 'addHole',
   cursor: 'crosshair',
+
+  onKeyDown(ctx, e) {
+    if ((e.key === 'a' || e.key === 'A')) {
+      const pts = state.addHolePoints || [];
+      if (pts.length > 0) {
+        e.preventDefault();
+        addHoleArcState.active = !addHoleArcState.active;
+        ctx.redraw();
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      addHoleArcState.active = false;
+      addHoleArcState.bulge = 0.3;
+      state.addHoleTargetId = null;
+      state.addHolePoints = [];
+      ctx.redraw();
+      import("../manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
+    }
+  },
+
+  onWheel(ctx, e) {
+    if (addHoleArcState.active) {
+      const pts = state.addHolePoints || [];
+      if (pts.length > 0) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.05 : 0.05;
+        addHoleArcState.bulge = Math.max(-1, Math.min(1, addHoleArcState.bulge + delta));
+        ctx.redraw();
+      }
+    }
+  },
 
   onPointerDown(ctx, e) {
     const { x, y, scale } = ctx;
@@ -729,7 +851,11 @@ export const addHoleTool = {
       }
     }
 
-    state.addHolePoints = [...pts, { x: ptX, y: ptY }];
+    const newPt = addHoleArcState.active
+      ? { x: ptX, y: ptY, arc: true, bulge: addHoleArcState.bulge }
+      : { x: ptX, y: ptY };
+    if (addHoleArcState.active) addHoleArcState.active = false; // reset after placing
+    state.addHolePoints = [...pts, newPt];
     ctx.redraw();
     _drawAddHoleInProgress(ctx);
   },
@@ -791,9 +917,12 @@ export const addHoleTool = {
     canvasCtx.lineCap = 'round';
     canvasCtx.lineJoin = 'round';
 
-    // Build preview holes: existing holes + in-progress hole
+    // Build preview holes: existing holes + in-progress hole (arc-aware)
     const existingHoles = ann.holes || [];
-    const previewHole = [...pts, { x: snapX, y: snapY }];
+    const previewPt = addHoleArcState.active
+      ? { x: snapX, y: snapY, arc: true, bulge: addHoleArcState.bulge }
+      : { x: snapX, y: snapY };
+    const previewHole = [...pts, previewPt];
     const allHoles = previewHole.length >= 3
       ? [...existingHoles, previewHole]
       : existingHoles;
@@ -815,10 +944,19 @@ export const addHoleTool = {
       canvasCtx.setLineDash([]);
     }
 
-    // Live area text
-    if (ann.points && ann.points.length >= 3) {
+    // Live area text (measureArea only)
+    if (ann.type === 'measureArea' && ann.points && ann.points.length >= 3) {
       const area = ctx.calculateArea(ann.points, allHoles.length > 0 ? allHoles : undefined, ann.page || 1);
       ctx.drawCentroidLabel(canvasCtx, ann.points, ctx.formatMeasurement(area), mColor);
+    }
+
+    // Arc-mode hint near cursor
+    if (addHoleArcState.active) {
+      canvasCtx.font = '10px Arial';
+      canvasCtx.fillStyle = mColor;
+      canvasCtx.globalAlpha = 0.7;
+      canvasCtx.fillText(`Arc (bulge: ${addHoleArcState.bulge.toFixed(2)})`, snapX + 12 / scale, snapY - 8 / scale);
+      canvasCtx.globalAlpha = 1;
     }
 
     // Close indicator at first point
@@ -841,6 +979,8 @@ export const addHoleTool = {
   },
 
   onDeactivate(ctx) {
+    addHoleArcState.active = false;
+    addHoleArcState.bulge = 0.3;
     state.addHoleTargetId = null;
     state.addHolePoints = [];
     ctx.redraw();
@@ -862,8 +1002,8 @@ function _finishAddHole(ctx) {
       if (!ann.holes) ann.holes = [];
       ann.holes = [...ann.holes, [...pts]];
 
-      // Recalculate the area measurement
-      _recalcMeasureAreaText(ann, ctx);
+      // Recalculate the area measurement (measureArea only)
+      if (ann.type === 'measureArea') _recalcMeasureAreaText(ann, ctx);
 
       ann.modifiedAt = new Date().toISOString();
       recordModify(ann.id, oldAnn, ann);
@@ -876,7 +1016,7 @@ function _finishAddHole(ctx) {
   ctx.redraw();
 
   // Switch back to select tool
-  import('../../tools/manager.js').then(m => m.setTool('select'));
+  import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
 }
 
 function _recalcMeasureAreaText(ann, ctx) {
@@ -911,9 +1051,11 @@ function _drawAddHolePreview(ctx, cursorX, cursorY) {
 
   ctx.drawMeasureAreaShape(canvasCtx, ann.points, mColor, canvasCtx.lineWidth, mFillColor, mBorderStyle, ann.holes && ann.holes.length > 0 ? ann.holes : undefined, DEFAULT_AREA_HATCH);
 
-  // Show area text
-  const area = ctx.calculateArea(ann.points, ann.holes, ann.page || 1);
-  ctx.drawCentroidLabel(canvasCtx, ann.points, ctx.formatMeasurement(area), mColor);
+  // Show area text (measureArea only)
+  if (ann.type === 'measureArea') {
+    const area = ctx.calculateArea(ann.points, ann.holes, ann.page || 1);
+    ctx.drawCentroidLabel(canvasCtx, ann.points, ctx.formatMeasurement(area), mColor);
+  }
 
   // Draw hint text near cursor
   canvasCtx.font = '10px Arial';

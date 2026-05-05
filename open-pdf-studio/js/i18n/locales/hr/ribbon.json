@@ -156,6 +156,8 @@
     "ellipse": "Elipsa",
     "polygon": "Poligon",
     "cloud": "Oblak",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Tekst",
     "textBox": "Tekstualni okvir",
     "note": "Bilješka",

@@ -156,6 +156,8 @@
     "ellipse": "Elipsa",
     "polygon": "Mnohoúhelník",
     "cloud": "Oblak",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Text",
     "textBox": "Textové pole",
     "note": "Poznámka",

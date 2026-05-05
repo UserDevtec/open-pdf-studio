@@ -6,6 +6,8 @@ import { isPdfAReadOnly } from '../pdf/loader.js';
 import { getAnnotationType } from '../plugins/annotation-type-registry.js';
 import { getTool } from './tool-registry.js';
 import { buildToolContext, resolvePointerCoords } from './tool-context.js';
+import { findAnnotationAt } from '../annotations/geometry.js';
+import { findHandleAt } from '../annotations/handles.js';
 
 // Tools that are always allowed (view-only, non-modifying)
 const READONLY_ALLOWED_TOOLS = new Set(['select', 'hand']);
@@ -49,6 +51,115 @@ function setTextSelectionEnabled(enabled) {
   });
 }
 
+// Dynamic fall-through for the unified select tool: when hovering body text (no
+// annotation under the cursor), drop annotation-canvas pointer-events so the
+// textLayer beneath it receives the events and native text selection works.
+// When over an annotation, restore pointer-events: auto so clicks select it.
+let _selectFallthroughInstalled = false;
+let _selectFallthroughHandler = null;
+
+function _setSelectFallthroughEnabled(enabled) {
+  if (enabled && !_selectFallthroughInstalled) {
+    _selectFallthroughHandler = (e) => {
+      // Bail out if select tool isn't active anymore
+      if (state.currentTool !== 'select') return;
+      // Don't toggle while interacting — keep canvas interactive during drag/resize/rubber band
+      if (state.isDragging || state.isResizing || state.isRubberBanding ||
+          state.isPanning || state.isDrawing || state.isEditingText) return;
+
+      const canvas = document.getElementById('annotation-canvas') ||
+                     document.querySelector('.annotation-canvas');
+      if (!canvas || !canvas.getBoundingClientRect) return;
+
+      // Resolve app-space coords using the same logic as resolvePointerCoords
+      const doc = getActiveDocument();
+      if (!doc?.pdfDoc) return;
+      const scale = doc.scale || 1.5;
+      const rect = canvas.getBoundingClientRect();
+
+      // Only act when cursor is over the page area (or text layer / canvas)
+      const insidePageArea = e.clientX >= rect.left && e.clientX <= rect.right &&
+                             e.clientY >= rect.top && e.clientY <= rect.bottom;
+      if (!insidePageArea) return;
+
+      let appX, appY;
+      const vp = window.__pdfViewport;
+      if (vp && vp.active) {
+        appX = (e.clientX - rect.left - vp.offsetX) / vp.zoom;
+        appY = (e.clientY - rect.top - vp.offsetY) / vp.zoom;
+      } else {
+        appX = (e.clientX - rect.left) / scale;
+        appY = (e.clientY - rect.top) / scale;
+      }
+
+      const ann = findAnnotationAt(appX, appY);
+      let overAnnotation = !!ann;
+
+      // Also treat resize/rotate handles of the (single) selected annotation
+      // as "over annotation" — handles can sit OUTSIDE the annotation rect
+      // (corner, rotate, edge handles), and without this check the
+      // annotation-canvas pointerEvents flips to 'none' as the cursor
+      // approaches the handle, blocking resize/rotate clicks entirely.
+      if (!overAnnotation) {
+        const selAnns = doc.selectedAnnotations || [];
+        if (selAnns.length === 1) {
+          const effScale = (vp && vp.active) ? vp.zoom : scale;
+          const handleHit = findHandleAt(appX, appY, selAnns[0], effScale);
+          if (handleHit) overAnnotation = true;
+        }
+      }
+
+      // Toggle annotation-canvas pointer-events so events fall through to text layer
+      // when no annotation is under the cursor.
+      const desired = overAnnotation ? 'auto' : 'none';
+      if (canvas.style.pointerEvents !== desired) {
+        canvas.style.pointerEvents = desired;
+      }
+
+      // Keep the text layer interactive whenever we're falling through.
+      const textLayers = document.querySelectorAll('.textLayer');
+      textLayers.forEach(layer => {
+        const layerPE = overAnnotation ? 'none' : 'auto';
+        if (layer.style.pointerEvents !== layerPE) {
+          layer.style.pointerEvents = layerPE;
+        }
+        layer.querySelectorAll('span').forEach(span => {
+          if (span.style.pointerEvents !== layerPE) span.style.pointerEvents = layerPE;
+          const cur = overAnnotation ? '' : 'text';
+          if (span.style.cursor !== cur) span.style.cursor = cur;
+        });
+      });
+    };
+    document.addEventListener('mousemove', _selectFallthroughHandler, true);
+    _selectFallthroughInstalled = true;
+  } else if (!enabled && _selectFallthroughInstalled) {
+    if (_selectFallthroughHandler) {
+      document.removeEventListener('mousemove', _selectFallthroughHandler, true);
+    }
+    _selectFallthroughHandler = null;
+    _selectFallthroughInstalled = false;
+    // NOTE: Do NOT touch annotation-canvas pointer-events here. The caller
+    // (setTool) has already configured the correct stacking for the new tool
+    // via setAnnotationCanvasForTextAccess(). For editText we need pe:none on
+    // the canvas — re-enabling it here would clobber that and (combined with
+    // stale pe:none on the textLayer left over from the last fallthrough
+    // mousemove) prevent text-edit clicks from reaching the span listeners.
+    //
+    // Also reset any per-element pointer-events the fallthrough handler may
+    // have written on the textLayer/spans during select mode, so the next
+    // tool starts from a clean slate. enableTextLayerHover() (for editText)
+    // and setTextSelectionEnabled() (for other tools) will re-apply the
+    // values they need.
+    document.querySelectorAll('.textLayer').forEach(layer => {
+      layer.style.pointerEvents = '';
+      layer.querySelectorAll('span').forEach(span => {
+        span.style.pointerEvents = '';
+        span.style.cursor = '';
+      });
+    });
+  }
+}
+
 // Configure layer stacking for tools that need text layer access (select, editText).
 // Drops annotation canvas below text layer, disables its pointer-events, and disables
 // form/link pointer events (they sit above the text layer and would intercept events).
@@ -61,6 +172,15 @@ function setAnnotationCanvasForTextAccess(enabled) {
   document.querySelectorAll('.formLayer section, .linkLayer .pdf-link').forEach(el => {
     el.style.pointerEvents = enabled ? 'none' : '';
   });
+}
+
+// Some tools call setTool('select') after committing one annotation. With
+// `keepToolActive=true` (default) the tool stays active so the user can place
+// multiple shapes in a row without re-clicking the toolbar. AutoCAD-style.
+// Esc returns to select-tool. Tools should call this helper instead of setTool('select') directly.
+export function maybeRevertToSelect() {
+  if (state.preferences?.keepToolActive !== false) return;
+  setTool('select');
 }
 
 // Set current tool
@@ -116,6 +236,11 @@ export function setTool(tool) {
   // Drop annotation canvas below text layer ONLY for editText tool
   // select = unified tool (annotation canvas stays above, text layer activates dynamically)
   setAnnotationCanvasForTextAccess(tool === 'editText');
+
+  // Unified select tool: install dynamic pointer-events fall-through so
+  // dragging across body text triggers native text selection while clicks
+  // on annotations still hit the annotation-canvas.
+  _setSelectFallthroughEnabled(tool === 'select');
 
   // Update status bar
   updateStatusTool();

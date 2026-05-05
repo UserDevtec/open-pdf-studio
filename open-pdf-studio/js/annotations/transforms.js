@@ -202,6 +202,20 @@ function applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn,
 export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn, shiftKey = false, ctrlKey = false) {
   if (annotation.locked) return;
 
+  // Center grips: move the whole annotation (translation, not stretch).
+  // These are the "grip stretch" semantics for the center grip per the
+  // grippoints spec — a single click+drag on the midpoint translates the
+  // entire shape by the cursor delta from the grip's original location.
+  // Caller has already reset `annotation` from `originalAnn` before invoking
+  // applyResize (see _handleResize in tool-dispatcher.js), so applyMove can
+  // operate directly on the original-relative state.
+  if (handleType === HANDLE_TYPES.LINE_MID ||
+      handleType === HANDLE_TYPES.RECT_CENTER ||
+      handleType === HANDLE_TYPES.CIRCLE_CENTER) {
+    applyMove(annotation, deltaX, deltaY);
+    return;
+  }
+
   switch (annotation.type) {
     case 'box':
     case 'circle':
@@ -209,6 +223,34 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
     case 'polygon':
     case 'cloud':
     case 'textbox':
+      // Textbox leader tip/knee drag: update only that point on the matching leader.
+      if (annotation.type === 'textbox' && typeof handleType === 'string' &&
+          (handleType.startsWith(HANDLE_TYPES.LEADER_TIP + '_') ||
+           handleType.startsWith(HANDLE_TYPES.LEADER_KNEE + '_'))) {
+        const isTip = handleType.startsWith(HANDLE_TYPES.LEADER_TIP + '_');
+        const prefix = isTip ? (HANDLE_TYPES.LEADER_TIP + '_') : (HANDLE_TYPES.LEADER_KNEE + '_');
+        const leaderId = handleType.substring(prefix.length);
+        const origLeaders = Array.isArray(originalAnn.leaders) ? originalAnn.leaders : [];
+        const newLeaders = origLeaders.map(l => ({ ...l }));
+        const idx = newLeaders.findIndex(l => l.id === leaderId);
+        // Shift held → ortho-snap: constrain delta to dominant axis (horizontal or vertical)
+        let dx = deltaX, dy = deltaY;
+        if (state.shiftKeyPressed) {
+          if (Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0;
+        }
+        if (idx >= 0) {
+          if (isTip) {
+            newLeaders[idx].tipX = origLeaders[idx].tipX + dx;
+            newLeaders[idx].tipY = origLeaders[idx].tipY + dy;
+          } else {
+            newLeaders[idx].kneeX = origLeaders[idx].kneeX + dx;
+            newLeaders[idx].kneeY = origLeaders[idx].kneeY + dy;
+          }
+        }
+        annotation.leaders = newLeaders;
+        annotation.modifiedAt = new Date().toISOString();
+        return;
+      }
       if (originalAnn.rotation) {
         applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn);
       } else {
@@ -547,6 +589,7 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
     case 'cloudPolyline':
     case 'measureArea':
     case 'measurePerimeter':
+    case 'filledArea':
       // Label drag for measureArea
       if (handleType === HANDLE_TYPES.LABEL_MOVE && annotation.type === 'measureArea') {
         // Compute centroid as default if no label position set
@@ -568,7 +611,7 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
       if (typeof handleType === 'string' && handleType.startsWith(HANDLE_TYPES.POLYLINE_NODE + '_')) {
         // Check if this is a hole node: polyline_node_hole_<holeIdx>_<nodeIdx>
         const holeMatch = handleType.match(/^polyline_node_hole_(\d+)_(\d+)$/);
-        if (holeMatch && annotation.type === 'measureArea' && originalAnn.holes) {
+        if (holeMatch && (annotation.type === 'measureArea' || annotation.type === 'filledArea') && originalAnn.holes) {
           const holeIdx = parseInt(holeMatch[1], 10);
           const nodeIdx = parseInt(holeMatch[2], 10);
           if (holeIdx < originalAnn.holes.length && nodeIdx < originalAnn.holes[holeIdx].length) {
@@ -646,8 +689,9 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
       }
       break;
 
-    case 'viewport': {
-      // Viewport: standard rectangle resize, minimum 40x40
+    case 'viewport':
+    case 'scaleRegion': {
+      // Viewport / scale region: standard rectangle resize, minimum 40x40
       switch (handleType) {
         case HANDLE_TYPES.TOP_LEFT:
           annotation.x = originalAnn.x + deltaX; annotation.y = originalAnn.y + deltaY;
@@ -678,7 +722,8 @@ export function applyResize(annotation, handleType, deltaX, deltaY, originalAnn,
     case 'stamp':
     case 'signature':
     case 'scaleBar':
-    case 'scheduleTable': {
+    case 'scheduleTable':
+    case 'parametricSymbol': {
       const lockRatio = shiftKey || annotation.lockAspectRatio;
       if (originalAnn.rotation) {
         applyRotatedResize(annotation, handleType, deltaX, deltaY, originalAnn, lockRatio);
@@ -947,6 +992,16 @@ export function applyMove(annotation, deltaX, deltaY) {
     case 'textbox':
       annotation.x += deltaX;
       annotation.y += deltaY;
+      // Shift textbox leaders (tip/knee) so they move rigidly with the box.
+      if (annotation.type === 'textbox' && Array.isArray(annotation.leaders)) {
+        annotation.leaders = annotation.leaders.map(l => ({
+          ...l,
+          tipX: l.tipX + deltaX,
+          tipY: l.tipY + deltaY,
+          kneeX: l.kneeX + deltaX,
+          kneeY: l.kneeY + deltaY,
+        }));
+      }
       break;
 
     case 'callout':
@@ -1008,6 +1063,7 @@ export function applyMove(annotation, deltaX, deltaY) {
     case 'cloudPolyline':
     case 'measureArea':
     case 'measurePerimeter':
+    case 'filledArea':
       if (annotation.points) {
         annotation.points = annotation.points.map(p => ({
           x: p.x + deltaX,
@@ -1015,7 +1071,7 @@ export function applyMove(annotation, deltaX, deltaY) {
         }));
       }
       // Move holes along with the outer polygon
-      if (annotation.type === 'measureArea' && annotation.holes) {
+      if ((annotation.type === 'measureArea' || annotation.type === 'filledArea') && annotation.holes) {
         annotation.holes = annotation.holes.map(hole =>
           hole.map(p => ({ x: p.x + deltaX, y: p.y + deltaY }))
         );
@@ -1031,8 +1087,10 @@ export function applyMove(annotation, deltaX, deltaY) {
     case 'stamp':
     case 'signature':
     case 'viewport':
+    case 'scaleRegion':
     case 'scaleBar':
     case 'scheduleTable':
+    case 'parametricSymbol':
       annotation.x += deltaX;
       annotation.y += deltaY;
       break;
@@ -1116,7 +1174,7 @@ export function applyRotation(annotation, mouseX, mouseY, originalAnn) {
   if (annotation.locked) return;
 
   // Supported types for rotation
-  const rotationTypes = ['image', 'stamp', 'signature', 'comment', 'box', 'circle', 'highlight', 'polygon', 'cloud', 'textbox'];
+  const rotationTypes = ['image', 'stamp', 'signature', 'comment', 'box', 'circle', 'highlight', 'polygon', 'cloud', 'textbox', 'parametricSymbol'];
   if (!rotationTypes.includes(annotation.type)) return;
 
   // Calculate center of annotation

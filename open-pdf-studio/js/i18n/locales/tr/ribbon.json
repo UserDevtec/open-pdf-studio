@@ -156,6 +156,8 @@
     "ellipse": "Elips",
     "polygon": "Çokgen",
     "cloud": "Bulut",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Metin",
     "textBox": "Metin Kutusu",
     "note": "Not",

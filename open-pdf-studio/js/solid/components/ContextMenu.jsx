@@ -1,7 +1,7 @@
 import { createEffect, onMount, onCleanup, Show, Switch, Match, For } from 'solid-js';
 import { showConfirm } from '../../ui/chrome/confirm-dialog.js';
 import {
-  visible, menuType, position, targetAnnotation, multiSelectCount, targetPage, hideMenu
+  visible, menuType, position, targetAnnotation, multiSelectCount, targetPage, hideMenu, vertexContext
 } from '../stores/contextMenuStore.js';
 import {
   openPopupIcon, hidePopupIcon, resetPopupIcon, cutIcon, copyIcon, pasteIcon,
@@ -106,7 +106,7 @@ function AnnotationMenuContent() {
   const isLocked = () => ann()?.locked || false;
   const isLineType = () => ['line', 'arrow'].includes(ann()?.type);
   const isMeasureDistance = () => ann()?.type === 'measureDistance';
-  const isMeasureArea = () => ann()?.type === 'measureArea';
+  const isMeasureArea = () => ann()?.type === 'measureArea' || ann()?.type === 'filledArea';
 
   const statusItems = [
     { key: 'None', label: () => t('annotation.statusNone') },
@@ -116,8 +116,97 @@ function AnnotationMenuContent() {
     { key: 'Rejected', label: () => t('annotation.statusRejected') },
   ];
 
+  // Edit-contour vertex actions — only shown when right-clicking a vertex/edge
+  // handle of the annotation that's currently in edit-contour mode.
+  const renderVertexActions = () => {
+    const v = vertexContext();
+    const a = ann();
+    if (!v || !a || a.id !== v.annotationId) return null;
+    const isVertex = v.kind === 'vertex';
+    const isEdge = v.kind === 'edge';
+    const deleteLabel = t('contextMenu.deleteVertex') || 'Delete vertex';
+    const insertLabel = t('contextMenu.insertVertex') || 'Insert vertex here';
+    const toArcLabel = t('contextMenu.convertToArc') || 'Convert to arc';
+    const toLineLabel = t('contextMenu.convertToLine') || 'Convert to line';
+    // The vertex's `arc` flag determines the segment ENDING at this vertex
+    // (i.e. previous vertex -> this vertex). See arcControlPoint() in
+    // js/annotations/measurement.js.
+    let clickedVertex = null;
+    if (isVertex) {
+      if (v.holeIndex != null && Array.isArray(a.holes) && a.holes[v.holeIndex]) {
+        clickedVertex = a.holes[v.holeIndex][v.nodeIndex];
+      } else if (Array.isArray(a.points)) {
+        clickedVertex = a.points[v.nodeIndex];
+      }
+    }
+    const isArcVertex = !!(clickedVertex && clickedVertex.arc);
+    const handleDelete = () => {
+      const before = cloneAnnotation(a);
+      let ok = false;
+      if (v.holeIndex != null && Array.isArray(a.holes) && a.holes[v.holeIndex]) {
+        const hole = a.holes[v.holeIndex];
+        if (hole.length > 3) { hole.splice(v.nodeIndex, 1); ok = true; }
+      } else if (Array.isArray(a.points) && a.points.length > 3) {
+        a.points.splice(v.nodeIndex, 1);
+        ok = true;
+      }
+      if (ok) {
+        a.modifiedAt = new Date().toISOString();
+        recordModify(a.id, before, cloneAnnotation(a));
+        redraw();
+      }
+      hideMenu();
+    };
+    const handleInsert = () => {
+      const before = cloneAnnotation(a);
+      const ei = v.edgeIndex;
+      if (v.holeIndex != null && Array.isArray(a.holes) && a.holes[v.holeIndex]) {
+        const hole = a.holes[v.holeIndex];
+        if (ei >= 0 && ei < hole.length) {
+          const p1 = hole[ei], p2 = hole[(ei + 1) % hole.length];
+          hole.splice(ei + 1, 0, { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 });
+        }
+      } else if (Array.isArray(a.points) && ei >= 0 && ei < a.points.length) {
+        const p1 = a.points[ei], p2 = a.points[(ei + 1) % a.points.length];
+        a.points.splice(ei + 1, 0, { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 });
+      }
+      a.modifiedAt = new Date().toISOString();
+      recordModify(a.id, before, cloneAnnotation(a));
+      redraw();
+      hideMenu();
+    };
+    const handleConvert = () => {
+      if (!clickedVertex) { hideMenu(); return; }
+      const before = cloneAnnotation(a);
+      if (clickedVertex.arc) {
+        clickedVertex.arc = false;
+        delete clickedVertex.bulge;
+      } else {
+        clickedVertex.arc = true;
+        clickedVertex.bulge = 0.5;
+      }
+      a.modifiedAt = new Date().toISOString();
+      recordModify(a.id, before, cloneAnnotation(a));
+      redraw();
+      hideMenu();
+    };
+    return (
+      <>
+        <Show when={isVertex}>
+          <MenuItem icon={deleteIcon} label={deleteLabel} onClick={handleDelete} />
+          <MenuItem label={isArcVertex ? toLineLabel : toArcLabel} onClick={handleConvert} />
+        </Show>
+        <Show when={isEdge}>
+          <MenuItem label={insertLabel} onClick={handleInsert} />
+        </Show>
+        <Separator />
+      </>
+    );
+  };
+
   return (
     <>
+      {renderVertexActions()}
       <MenuItem icon={openPopupIcon} label={t('annotation.openPopUpNote')} onClick={() => {
         const a = ann();
         if (a) openStickyPopup(a);

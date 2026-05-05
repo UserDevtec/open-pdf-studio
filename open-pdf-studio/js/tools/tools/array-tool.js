@@ -59,7 +59,7 @@ export const arrayTool = {
 
     redrawAnnotations();
     _arrayState.basePoint = null;
-    import('../../tools/manager.js').then(m => m.setTool('select'));
+    import("../../tools/manager.js").then(m => m.maybeRevertToSelect && m.maybeRevertToSelect());
   },
 
   onPointerMove(ctx, e) {

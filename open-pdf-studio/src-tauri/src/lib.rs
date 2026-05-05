@@ -25,6 +25,11 @@ struct PdfBytesCache(Mutex<HashMap<String, Vec<u8>>>);
 // fresh DocumentHandle and re-extract every glyph from scratch.
 struct DocHandleCache(Mutex<HashMap<String, Arc<open_pdf_render::DocumentHandle>>>);
 
+/// Cache for already-rendered thumbnails. Keyed by (path, page, max_width, rotation).
+/// Hits return instantly without touching the renderer or JPEG encoder, which
+/// makes scrolling back to previously-rendered pages essentially free.
+struct ThumbnailCache(Mutex<HashMap<(String, u32, u32, i32), String>>);
+
 #[tauri::command]
 fn get_opened_file(state: tauri::State<OpenedFiles>) -> Vec<String> {
     state.0.lock().unwrap().clone()
@@ -957,10 +962,22 @@ fn render_thumbnail(
     skip_images: Option<bool>,
     bytes_cache: tauri::State<PdfBytesCache>,
     handle_cache: tauri::State<DocHandleCache>,
+    thumb_cache: tauri::State<ThumbnailCache>,
 ) -> Result<String, String> {
-    let doc = get_or_load_doc(&path, &bytes_cache, &handle_cache)?;
     let extra_rot = rotation.unwrap_or(0);
     let skip_img = skip_images.unwrap_or(false);
+
+    // Cache hit: previously rendered (path, page, max_width, rotation) is
+    // returned instantly. Thumbnails are deterministic given these inputs
+    // (annotation overlay happens client-side), so caching is safe.
+    let cache_key = (path.clone(), page_index, max_width, extra_rot);
+    if let Ok(tc) = thumb_cache.0.lock() {
+        if let Some(cached) = tc.get(&cache_key) {
+            return Ok(cached.clone());
+        }
+    }
+
+    let doc = get_or_load_doc(&path, &bytes_cache, &handle_cache)?;
 
     // Get page dimensions to calculate thumbnail scale
     let (w_pt, h_pt) = doc.page_dimensions(page_index as usize)
@@ -970,10 +987,17 @@ fn render_thumbnail(
     let scale = max_width as f32 / w_pt.max(h_pt);
 
     // Render at thumbnail scale. When skipImages is set, cap image decode
-    // at 250k pixels (≈500×500) so large embedded images are downsampled
-    // rather than decoded at full resolution (which can take 17+ seconds).
+    // to ~2× the rendered thumbnail pixel area. This is far smaller than
+    // the previous fixed 250k budget (≈500×500) for typical 200px thumbs,
+    // so turbojpeg picks a much more aggressive 1/4 or 1/8 DCT scale and
+    // image decode drops from seconds to milliseconds.
     let page = if skip_img {
-        doc.render_page_with_image_limit(page_index as usize, scale, extra_rot, 250_000)
+        let thumb_w = (w_pt.max(h_pt) * scale).ceil() as u32;
+        let thumb_h = (w_pt.min(h_pt) * scale).ceil() as u32;
+        // 2× area gives a small quality margin for rotation/clipping;
+        // floor at 10k px so very small thumbs still get a sane budget.
+        let budget = (thumb_w.saturating_mul(thumb_h).saturating_mul(2)).max(10_000);
+        doc.render_page_with_image_limit(page_index as usize, scale, extra_rot, budget)
     } else {
         doc.render_page(page_index as usize, scale, extra_rot)
     }.map_err(|e| format!("{}", e))?;
@@ -1002,7 +1026,15 @@ fn render_thumbnail(
     // Return as base64 data URL (small enough for IPC, typically 5-30KB per thumbnail)
     use base64::Engine;
     let b64 = base64::engine::general_purpose::STANDARD.encode(&jpeg_data);
-    Ok(format!("{{\"dataURL\":\"data:image/jpeg;base64,{}\",\"width\":{},\"height\":{}}}", b64, page.width, page.height))
+    let result = format!("{{\"dataURL\":\"data:image/jpeg;base64,{}\",\"width\":{},\"height\":{}}}", b64, page.width, page.height);
+
+    // Populate cache for instant subsequent retrieval (e.g. user scrolls
+    // back, switches tabs, or invalidateThumbnail re-requests the page).
+    if let Ok(mut tc) = thumb_cache.0.lock() {
+        tc.insert(cache_key, result.clone());
+    }
+
+    Ok(result)
 }
 
 #[tauri::command]
@@ -1142,9 +1174,13 @@ fn invalidate_pdf_cache(
     path: String,
     bytes_cache: tauri::State<PdfBytesCache>,
     handle_cache: tauri::State<DocHandleCache>,
+    thumb_cache: tauri::State<ThumbnailCache>,
 ) -> Result<bool, String> {
     bytes_cache.0.lock().map_err(|e| format!("Bytes cache lock: {}", e))?.remove(&path);
     handle_cache.0.lock().map_err(|e| format!("Handle cache lock: {}", e))?.remove(&path);
+    if let Ok(mut tc) = thumb_cache.0.lock() {
+        tc.retain(|(p, _, _, _), _| p != &path);
+    }
     Ok(true)
 }
 
@@ -1154,9 +1190,11 @@ fn invalidate_pdf_cache(
 fn clear_pdf_cache(
     bytes_cache: tauri::State<PdfBytesCache>,
     handle_cache: tauri::State<DocHandleCache>,
+    thumb_cache: tauri::State<ThumbnailCache>,
 ) -> Result<bool, String> {
     bytes_cache.0.lock().map_err(|e| format!("Bytes cache lock: {}", e))?.clear();
     handle_cache.0.lock().map_err(|e| format!("Handle cache lock: {}", e))?.clear();
+    if let Ok(mut tc) = thumb_cache.0.lock() { tc.clear(); }
     Ok(true)
 }
 
@@ -1216,6 +1254,7 @@ pub fn run() {
         .manage(LockedFiles(Mutex::new(HashMap::new())))
         .manage(PdfBytesCache(Mutex::new(HashMap::new())))
         .manage(DocHandleCache(Mutex::new(HashMap::new())))
+        .manage(ThumbnailCache(Mutex::new(HashMap::new())))
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())

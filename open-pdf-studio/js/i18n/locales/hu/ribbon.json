@@ -156,6 +156,8 @@
     "ellipse": "Ellipszis",
     "polygon": "Sokszög",
     "cloud": "Felhő",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Szöveg",
     "textBox": "Szövegdoboz",
     "note": "Jegyzet",

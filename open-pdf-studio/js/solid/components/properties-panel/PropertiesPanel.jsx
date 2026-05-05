@@ -18,6 +18,7 @@ import ActionsSection from './ActionsSection.jsx';
 import CustomFieldsSection from './CustomFieldsSection.jsx';
 import CustomPluginPanel from './CustomPluginPanel.jsx';
 import CollapsibleSection from './CollapsibleSection.jsx';
+import ParametricSymbolSection from './ParametricSymbolSection.jsx';
 
 export default function PropertiesPanel() {
   const { t } = useTranslation('properties');
@@ -85,6 +86,44 @@ export default function PropertiesPanel() {
                 </div>
               </CollapsibleSection>
             </Show>
+            <Show when={annotProps.annotationType === 'scaleRegion'}>
+              <CollapsibleSection title={t('scaleRegion.title') || 'Scale Region'} name="scaleRegion" id="prop-scaleregion-section">
+                <div class="property-group">
+                  <label>{t('scaleRegion.label') || 'Label'}</label>
+                  <input type="text"
+                    value={annotProps.scaleRegionLabel || ''}
+                    disabled={annotProps.locked === true || annotProps.locked === 'mixed'}
+                    onChange={(e) => updateAnnotProp('scaleRegionLabel', e.target.value)}
+                  />
+                </div>
+                <div class="property-group">
+                  <label>{t('scaleRegion.scale') || 'Scale'}</label>
+                  <select
+                    value={annotProps.scaleRegionScale || '1:100'}
+                    disabled={annotProps.locked === true || annotProps.locked === 'mixed'}
+                    onChange={(e) => updateAnnotProp('scaleRegionScale', e.target.value)}
+                  >
+                    {['1:10','1:20','1:25','1:50','1:75','1:100','1:125','1:150','1:200','1:250','1:300','1:400','1:500','1:1000','1:2000','1:5000'].map(s =>
+                      <option value={s}>{s}</option>
+                    )}
+                  </select>
+                </div>
+                <div class="property-group">
+                  <label>{t('scaleRegion.unit') || 'Unit'}</label>
+                  <select
+                    value={annotProps.scaleRegionUnits || 'mm'}
+                    disabled={annotProps.locked === true || annotProps.locked === 'mixed'}
+                    onChange={(e) => updateAnnotProp('scaleRegionUnits', e.target.value)}
+                  >
+                    <option value="mm">mm</option>
+                    <option value="cm">cm</option>
+                    <option value="m">m</option>
+                    <option value="in">in</option>
+                    <option value="ft">ft</option>
+                  </select>
+                </div>
+              </CollapsibleSection>
+            </Show>
             <Show when={sectionVis.scaleBar}>
               <CollapsibleSection title={t('scaleBar.title')} name="scaleBar" id="prop-scalebar-section">
                 <div class="property-group">
@@ -126,6 +165,7 @@ export default function PropertiesPanel() {
                 </div>
               </CollapsibleSection>
             </Show>
+            <ParametricSymbolSection />
             <TextFormatSection />
             <ParagraphSection />
             <ContentSection />

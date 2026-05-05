@@ -24,6 +24,7 @@ const [collapsedSections, setCollapsedSections] = createSignal({});
 
 // Annotation properties store
 const [annotProps, setAnnotProps] = createStore({
+  id: '',
   type: '',
   typeDisplay: '',
   subject: '',
@@ -71,6 +72,8 @@ const [annotProps, setAnnotProps] = createStore({
   scaleBarTotalUnits: 5000,
   scaleBarDivisions: 5,
   scaleBarHeight: 14,
+  symbolId: '',
+  params: {},
   replies: [],
   multiCount: 0,
 });
@@ -153,10 +156,10 @@ function computeSectionVisibility(type) {
   const isLineOrArrow = type === 'arrow' || type === 'line';
   const isTextMarkup = ['textHighlight', 'textStrikethrough', 'textUnderline'].includes(type);
   const hideLineWidth = ['highlight', 'comment', 'image', 'textHighlight'].includes(type);
-  const hasFillColor = ['highlight', 'box', 'circle', 'polygon', 'cloud', 'textbox', 'callout', 'arrow', 'line', 'measureArea'].includes(type);
-  const hideColor = ['line', 'arrow', 'box', 'circle', 'draw', 'highlight', 'image', 'textbox', 'callout', 'polygon', 'cloud', 'measureDistance', 'measureArea', 'measurePerimeter'].includes(type);
-  const hasBorderStyle = ['textbox', 'callout', 'arrow', 'line', 'box', 'circle', 'polygon', 'cloud', 'draw', 'polyline', 'measureDistance', 'measureArea', 'measurePerimeter'].includes(type);
-  const hasHatchPattern = ['box', 'circle', 'polygon', 'cloud', 'measureArea'].includes(type);
+  const hasFillColor = ['highlight', 'box', 'circle', 'polygon', 'cloud', 'textbox', 'callout', 'arrow', 'line', 'measureArea', 'filledArea'].includes(type);
+  const hideColor = ['line', 'arrow', 'box', 'circle', 'draw', 'highlight', 'image', 'textbox', 'callout', 'polygon', 'cloud', 'measureDistance', 'measureArea', 'measurePerimeter', 'filledArea'].includes(type);
+  const hasBorderStyle = ['textbox', 'callout', 'arrow', 'line', 'box', 'circle', 'polygon', 'cloud', 'draw', 'polyline', 'measureDistance', 'measureArea', 'measurePerimeter', 'filledArea'].includes(type);
+  const hasHatchPattern = ['box', 'circle', 'polygon', 'cloud', 'measureArea', 'filledArea'].includes(type);
   const hasRotation = ['box', 'circle', 'polygon', 'cloud', 'highlight', 'redaction', 'comment', 'stamp', 'signature'].includes(type);
   const isMeasurement = ['measureDistance', 'measureArea', 'measurePerimeter'].includes(type);
   const isScaleBar = type === 'scaleBar';
@@ -184,7 +187,7 @@ function computeSectionVisibility(type) {
     customFields: hasCustomFields,
     iconGroup: type === 'comment',
     fillColorGroup: hasFillColor,
-    strokeColorGroup: isShape || type === 'measureDistance' || type === 'measureArea' || type === 'measurePerimeter',
+    strokeColorGroup: isShape || type === 'measureDistance' || type === 'measureArea' || type === 'measurePerimeter' || type === 'filledArea',
     colorGroup: !hideColor || isTextMarkup,
     lineWidthGroup: !hideLineWidth,
     borderStyleGroup: hasBorderStyle,
@@ -205,6 +208,7 @@ export function storeShowProperties(annotation) {
   const isLocked = annotation.locked || false;
 
   setAnnotProps({
+    id: annotation.id || '',
     type: annotation.type,
     typeDisplay: getTypeDisplayName(annotation.type),
     subject: annotation.subject || '',
@@ -228,6 +232,7 @@ export function storeShowProperties(annotation) {
     hatchPattern: annotation.hatchPattern || (annotation.type === 'measureArea' ? 'diagonal-left' : 'none'),
     hatchColor: annotation.hatchColor || (annotation.type === 'measureArea' ? '#ff0000' : (annotation.strokeColor || annotation.color || '#000000')),
     hatchScale: annotation.hatchScale ?? 100,
+    hatchAngle: annotation.hatchAngle ?? 45,
     text: annotation.text || '',
     fontSize: annotation.fontSize || 16,
     fontFamily: annotation.fontFamily || 'Arial',
@@ -260,7 +265,12 @@ export function storeShowProperties(annotation) {
     viewportName: annotation.name,
     viewportScaleRatio: annotation.scaleRatio || '',
     viewportUnit: annotation.unit || 'mm',
+    scaleRegionScale: annotation.scaleString || '1:100',
+    scaleRegionUnits: annotation.units || 'mm',
+    scaleRegionLabel: annotation.label || '',
     annotationType: annotation.type,
+    symbolId: annotation.symbolId || '',
+    params: annotation.params ? { ...annotation.params } : {},
     replies: annotation.replies || [],
     multiCount: 0,
   });
@@ -355,6 +365,7 @@ export function storeShowMultiSelection(selected) {
   const sharedHatchPattern = sharedValue(selected, a => a.hatchPattern || (a.type === 'measureArea' ? 'diagonal-left' : 'none'), 'mixed');
   const sharedHatchColor = sharedValue(selected, a => a.hatchColor || (a.type === 'measureArea' ? '#ff0000' : (a.strokeColor || a.color || '#000000')), 'mixed');
   const sharedHatchScale = sharedValue(selected, a => a.hatchScale ?? 100, 'mixed');
+  const sharedHatchAngle = sharedValue(selected, a => a.hatchAngle ?? 45, 'mixed');
   const sharedFontSize = sharedValue(selected, a => a.fontSize || 16, 'mixed');
   const sharedFontFamily = sharedValue(selected, a => a.fontFamily || 'Arial', 'mixed');
   const allLocked = selected.every(a => a.locked);
@@ -393,6 +404,7 @@ export function storeShowMultiSelection(selected) {
     hatchPattern: sharedHatchPattern,
     hatchColor: sharedHatchColor,
     hatchScale: sharedHatchScale,
+    hatchAngle: sharedHatchAngle,
     text: '',
     fontSize: sharedFontSize,
     fontFamily: sharedFontFamily,
@@ -424,7 +436,7 @@ export function storeShowMultiSelection(selected) {
   const hideColorTypes = new Set(['line', 'arrow', 'box', 'circle', 'draw', 'highlight', 'image', 'textbox', 'callout', 'polygon', 'cloud']);
   const hideLineWidthTypes = new Set(['highlight', 'comment', 'image', 'textHighlight']);
   const borderStyleTypes = new Set(['textbox', 'callout', 'arrow', 'line', 'box', 'circle', 'polygon', 'cloud', 'draw', 'polyline']);
-  const hatchPatternTypes = new Set(['box', 'circle', 'polygon', 'cloud', 'measureArea']);
+  const hatchPatternTypes = new Set(['box', 'circle', 'polygon', 'cloud', 'measureArea', 'filledArea']);
   const rotationTypes = new Set(['box', 'circle', 'polygon', 'cloud', 'highlight', 'redaction', 'comment', 'stamp', 'signature']);
   const textboxTypes = new Set(['textbox', 'callout']);
   const textMarkupTypes = new Set(['textHighlight', 'textStrikethrough', 'textUnderline']);
@@ -625,6 +637,7 @@ function applyPropToAnnotation(ann, key, value) {
     case 'hatchPattern': ann.hatchPattern = value; break;
     case 'hatchColor': ann.hatchColor = value; break;
     case 'hatchScale': ann.hatchScale = parseInt(value); break;
+    case 'hatchAngle': ann.hatchAngle = parseInt(value); break;
     case 'text': ann.text = value; break;
     case 'fontSize': ann.fontSize = parseInt(value); break;
     case 'textColor':
@@ -674,6 +687,9 @@ function applyPropToAnnotation(ann, key, value) {
       ann.unit = newU;
       break;
     }
+    case 'scaleRegionScale': ann.scaleString = String(value || '1:100'); break;
+    case 'scaleRegionUnits': ann.units = String(value || 'mm'); break;
+    case 'scaleRegionLabel': ann.label = String(value || ''); break;
     default: ann[key] = value; break;
   }
 }
@@ -779,6 +795,7 @@ export function updateAnnotProp(key, value) {
     case 'hatchPattern': currentAnnotation.hatchPattern = value; break;
     case 'hatchColor': currentAnnotation.hatchColor = value; break;
     case 'hatchScale': currentAnnotation.hatchScale = parseInt(value); break;
+    case 'hatchAngle': currentAnnotation.hatchAngle = parseInt(value); break;
     case 'text': currentAnnotation.text = value; break;
     case 'fontSize': currentAnnotation.fontSize = parseInt(value); break;
     case 'textColor':
@@ -912,6 +929,25 @@ export function updateAnnotProp(key, value) {
       currentAnnotation.unit = vpNewUnit;
       currentAnnotation.scaleRatio = '';
       recalculateAllMeasurements();
+      break;
+    }
+    case 'scaleRegionScale': {
+      currentAnnotation.scaleString = String(value || '1:100');
+      setAnnotProps('scaleRegionScale', currentAnnotation.scaleString);
+      import('../../annotations/scale-region.js').then(m => m.invalidateScaleRegionCache());
+      recalculateAllMeasurements();
+      break;
+    }
+    case 'scaleRegionUnits': {
+      currentAnnotation.units = String(value || 'mm');
+      setAnnotProps('scaleRegionUnits', currentAnnotation.units);
+      import('../../annotations/scale-region.js').then(m => m.invalidateScaleRegionCache());
+      recalculateAllMeasurements();
+      break;
+    }
+    case 'scaleRegionLabel': {
+      currentAnnotation.label = String(value || '');
+      setAnnotProps('scaleRegionLabel', currentAnnotation.label);
       break;
     }
     default: {

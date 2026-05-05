@@ -156,6 +156,8 @@
     "ellipse": "椭圆",
     "polygon": "多边形",
     "cloud": "云形",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "文本",
     "textBox": "文本框",
     "note": "便签",

@@ -306,6 +306,56 @@
      out of reach above the scroll origin. */
   align-items: safe center;
   justify-content: safe center;
+  position: relative;
+}
+
+/* Optional canvas scrollbars (toggled via preference `showScrollbars`).
+   Windows-style, squared corners, light-gray track, darker thumb. */
+.canvas-scrollbar {
+  position: absolute;
+  background: #f0f0f0;
+  border: 1px solid #d4d4d4;
+  z-index: 30;
+  user-select: none;
+  touch-action: none;
+}
+.canvas-scrollbar-h {
+  left: 0;
+  bottom: 0;
+  right: 0;
+  height: 14px;
+}
+.canvas-scrollbar-v {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+}
+.canvas-scrollbar-thumb {
+  position: absolute;
+  background: #c0c0c0;
+  border: 1px solid #a0a0a0;
+  cursor: default;
+}
+.canvas-scrollbar-h .canvas-scrollbar-thumb {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  height: 100%;
+}
+.canvas-scrollbar-v .canvas-scrollbar-thumb {
+  left: 0;
+  right: 0;
+  top: 0;
+  width: 100%;
+}
+.canvas-scrollbar-thumb:hover {
+  background: #a0a0a0;
+  border-color: #707070;
+}
+.canvas-scrollbar-thumb:active {
+  background: #707070;
+  border-color: #505050;
 }
 
 #placeholder {

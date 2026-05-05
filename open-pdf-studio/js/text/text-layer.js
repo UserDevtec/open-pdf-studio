@@ -419,7 +419,18 @@ export async function createTextLayerFromRust(container, pageNum, pageWidth, pag
       pageIndex: pageNum - 1,
     });
     const spans = JSON.parse(jsonStr);
-    if (!spans || spans.length === 0) return false;
+    if (!spans || spans.length === 0) {
+      // Rust returned no text for this page → drop any stale textLayer
+      // (e.g. left over from a previous page in vector mode) so the caller's
+      // PDF.js fallback path can create a fresh one with the right data-page.
+      const stale = container.querySelector('.textLayer');
+      if (stale) {
+        const stalePage = parseInt(stale.dataset.page);
+        if (Number.isFinite(stalePage)) textLayers.delete(stalePage);
+        stale.remove();
+      }
+      return false;
+    }
 
     let textLayerDiv = container.querySelector('.textLayer');
     if (!textLayerDiv) {
@@ -427,11 +438,34 @@ export async function createTextLayerFromRust(container, pageNum, pageWidth, pag
       textLayerDiv.className = 'textLayer';
       textLayerDiv.dataset.page = pageNum;
       container.appendChild(textLayerDiv);
+    } else {
+      // Reusing a textLayer that was created for a different page (e.g. user
+      // navigated from page 1 to page 11 in vector mode). The DOM element is
+      // recycled but the data-page attribute and the textLayers map entry
+      // must be updated so downstream lookups (find-bar, edit-text-tool,
+      // undo-manager) still resolve to the right page.
+      const prevPage = parseInt(textLayerDiv.dataset.page);
+      if (Number.isFinite(prevPage) && prevPage !== pageNum) {
+        textLayers.delete(prevPage);
+      }
+      textLayerDiv.dataset.page = pageNum;
     }
     textLayerDiv.innerHTML = '';
 
+    // The textLayer is sized + transformed by pdf-viewport.js so it sits in
+    // PDF user space (origin top-left after Y flip), 1 CSS px = 1 PDF point.
+    // --total-scale-factor is forced to 1 there so spans render at their
+    // natural PDF point size; the canvas zoom matrix on the parent scales
+    // everything to screen.
+    textLayerDiv.style.setProperty('--total-scale-factor', '1');
+    textLayerDiv.style.width = `${pageWidth}px`;
+    textLayerDiv.style.height = `${pageHeight}px`;
+
+    // Hidden text-width measurement canvas for --scale-x
+    const measureCanvas = document.createElement('canvas');
+    const measureCtx = measureCanvas.getContext('2d');
+
     // Text spans are in PDF user space (origin bottom-left, Y up).
-    // The text layer uses percentage-based positioning relative to page dimensions.
     for (const span of spans) {
       if (!span.text || !span.text.trim()) continue;
 
@@ -440,32 +474,29 @@ export async function createTextLayerFromRust(container, pageNum, pageWidth, pag
       el.setAttribute('role', 'presentation');
       el.setAttribute('dir', 'ltr');
 
-      // Convert PDF coordinates to text layer positioning:
-      // left = x / pageWidth (as percentage)
-      // top = (pageHeight - y) / pageHeight (as percentage, flipped Y)
-      // Subtract font ascent to align with rendered glyphs
+      // Convert PDF coordinates (Y-up, baseline) to text layer (Y-down, top of glyph).
       const ascentRatio = 0.8;
       const left = span.x;
       const top = pageHeight - span.y - span.fontSize * ascentRatio;
 
-      const leftPct = (100 * left / pageWidth).toFixed(4);
-      const topPct = (100 * top / pageHeight).toFixed(4);
-
-      el.style.position = '';
-      el.style.left = `${leftPct}%`;
-      el.style.top = `${topPct}%`;
+      el.style.position = 'absolute';
+      el.style.left = `${left.toFixed(2)}px`;
+      el.style.top = `${top.toFixed(2)}px`;
       el.style.fontFamily = 'sans-serif';
       el.style.setProperty('--font-height', `${span.fontSize.toFixed(2)}px`);
       el.style.lineHeight = '1';
       el.style.color = 'transparent';
+      el.style.whiteSpace = 'pre';
 
-      // Compute scale-x to match rendered width
+      // Compute --scale-x so the rendered CSS text exactly fills the PDF
+      // glyph run width. Without this the spans are too wide/narrow and
+      // either clip the rendered text on selection or leave gaps that the
+      // browser refuses to extend selection across.
       if (span.width > 0 && span.fontSize > 0) {
-        // Estimate the CSS text width vs the PDF text width
-        // The text layer CSS uses --scale-x to adjust horizontal scaling
-        const charWidthEstimate = span.fontSize * 0.6 * span.text.length;
-        if (charWidthEstimate > 0) {
-          const scaleX = span.width / charWidthEstimate;
+        measureCtx.font = `${span.fontSize}px sans-serif`;
+        const measured = measureCtx.measureText(span.text).width;
+        if (measured > 0) {
+          const scaleX = span.width / measured;
           el.style.setProperty('--scale-x', `${scaleX.toFixed(4)}`);
         }
       }

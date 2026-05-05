@@ -6,6 +6,7 @@ const [colorPickerValue, setColorPickerValue] = createSignal('#ffff00');
 const [lineWidthValue, setLineWidthValue] = createSignal(3);
 const [currentTheme, setCurrentTheme] = createSignal('dark');
 const [calibrationPixelDistance, setCalibrationPixelDistance] = createSignal(null);
+const [isFullscreen, setIsFullscreen] = createSignal(false);
 
 // Fall back to 'home' when contextual tabs hide while a contextual tab is active
 createRoot(() => {
@@ -37,5 +38,6 @@ export {
   colorPickerValue, setColorPickerValue,
   lineWidthValue, setLineWidthValue,
   currentTheme, setCurrentTheme,
-  calibrationPixelDistance, setCalibrationPixelDistance
+  calibrationPixelDistance, setCalibrationPixelDistance,
+  isFullscreen, setIsFullscreen
 };

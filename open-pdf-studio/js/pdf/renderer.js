@@ -996,8 +996,12 @@ export async function zoomOut() {
     m.zoomStepAtCenter(-1);
     return;
   }
-  if (doc.scale > 0.5) {
-    doc.scale -= 0.25;
+  // Allow zooming out to 0.1 for large pages (e.g. blank A1/A0 docs that bypass
+  // the vector viewport). Use proportional steps so big jumps near the floor
+  // don't cause weird increments.
+  if (doc.scale > 0.1) {
+    if (doc.scale <= 0.5) doc.scale = Math.max(0.1, doc.scale - 0.1);
+    else doc.scale -= 0.25;
     if (doc.viewMode === 'continuous') {
       await renderContinuous();
     } else {
@@ -1324,6 +1328,9 @@ export function clearPdfView() {
 
   // Clear PDF vector snap cache
   clearPdfVectorCache();
+
+  // Clear high-res page bitmap cache
+  import('./page-bitmap-cache.js').then(m => m.clearAllBitmaps()).catch(() => {});
 
   // Clear element detection cache
   clearDetectionCache();

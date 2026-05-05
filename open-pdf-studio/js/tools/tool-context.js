@@ -19,7 +19,7 @@ import { drawShapePreview } from './shape-preview.js';
 import { createAnnotationFromTool, createContinuousAnnotation, buildAnnotationProps, createMeasureAreaAnnotation, createMeasurePerimeterAnnotation } from './annotation-creators.js';
 import { isPdfAReadOnly } from '../pdf/loader.js';
 import { calculateDistance, calculateArea, calculatePerimeter, formatMeasurement, snapDistanceTo10 } from '../annotations/measurement.js';
-import { performSnap, drawSnapIndicator } from './snap-engine.js';
+import { performSnap, drawSnapIndicator, setPolarAnchor, clearPolarAnchor } from './snap-engine.js';
 import { buildCloudPolylinePath } from '../annotations/rendering/shapes.js';
 import { drawDimension, drawMeasureAreaShape, drawCentroidLabel, drawMeasurePerimeterShape } from '../annotations/rendering/measurements.js';
 import { getAnnotationType } from '../plugins/annotation-type-registry.js';
@@ -157,6 +157,8 @@ export function buildToolContext(e, coords) {
     snap: (x, y, excludeId, extraPoints) => performSnap(x, y, ctxDoc?.annotations || [], coords.pageNum, ctxScale, excludeId, extraPoints),
     snapToGrid,
     snapAngle,
+    setPolarAnchor,
+    clearPolarAnchor,
     snapDistanceTo10,
     drawSnapIndicator: (snapResult) => {
       if (!coords.canvasCtx) return;

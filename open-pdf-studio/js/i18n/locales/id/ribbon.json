@@ -156,6 +156,8 @@
     "ellipse": "Elips",
     "polygon": "Poligon",
     "cloud": "Awan",
+    "filledArea": "Filled area",
+    "filledAreaTitle": "Filled area",
     "text": "Teks",
     "textBox": "Kotak Teks",
     "note": "Catatan",

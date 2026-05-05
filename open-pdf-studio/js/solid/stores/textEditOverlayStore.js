@@ -29,4 +29,4 @@ export function getHeightGrowth() {
   return heightGrowth();
 }
 
-export { active, overlayStyle, text, setText, onCommit, onCancel, heightGrowth, setHeightGrowth };
+export { active, overlayStyle, setOverlayStyle, text, setText, onCommit, onCancel, heightGrowth, setHeightGrowth };

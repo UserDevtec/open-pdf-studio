@@ -1,6 +1,6 @@
 import { state, getActiveDocument } from '../../core/state.js';
 import { goToPage } from '../../pdf/renderer.js';
-import { viewport, zoomStepAtPoint, suppressNextFit } from '../../pdf/pdf-viewport.js';
+import { viewport, zoomStepAtPoint, suppressNextFit, markAnchored } from '../../pdf/pdf-viewport.js';
 import { getTool } from '../../tools/tool-registry.js';
 
 // ─── Wheel Zoom + Pan + Page Navigation ───────────────────────────────────
@@ -62,7 +62,16 @@ export function setupWheelZoom() {
         if (direction > 0) await m.zoomIn(); else await m.zoomOut();
         return;
       }
-      const rect = e.target.closest('canvas')?.getBoundingClientRect() || e.target.getBoundingClientRect();
+      // Always anchor to pdf-canvas rect. The cursor may be over a non-canvas
+      // overlay (textLayer span, annotation overlay child) whose own rect is
+      // offset from the canvas — using e.target.getBoundingClientRect() in
+      // that case gives wrong sx/sy and the zoom anchor drifts. The
+      // pdf-canvas, annotation-canvas and text-highlight-canvas all share the
+      // same rect, so the pdf-canvas rect is the authoritative reference.
+      const _pdfCanvas = document.getElementById('pdf-canvas');
+      const rect = _pdfCanvas?.getBoundingClientRect()
+        || e.target.closest('canvas')?.getBoundingClientRect()
+        || e.target.getBoundingClientRect();
       const sx = e.clientX - rect.left;
       const sy = e.clientY - rect.top;
       const dy = e.deltaY || 0;
@@ -148,6 +157,9 @@ export function setupWheelZoom() {
       if (newOffsetX !== viewport.offsetX || newOffsetY !== viewport.offsetY) {
         viewport.offsetX = newOffsetX;
         viewport.offsetY = newOffsetY;
+        // Wheel-pan is explicit user positioning → don't let clampAndCenter
+        // re-center a fit-axis on the next render.
+        markAnchored();
         viewport.dirty = true;
       }
       return;
