@@ -236,6 +236,19 @@ export function handleDblClick(e) {
     if (dblClickDoc) dblClickDoc.currentPage = coords.pageNum;
   }
 
+  // Delegate to current tool first — multi-click tools (polyline, spline, arc,
+  // measureArea, ...) listen for `e.detail === 2` to finish a shape. PointerDown
+  // events have detail=0 in Chromium so without this delegation a real
+  // dblclick never finalises the in-progress geometry.
+  const activeTool = state.currentTool && getTool(state.currentTool);
+  if (activeTool && typeof activeTool.onPointerDown === 'function') {
+    const synth = { detail: 2, button: 0, shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey, clientX: e.clientX, clientY: e.clientY, target: e.target, preventDefault: ()=>e.preventDefault?.(), stopPropagation: ()=>e.stopPropagation?.() };
+    const ctx = buildToolContext(synth, coords);
+    if (ctx) {
+      try { activeTool.onPointerDown(ctx, synth); } catch(err) { console.error('[dispatcher] tool dblclick delegation error', err); }
+    }
+  }
+
   const clicked = findAnnotationAt(coords.x, coords.y);
   if (clicked) {
     const dblDoc = getActiveDocument();
