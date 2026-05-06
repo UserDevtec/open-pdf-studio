@@ -279,21 +279,39 @@ let _thumbnailPauseTimer = null;
 export function pauseThumbnails() {
   _thumbnailsPaused = true;
   if (_thumbnailPauseTimer) clearTimeout(_thumbnailPauseTimer);
-  // Auto-resume after 3 seconds of no navigation
+  // Auto-resume after a short window of no navigation. Was 3000ms — that
+  // caused thumbnails to sit idle for ~3s after document open because
+  // renderer.js calls pauseThumbnails() on the very first page render.
+  // 500ms is enough to coalesce rapid page-up/page-down without making the
+  // user wait several seconds for thumbnails on initial load.
   _thumbnailPauseTimer = setTimeout(() => {
     _thumbnailsPaused = false;
     _thumbnailPauseTimer = null;
     startProcessor();
-  }, 3000);
+  }, 500);
 }
 
-// Start the thumbnail processor (with short initial delay so the current page
-// render gets the Rust backend first; cached thumbnails return instantly so
-// 250ms is enough — the previous 2000ms was visibly slow on small docs).
+// Resume thumbnail rendering immediately. Called by the page renderer once
+// its IPC-heavy work (extract_draw_commands / prepareImages) has finished,
+// so thumbnails don't have to wait the full pause window on initial load.
+export function resumeThumbnails() {
+  if (!_thumbnailsPaused) return;
+  if (_thumbnailPauseTimer) {
+    clearTimeout(_thumbnailPauseTimer);
+    _thumbnailPauseTimer = null;
+  }
+  _thumbnailsPaused = false;
+  startProcessor();
+}
+
+// Start the thumbnail processor. The previous 250ms delay added a visible
+// lag on small documents — once paused-state is honored, the very first
+// thumbnail no longer competes with the active-page render, so a tiny
+// yield (1 task tick) is enough to let the UI paint the placeholder first.
 function startProcessor() {
   if (processorRunning) return;
   processorRunning = true;
-  setTimeout(processNextThumbnail, 250);
+  setTimeout(processNextThumbnail, 0);
 }
 
 // Process the next thumbnail (prioritizes visible pages, then active document)

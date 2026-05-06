@@ -7,7 +7,7 @@ import { redrawAnnotations, renderAnnotationsForPage } from '../annotations/rend
 import { ensureAnnotationsForPage, hidePdfABar } from './loader.js';
 import { updateAllStatus } from '../ui/chrome/status-bar.js';
 import { hideProperties } from '../ui/panels/properties-panel.js';
-import { updateActiveThumbnail, pauseThumbnails } from '../ui/panels/left-panel.js';
+import { updateActiveThumbnail, pauseThumbnails, resumeThumbnails } from '../ui/panels/left-panel.js';
 import { createSinglePageTextLayer, clearSinglePageTextLayer, createTextLayer, clearTextLayers, createTextLayerFromRust } from '../text/text-layer.js';
 import { createSinglePageLinkLayer, clearSinglePageLinkLayer, createLinkLayer, clearLinkLayers } from './link-layer.js';
 import { createSinglePageFormLayer, clearSinglePageFormLayer, createFormLayer, clearFormLayers, hideFormFieldsBar } from './form-layer.js';
@@ -285,8 +285,13 @@ export async function renderPage(pageNum) {
           _skipBitmapRender = true;
         }
       }
+      // Heavy IPC for the active page is done — let the thumbnail processor
+      // resume immediately instead of waiting out the pause window.
+      resumeThumbnails();
     } catch (e) {
       console.warn('[render] Vector mode failed:', e);
+      // Failure path: still resume so thumbnails don't stay stuck paused.
+      resumeThumbnails();
     }
   }
 
