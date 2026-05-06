@@ -124,31 +124,42 @@ impl FontRegistry {
             HashMap::new()
         };
 
-        // Try to extract and parse embedded font data
-        let mut parsed = Self::extract_and_parse_font(font_dict, doc);
+        // Try to extract and parse embedded font data.
+        // For Type0/CID fonts the embedded font lives on the DescendantFont's
+        // FontDescriptor, not on the parent Type0 dict — try descendant first.
+        let mut parsed = if is_cid {
+            Self::extract_descendant_font(font_dict, doc)
+                .or_else(|| Self::extract_and_parse_font(font_dict, doc))
+        } else {
+            Self::extract_and_parse_font(font_dict, doc)
+        };
 
-        // Check if the embedded font has usable glyph outlines for common character codes.
-        // Some PDFs embed fonts with empty glyph entries for subset codes — fall back
-        // to system font when most glyphs used by the document are empty.
-        let embedded_usable = parsed.as_ref().map(|p| {
-            // Check first 10 glyph IDs (common subset range) for actual outlines
-            let check_range = 1u16..=10;
-            let with_outlines = check_range.clone().filter(|gid| {
-                p.glyphs.get(gid).map(|g| !g.commands.is_empty()).unwrap_or(false)
-            }).count();
-            // If less than half of checked glyphs have outlines, the font is likely broken
-            with_outlines > check_range.count() / 2
-        }).unwrap_or(false);
+        // For simple (non-CID) fonts, optionally fall back to a system font when
+        // the embedded subset has no usable outlines for the common range.
+        //
+        // CRITICAL: never apply this fallback to Type0/CID fonts. CID fonts use
+        // CID→GID mappings that are specific to the embedded TrueType (e.g. CID 46
+        // = GID 46 = 'K' in this PDF). Substituting a system font would invalidate
+        // that mapping and produce garbled text (issue #215).
+        if !is_cid {
+            let embedded_usable = parsed.as_ref().map(|p| {
+                let check_range = 1u16..=10;
+                let with_outlines = check_range.clone().filter(|gid| {
+                    p.glyphs.get(gid).map(|g| !g.commands.is_empty()).unwrap_or(false)
+                }).count();
+                with_outlines > check_range.count() / 2
+            }).unwrap_or(false);
 
-        if parsed.is_none() || !embedded_usable {
+            if parsed.is_none() || !embedded_usable {
+                if let Some(sys_font) = Self::try_system_font(&base_font) {
+                    parsed = Some(sys_font);
+                }
+            }
+        } else if parsed.is_none() {
+            // CID font with no embedded data — last resort system fallback.
             if let Some(sys_font) = Self::try_system_font(&base_font) {
                 parsed = Some(sys_font);
             }
-        }
-
-        // For Type0 fonts with DescendantFonts, also check the descendant for embedded data
-        if parsed.is_none() && is_cid {
-            parsed = Self::extract_descendant_font(font_dict, doc);
         }
 
         FontEntry {
@@ -314,15 +325,23 @@ impl FontRegistry {
             Some(Object::Dictionary(d)) => d,
             _ => return false,
         };
-        // Check CIDToGIDMap
+        // Check CIDToGIDMap.
+        // Per ISO 32000-1 §9.7.4.2, the DEFAULT value of CIDToGIDMap for a
+        // CIDFontType2 font is /Identity when the entry is absent — meaning
+        // CID values map directly to GIDs in the embedded TrueType. We must
+        // therefore treat a missing entry as Identity (true), not as false.
         match cid_dict.get(b"CIDToGIDMap") {
             Ok(obj) => {
                 match Self::resolve_obj(obj, doc) {
                     Some(Object::Name(n)) => n == b"Identity",
-                    _ => false,
+                    // A stream-based CIDToGIDMap is a non-identity custom map
+                    Some(Object::Stream(_)) => false,
+                    // Anything else: treat as Identity (spec default)
+                    _ => true,
                 }
             }
-            _ => false,
+            // Entry absent → spec default is Identity
+            Err(_) => true,
         }
     }
 
@@ -484,14 +503,18 @@ impl FontRegistry {
         if entry.cid_to_gid_identity {
             // Direct mapping: CID = GID
             if parsed.glyphs.contains_key(&cid) {
-                Some(cid)
-            } else {
-                None
+                return Some(cid);
             }
-        } else {
-            // Try Unicode lookup: CID might be a Unicode codepoint
-            parsed.cmap.get(&(cid as u32)).copied()
         }
+        // ToUnicode CMap → font cmap (text-extraction CMap, but may help when the
+        // CID space is Unicode-aligned, e.g. Adobe-Japan1 etc.)
+        if let Some(&unicode_char) = entry.cid_to_unicode.get(&cid) {
+            if let Some(&gid) = parsed.cmap.get(&(unicode_char as u32)) {
+                return Some(gid);
+            }
+        }
+        // Last resort: try the CID directly as a Unicode codepoint in cmap.
+        parsed.cmap.get(&(cid as u32)).copied()
     }
 
     /// Extract ToUnicode CMap from font dictionary.
