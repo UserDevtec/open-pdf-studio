@@ -364,6 +364,11 @@ impl FontRegistry {
     /// Try to load a system font matching the PDF BaseFont name.
     /// Strips subset prefix (e.g., "ESYDQT+SegoeUI-Bold" → "SegoeUI-Bold")
     /// then maps to Windows font files.
+    ///
+    /// As a last resort (e.g. for Type1 fonts whose embedded /FontFile we
+    /// cannot parse, like UniviaPro), falls back to Arial so text is at
+    /// least visible — character mapping still works through the font's
+    /// ToUnicode CMap → Arial's Unicode cmap → glyph IDs.
     fn try_system_font(base_font: &str) -> Option<ParsedFont> {
         // Strip subset prefix: 6 uppercase letters + '+'
         let clean_name = if base_font.len() > 7 && base_font.as_bytes()[6] == b'+' {
@@ -373,18 +378,39 @@ impl FontRegistry {
         };
 
         // Try to find system font file
-        let font_path = Self::find_system_font(clean_name)?;
-        let font_data = std::fs::read(&font_path).ok()?;
-        match font_parser::parse_truetype(&font_data) {
-            Ok(parsed) => {
-                eprintln!("[fonts] Loaded system font: {} → {}", clean_name, font_path);
-                Some(parsed)
-            }
-            Err(e) => {
-                eprintln!("[fonts] Failed to parse system font {}: {}", font_path, e);
-                None
+        if let Some(font_path) = Self::find_system_font(clean_name) {
+            if let Ok(font_data) = std::fs::read(&font_path) {
+                match font_parser::parse_truetype(&font_data) {
+                    Ok(parsed) => {
+                        eprintln!("[fonts] Loaded system font: {} → {}", clean_name, font_path);
+                        return Some(parsed);
+                    }
+                    Err(e) => {
+                        eprintln!("[fonts] Failed to parse system font {}: {}", font_path, e);
+                    }
+                }
             }
         }
+
+        // Last-resort generic fallback — pick a sane default based on the
+        // font name's hints (bold/italic) so substitutions look reasonable.
+        let lower = clean_name.to_lowercase();
+        let is_bold = lower.contains("bold") || lower.contains("black") || lower.contains("heavy");
+        let is_italic = lower.contains("italic") || lower.contains("oblique");
+        let fallback_file = match (is_bold, is_italic) {
+            (true, true) => "arialbi.ttf",
+            (true, false) => "arialbd.ttf",
+            (false, true) => "ariali.ttf",
+            (false, false) => "arial.ttf",
+        };
+        let path = format!(r"C:\Windows\Fonts\{}", fallback_file);
+        if let Ok(font_data) = std::fs::read(&path) {
+            if let Ok(parsed) = font_parser::parse_truetype(&font_data) {
+                eprintln!("[fonts] Generic fallback: {} → {}", clean_name, fallback_file);
+                return Some(parsed);
+            }
+        }
+        None
     }
 
     /// Find a system font file matching a PDF font name.
