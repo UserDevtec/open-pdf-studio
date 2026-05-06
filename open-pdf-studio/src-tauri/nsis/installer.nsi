@@ -632,6 +632,12 @@ Section Install
   ; Copy main executable
   File "${MAINBINARYSRCPATH}"
 
+  ; Copy WebView2Loader.dll from the same directory as the main binary (target/release)
+  ; This is required for the app to launch on Windows; without it the app fails with
+  ; "WebView2Loader.dll niet gevonden". Tauri's default NSIS template does not bundle
+  ; this DLL, so we copy it explicitly here.
+  File "${MAINBINARYSRCPATH}\..\WebView2Loader.dll"
+
   ; Copy resources
   {{#each resources_dirs}}
     CreateDirectory "$INSTDIR\\{{this}}"
