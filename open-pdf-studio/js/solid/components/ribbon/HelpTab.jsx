@@ -52,6 +52,13 @@ export default function HelpTab() {
             onClick={() => openDialog('about')}
           />
           <RibbonButton
+            id="ribbon-whats-new"
+            title={t('help.whatsNewTitle')}
+            icon={aboutIcon}
+            label={t('help.whatsNew')}
+            onClick={() => import('../../../help/whats-new-trigger.js').then(m => m.openWhatsNewManual())}
+          />
+          <RibbonButton
             id="ribbon-check-updates"
             title={t('help.checkForUpdates')}
             icon={updatesIcon}

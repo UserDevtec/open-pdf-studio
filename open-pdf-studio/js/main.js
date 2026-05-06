@@ -278,6 +278,12 @@ async function init() {
   if (!mobile) {
     setTimeout(() => checkDefaultPdfApp(), 3000);
     checkForUpdates(true);
+    // What's New dialog — fire-and-forget, never blocks startup.
+    setTimeout(() => {
+      import('./help/whats-new-trigger.js')
+        .then(m => m.checkForNewReleaseOnStartup())
+        .catch(() => { /* offline / network error — silently skip */ });
+    }, 1500);
   }
 }
 

@@ -257,6 +257,8 @@
     "information": "Informatie",
     "aboutTitle": "Over Open PDF Studio",
     "about": "Over",
+    "whatsNewTitle": "Wat is nieuw in deze versie",
+    "whatsNew": "Wat is nieuw",
     "keyboardShortcutsTitle": "Sneltoetsen (F1)",
     "shortcuts": "Sneltoetsen",
     "keyboardShortcutsContent": "Sneltoetsen:\n\nBESTAND:\nCtrl+N - Nieuw document\nCtrl+O - PDF openen\nCtrl+S - Opslaan\nCtrl+P - Afdrukken\nCtrl+W - Sluiten\n\nBEWERKEN:\nCtrl+Z - Ongedaan maken\nCtrl+Y / Ctrl+Shift+Z - Opnieuw uitvoeren\nDelete - Geselecteerde annotatie verwijderen\nCtrl+Shift+C - Annotaties op pagina wissen\n\nBEELD:\nCtrl++ - Inzoomen\nCtrl+- - Uitzoomen\nCtrl+0 - Werkelijke grootte\nCtrl+1 - Breedte passend\nCtrl+2 - Pagina passend\n\nHULPMIDDELEN:\nV - Selectiegereedschap\n1 - Markeren\n2 - Vrije hand\n3 - Lijn\n4 - Rechthoek\n5 - Ellips\nT - Tekstvak\nN - Notitie",

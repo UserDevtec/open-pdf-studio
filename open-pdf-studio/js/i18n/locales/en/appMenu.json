@@ -28,6 +28,16 @@
     "license": "Licensed under MIT. Free for personal and commercial use.",
     "version": "Version"
   },
+  "whatsNew": {
+    "title": "What's new",
+    "tabNl": "Dutch",
+    "tabEn": "English",
+    "dontShowAgain": "Don't show again for this version",
+    "close": "Close",
+    "loading": "Loading notes...",
+    "error": "Could not load release notes",
+    "empty": "No new release notes"
+  },
   "openPanel": {
     "title": "Open",
     "browse": "Browse",

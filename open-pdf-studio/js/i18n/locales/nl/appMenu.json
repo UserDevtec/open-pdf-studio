@@ -27,6 +27,16 @@
     "copyright": "\u00a9 2026 OpenAEC Foundation. Gelicentieerd onder MIT.",
     "version": "Versie"
   },
+  "whatsNew": {
+    "title": "Wat is nieuw",
+    "tabNl": "Nederlands",
+    "tabEn": "Engels",
+    "dontShowAgain": "Niet meer tonen voor deze versie",
+    "close": "Sluiten",
+    "loading": "Notities laden...",
+    "error": "Kon release-notes niet laden",
+    "empty": "Geen nieuwe release-notes"
+  },
   "openPanel": {
     "title": "Openen",
     "browse": "Bladeren",

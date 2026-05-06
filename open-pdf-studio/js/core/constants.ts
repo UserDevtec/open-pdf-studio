@@ -274,5 +274,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   feedbackFullName: '',
 
   // Language
-  language: 'auto'
+  language: 'auto',
+
+  // What's New dialog — last release version the user has acknowledged
+  lastSeenReleaseVersion: ''
 };
