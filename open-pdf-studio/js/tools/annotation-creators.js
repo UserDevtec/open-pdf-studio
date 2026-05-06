@@ -96,7 +96,7 @@ export function buildAnnotationProps(tool, startX, startY, endX, endY, e) {
         borderStyle: prefs.arrowBorderStyle || 'solid',
         startHead: prefs.arrowStartHead || 'none',
         endHead: prefs.arrowEndHead || 'open',
-        headSize: prefs.arrowHeadSize || 12,
+        headSize: prefs.arrowHeadSize || 8,
         opacity: (prefs.arrowOpacity || 100) / 100,
         ...o
       };

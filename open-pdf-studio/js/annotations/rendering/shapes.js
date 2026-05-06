@@ -114,7 +114,7 @@ export function computeTextboxContentHeight(annotation) {
   const fontSize = annotation.fontSize || 14;
   const lineSpacing = annotation.lineSpacing || 1.0;
   const lineHeight = fontSize * lineSpacing;
-  const padding = (annotation.lineWidth ?? 1) + 2;
+  const padding = Math.max((annotation.lineWidth ?? 1), 1) + 1;
   const maxWidth = width - padding * 2;
 
   const fontFamily = annotation.fontFamily || 'Arial';
@@ -165,7 +165,7 @@ export function drawTextboxContent(ctx, annotation, padding) {
   const lineSpacing = annotation.lineSpacing || 1.0;
   const lineHeight = fontSize * lineSpacing;
   // Use same padding as the textarea editor: borderWidth + 2
-  if (padding === undefined) padding = (annotation.lineWidth ?? 1) + 2;
+  if (padding === undefined) padding = Math.max((annotation.lineWidth ?? 1), 1) + 1;
 
   // Build font string with style options
   const fontFamily = annotation.fontFamily || 'Arial';

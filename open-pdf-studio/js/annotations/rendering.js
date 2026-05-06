@@ -85,7 +85,7 @@ function _drawPolarOverlay(ctx, snapResult, scale) {
 function thinLw(width) {
   if (width === 0) return 0;
   if (state.preferences?.thinLines) return Math.min(width, 1);
-  return Math.max(width, 0.5);
+  return Math.max(width, 0.25);
 }
 
 // Pick the textbox edge whose midpoint is closest to (kx, ky).
@@ -137,7 +137,7 @@ function drawTextboxLeader(ctx, annotation, leader, strokeColor, lineWidth) {
   } else {
     // arrow — filled (closed) by default for textbox leaders
     const angle = Math.atan2(tipY - kneeY, tipX - kneeX);
-    drawArrowheadOnCanvas(ctx, tipX, tipY, angle, 10, 'closed');
+    drawArrowheadOnCanvas(ctx, tipX, tipY, angle, 7, 'closed');
   }
   ctx.restore();
 }
@@ -206,7 +206,7 @@ export function drawAnnotation(ctx, annotation) {
       const arrowFillColor = annotation.fillColor || strokeColor;
       const endHead = annotation.endHead || 'open';
       const startHead = annotation.startHead || 'none';
-      const headSize = annotation.headSize || 12;
+      const headSize = annotation.headSize || 8;
       let lw = annotation.lineWidth ?? 3;
       if (lw === 0) lw = 0.5;
       lw = thinLw(lw);
@@ -618,13 +618,7 @@ export function drawAnnotation(ctx, annotation) {
       if (tbLineWidth > 0) {
         ctx.strokeStyle = annotation.strokeColor || strokeColor;
         ctx.lineWidth = tbLineWidth;
-        if (tbBorderStyle === 'dashed') {
-          ctx.setLineDash([12, 8]);
-        } else if (tbBorderStyle === 'dotted') {
-          ctx.setLineDash([2, 6]);
-        } else {
-          ctx.setLineDash([]);
-        }
+        applyBorderStyle(ctx, tbBorderStyle);
         ctx.strokeRect(annotation.x, annotation.y, tbWidth, tbHeight);
         ctx.setLineDash([]);
       }
@@ -659,13 +653,7 @@ export function drawAnnotation(ctx, annotation) {
       // Set stroke style for leader line and border
       ctx.strokeStyle = annotation.strokeColor || strokeColor;
       ctx.lineWidth = coLineWidth > 0 ? coLineWidth : 1;
-      if (coBorderStyle === 'dashed') {
-        ctx.setLineDash([12, 8]);
-      } else if (coBorderStyle === 'dotted') {
-        ctx.setLineDash([2, 6]);
-      } else {
-        ctx.setLineDash([]);
-      }
+      applyBorderStyle(ctx, coBorderStyle);
 
       // Arrow tip position
       const arrowX = annotation.arrowX !== undefined ? annotation.arrowX : annotation.x - 60;
@@ -699,7 +687,7 @@ export function drawAnnotation(ctx, annotation) {
       // Draw arrowhead — filled (closed) by default, but honor explicit per-annotation style if set
       const angle = Math.atan2(arrowY - kneeY, arrowX - kneeX);
       ctx.fillStyle = annotation.strokeColor || strokeColor;
-      drawArrowheadOnCanvas(ctx, arrowX, arrowY, angle, 10, annotation.arrowStyle || 'closed');
+      drawArrowheadOnCanvas(ctx, arrowX, arrowY, angle, annotation.headSize || 7, annotation.arrowStyle || 'closed');
 
       ctx.save();
       if (annotation.rotation || annotation.flipX || annotation.flipY) {
@@ -721,13 +709,7 @@ export function drawAnnotation(ctx, annotation) {
       if (coLineWidth > 0) {
         ctx.strokeStyle = annotation.strokeColor || strokeColor;
         ctx.lineWidth = coLineWidth;
-        if (coBorderStyle === 'dashed') {
-          ctx.setLineDash([12, 8]);
-        } else if (coBorderStyle === 'dotted') {
-          ctx.setLineDash([2, 6]);
-        } else {
-          ctx.setLineDash([]);
-        }
+        applyBorderStyle(ctx, coBorderStyle);
         ctx.strokeRect(annotation.x, annotation.y, coWidth, coHeight);
         ctx.setLineDash([]);
       }
