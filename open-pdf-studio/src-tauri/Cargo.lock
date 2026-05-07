@@ -3034,7 +3034,7 @@ dependencies = [
 
 [[package]]
 name = "open-pdf-studio"
-version = "1.47.11"
+version = "1.47.13"
 dependencies = [
  "base64 0.22.1",
  "dirs 5.0.1",
