@@ -24,8 +24,17 @@ Open PDF Studio is a lightweight, native desktop application that provides profe
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/comment-tools.jpg" alt="Annotation & Comment Tools" width="49%">
   <img src="docs/screenshots/print-dialog.jpg" alt="Print Dialog with Preview" width="49%">
+  <img src="docs/screenshots/file-browser.jpg" alt="Annotation & Comment Tools" width="49%">
+</p>
+
+## Repository activity
+Latest Star History overview showing the ongoing growth of this active open-source project.
+
+<p align="center">
+  <a href="https://www.star-history.com/?repos=OpenAEC-Foundation%2Fopen-pdf-studio&type=date&legend=top-left">
+    <img src="https://api.star-history.com/svg?repos=OpenAEC-Foundation%2Fopen-pdf-studio&type=date&legend=top-left" alt="Star History Chart" width="100%">
+  </a>
 </p>
 
 ## Why Open PDF Studio?
